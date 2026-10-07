@@ -17,11 +17,14 @@ import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
 import { defaultBattleActions } from "./battle-states/BattleState.ts"
 import { categorySelectionState } from "./battle-states/CategorySelectionState.ts"
 import { commandSelectionState } from "./battle-states/CommandSelectionState.ts"
+import { confirmAbilityTargetState } from "./battle-states/ConfirmAbilityTargetState.ts"
 import { cutSceneState } from "./battle-states/CutSceneState.ts"
+import { endFacingState } from "./battle-states/EndFacingState.ts"
 import { exploreState } from "./battle-states/ExploreState.ts"
 import { initBattleState } from "./battle-states/InitBattleState.ts"
 import { moveSequenceState } from "./battle-states/MoveSequenceState.ts"
 import { moveTargetState } from "./battle-states/MoveTargetState.ts"
+import { performAbilityState } from "./battle-states/PerformAbilityState.ts"
 import { selectUnitState } from "./battle-states/SelectUnitState.ts"
 
 function createStateMachine(owner: BattleController) {
@@ -33,11 +36,14 @@ function createStateMachine(owner: BattleController) {
 		ActionSelectionState: actionSelectionState(owner),
 		CategorySelectionState: categorySelectionState(owner),
 		CommandSelectionState: commandSelectionState(owner),
+		ConfirmAbilityTargetState: confirmAbilityTargetState(owner),
 		CutSceneState: cutSceneState(owner),
+		EndFacingState: endFacingState(owner),
 		ExploreState: exploreState(owner),
 		InitBattleState: initBattleState(owner),
 		MoveSequenceState: moveSequenceState(owner),
 		MoveTargetState: moveTargetState(owner),
+		PerformAbilityState: performAbilityState(owner),
 		SelectUnitState: selectUnitState(owner)
 	})
 }

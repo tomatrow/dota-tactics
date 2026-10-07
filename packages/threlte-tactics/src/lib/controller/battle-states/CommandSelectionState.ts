@@ -30,8 +30,7 @@ export function commandSelectionState(owner: BattleController) {
 				case 1: // Action
 					return "CategorySelectionState"
 				case 2: // Wait
-					// TODO(part 16): `EndFacingState`.
-					return "SelectUnitState"
+					return "EndFacingState"
 			}
 		},
 		cancel() {

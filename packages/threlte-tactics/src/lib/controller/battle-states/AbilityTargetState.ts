@@ -53,10 +53,8 @@ export function abilityTargetState(owner: BattleController) {
 		},
 		fire(button: number) {
 			if (button === 0) {
-				// TODO(part 15): confirm the targets (`ConfirmAbilityTargetState`) first.
-				turn.hasUnitActed = true
-				if (turn.hasUnitMoved) turn.lockMove = true
-				return "CommandSelectionState"
+				if (ar.directionOriented || tiles.includes(owner.currentTile!))
+					return "ConfirmAbilityTargetState"
 			} else {
 				return "CategorySelectionState"
 			}

@@ -7,7 +7,7 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
  * Port of `Model/Turn.cs`: the current unit's turn. A move can be undone until the unit acts
  * after it.
  */
-// TODO(part 15): the ability's targets. TODO(part 24): the A.I.'s plan.
+// TODO(part 24): the A.I.'s plan.
 export class Turn {
 	actor: Unit | null = null
 	hasUnitMoved = false
@@ -15,6 +15,8 @@ export class Turn {
 	lockMove = false
 	/** The ability picked from the menus. */
 	ability: Ability | null = null
+	/** The tiles in the ability's area that it targets. */
+	targets: Tile[] = []
 	#startTile: Tile | null = null
 	#startDir: Directions = 0
 

@@ -17,11 +17,14 @@ export type BattleStateName =
 	| "ActionSelectionState"
 	| "CategorySelectionState"
 	| "CommandSelectionState"
+	| "ConfirmAbilityTargetState"
 	| "CutSceneState"
+	| "EndFacingState"
 	| "ExploreState"
 	| "InitBattleState"
 	| "MoveSequenceState"
 	| "MoveTargetState"
+	| "PerformAbilityState"
 	| "SelectUnitState"
 
 // A type, not an interface: `fsm` needs handler maps to be assignable to an index signature.

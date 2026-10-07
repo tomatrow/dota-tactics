@@ -4,6 +4,8 @@ import type { LevelData } from "#lib/model/LevelData.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Ability } from "#lib/view-model-component/ability/Ability.ts"
+import { FullAbilityArea } from "#lib/view-model-component/ability/area-of-effect/FullAbilityArea.ts"
+import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
 import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Rank } from "#lib/view-model-component/actor/Rank.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
@@ -68,11 +70,14 @@ describe("BattleController", () => {
 			| "ActionSelectionState"
 			| "CategorySelectionState"
 			| "CommandSelectionState"
+			| "ConfirmAbilityTargetState"
 			| "CutSceneState"
+			| "EndFacingState"
 			| "ExploreState"
 			| "InitBattleState"
 			| "MoveSequenceState"
 			| "MoveTargetState"
+			| "PerformAbilityState"
 			| "SelectUnitState"
 		>()
 		expectTypeOf(battle.machine.move).parameters.toEqualTypeOf<[Point]>()
@@ -156,6 +161,8 @@ describe("SelectUnitState", () => {
 		battle.move(Point.of(0, -1))
 		battle.move(Point.of(0, -1))
 		expect(menu(battle).selected).toBe("Wait")
+		battle.fire(0)
+		expect(battle.machine.current).toBe("EndFacingState")
 		battle.fire(0)
 		expect(battle.machine.current).toBe("SelectUnitState")
 		expect(battle.turn.actor).toBe(battle.units[1])
@@ -264,14 +271,9 @@ describe("MoveTargetState and MoveSequenceState", () => {
 })
 
 describe("CategorySelectionState and ActionSelectionState", () => {
-	test("attacking uses the action and locks the move it followed", async () => {
+	test("Attack aims the actor's attack", async () => {
 		const battle = await started()
-		battle.fire(0)
-		battle.move(Point.of(0, 1))
-		battle.fire(0)
-		await advance(1)
-
-		// Action
+		battle.move(Point.of(0, -1))
 		battle.fire(0)
 		expect(battle.machine.current).toBe("CategorySelectionState")
 		expect(menu(battle)).toEqual({
@@ -281,17 +283,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		})
 		battle.fire(0)
 		expect(battle.machine.current).toBe("AbilityTargetState")
-		battle.fire(0)
-
-		expect(battle.machine.current).toBe("CommandSelectionState")
-		expect(menu(battle)).toMatchObject({
-			entries: ["(Move)", "(Action)", "Wait"],
-			selected: "Wait"
-		})
-		// The move can't be undone any more.
-		battle.fire(1)
-		expect(battle.machine.current).toBe("ExploreState")
-		expect(battle.units[0]!.tile?.pos).toBe(Point.of(1, 2))
+		expect(battle.turn.ability).toBe(battle.units[0]!.attack)
 	})
 
 	test("a category lists its abilities; cancelling goes back a menu at a time", async () => {
@@ -374,20 +366,27 @@ describe("stat panel", () => {
 	})
 })
 
-describe("AbilityTargetState", () => {
-	/** From the commands to the attack's target selection. */
-	function attack(battle: BattleController) {
-		battle.move(Point.of(0, -1))
-		battle.fire(0)
-		battle.fire(0)
-		expect(battle.machine.current).toBe("AbilityTargetState")
-	}
+/** From the commands to the attack's target selection. */
+function attack(battle: BattleController) {
+	battle.move(Point.of(0, -1))
+	battle.fire(0)
+	battle.fire(0)
+	expect(battle.machine.current).toBe("AbilityTargetState")
+}
 
-	test("shows the attack's range; the cursor shows who it is over; confirming acts", async () => {
+/**
+ * A row of tiles from (0, 1) to (6, 1). The heroes start at (1, 1), (0, 1) and (2, 1): the
+ * Rogue's attack reaches (4, 1), and its area there holds no one.
+ */
+const row: LevelData = {
+	tiles: [1, 0, 2, 3, 4, 5, 6].map((x) => [x, 2, 1])
+}
+
+describe("AbilityTargetState", () => {
+	test("shows the attack's range; the cursor shows who is under it", async () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
 		attack(battle)
-		expect(battle.turn.ability).toBe(rogue.attack)
 		// The test heroes' attack reaches 3 tiles.
 		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,0)", "(1,1)", "(1,2)", "(2,1)"])
 		const { primaryPanel, secondaryPanel } = battle.statPanelController
@@ -401,10 +400,20 @@ describe("AbilityTargetState", () => {
 		expect(battle.pos).toBe(Point.of(0, 1))
 
 		battle.fire(0)
-		expect(battle.machine.current).toBe("CommandSelectionState")
-		expect(highlighted(battle)).toEqual([])
-		expect(shownHp(secondaryPanel)).toBeNull()
-		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+	})
+
+	test("can't confirm a tile out of range", async () => {
+		const battle = await started(row)
+		attack(battle)
+		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,1)", "(2,1)", "(3,1)", "(4,1)"])
+		battle.move(Point.of(1, 0))
+		battle.move(Point.of(1, 0))
+		battle.move(Point.of(1, 0))
+		battle.move(Point.of(1, 0))
+		expect(battle.pos).toBe(Point.of(5, 1))
+		battle.fire(0)
+		expect(battle.machine.current).toBe("AbilityTargetState")
 	})
 
 	test("cancelling goes back to the categories", async () => {
@@ -419,23 +428,170 @@ describe("AbilityTargetState", () => {
 	test("a direction oriented range turns the actor instead of moving the cursor", async () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
+		const range = new LineAbilityRange(rogue, { horizontal: 9 })
 		rogue.attack = new Ability({
 			name: "Line",
-			range: new LineAbilityRange(rogue, { horizontal: 9 })
+			range,
+			area: new FullAbilityArea(range),
+			effects: [{ name: "Damage", target: new DefaultAbilityEffectTarget() }]
 		})
 		attack(battle)
 		// Facing north. The secondary panel shows whoever is under the cursor: the actor.
 		expect(highlighted(battle)).toEqual(["(1,2)"])
 		expect(shownHp(battle.statPanelController.secondaryPanel)).toBe(hp(rogue))
 
-		battle.move(Point.of(-1, 0))
+		battle.move(Point.of(0, -1))
 		expect(battle.pos).toBe(Point.of(1, 1))
+		expect(rogue.dir).toBe(Directions.South)
+		expect(highlighted(battle)).toEqual(["(1,0)"])
+
+		battle.move(Point.of(-1, 0))
 		expect(rogue.dir).toBe(Directions.West)
 		expect(rogue.transform.localEulerAngles).toEqual([0, 270, 0])
 		expect(highlighted(battle)).toEqual(["(0,1)"])
-		expect(warrior.tile?.pos).toBe(Point.of(0, 1))
+
+		// Confirms the direction: the area is the whole range.
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+		expect(highlighted(battle)).toEqual(["(0,1)"])
+		expect(battle.turn.targets).toEqual([warrior.tile])
+	})
+})
+
+describe("ConfirmAbilityTargetState", () => {
+	test("shows the area around the aimed tile; moving cycles through the targets in it", async () => {
+		const battle = await started()
+		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		attack(battle)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+
+		// Aimed at the Rogue's own tile; the area reaches 1 tile further.
+		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,0)", "(1,1)", "(1,2)", "(2,1)"])
+		expect(battle.turn.targets).toEqual([rogue.tile, wizard.tile, warrior.tile])
+		const { primaryPanel, secondaryPanel } = battle.statPanelController
+		expect(shownHp(primaryPanel)).toBe(hp(rogue))
+		expect(shownHp(secondaryPanel)).toBe(hp(rogue))
+
+		battle.move(Point.of(1, 0))
+		expect(shownHp(secondaryPanel)).toBe(hp(wizard))
+		battle.move(Point.of(0, 1))
+		expect(shownHp(secondaryPanel)).toBe(hp(warrior))
+		battle.move(Point.of(0, 1))
+		expect(shownHp(secondaryPanel)).toBe(hp(rogue))
+		battle.move(Point.of(-1, 0))
+		expect(shownHp(secondaryPanel)).toBe(hp(warrior))
+		battle.move(Point.of(0, -1))
+		expect(shownHp(secondaryPanel)).toBe(hp(wizard))
+		expect(battle.pos).toBe(Point.of(1, 1))
+	})
+
+	test("only targets units with hit points left", async () => {
+		const battle = await started()
+		const [rogue, warrior] = battle.units as [Unit, Unit]
+		rogue.stats.setValue(StatTypes.HP, 0, false)
+		attack(battle)
+		battle.move(Point.of(-1, 0))
+		battle.fire(0)
+		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,1)"])
+		expect(battle.turn.targets).toEqual([warrior.tile])
+	})
+
+	test("can't perform without targets; cancelling aims again", async () => {
+		const battle = await started(row)
+		attack(battle)
+		battle.move(Point.of(1, 0))
+		battle.move(Point.of(1, 0))
+		battle.move(Point.of(1, 0))
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+		expect(highlighted(battle).sort()).toEqual(["(3,1)", "(4,1)", "(5,1)"])
+		expect(battle.turn.targets).toEqual([])
+		expect(shownHp(battle.statPanelController.secondaryPanel)).toBeNull()
+
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+		battle.fire(1)
+		expect(battle.machine.current).toBe("AbilityTargetState")
+		expect(battle.pos).toBe(Point.of(4, 1))
+		expect(highlighted(battle)).toHaveLength(5)
+	})
+})
+
+describe("PerformAbilityState and EndFacingState", () => {
+	test("performing uses the action and takes 50 HP from each target a frame later", async () => {
+		const battle = await started()
+		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		const hpBefore = battle.units.map((u) => u.stats.get(StatTypes.HP))
+		attack(battle)
+		battle.move(Point.of(-1, 0))
+		battle.fire(0)
+		expect(battle.turn.targets).toEqual([warrior.tile, rogue.tile])
+
+		battle.fire(0)
+		expect(battle.machine.current).toBe("PerformAbilityState")
+		expect(highlighted(battle)).toEqual([])
+		expect(battle.turn).toMatchObject({ hasUnitActed: true, lockMove: false })
+		expect(rogue.stats.get(StatTypes.HP)).toBe(hpBefore[0])
+
+		await advance(0.1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect([rogue, warrior, wizard].map((u) => u.stats.get(StatTypes.HP))).toEqual([
+			hpBefore[0]! - 50,
+			hpBefore[1]! - 50,
+			hpBefore[2]
+		])
+		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
+	})
+
+	test("after a move, performing locks it and goes on to pick the actor's facing", async () => {
+		const battle = await started()
+		const rogue = battle.units[0]!
+		battle.fire(0)
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		await advance(1)
+		expect(battle.pos).toBe(Point.of(1, 2))
+		// Action, Attack; aimed at itself.
+		battle.fire(0)
+		battle.fire(0)
+		battle.fire(0)
+		expect(battle.turn.targets).toEqual([rogue.tile])
+		battle.fire(0)
+		await advance(0.1)
+
+		expect(battle.machine.current).toBe("EndFacingState")
+		expect(battle.turn).toMatchObject({ hasUnitMoved: true, hasUnitActed: true, lockMove: true })
+		battle.move(Point.of(1, 0))
+		expect(rogue.dir).toBe(Directions.East)
+		expect(rogue.transform.localEulerAngles).toEqual([0, 90, 0])
+		// Cancelling turns back.
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(rogue.dir).toBe(Directions.North)
+		expect(rogue.transform.localEulerAngles).toEqual([0, 0, 0])
+		expect(menu(battle)).toMatchObject({
+			entries: ["(Move)", "(Action)", "Wait"],
+			selected: "Wait"
+		})
+		// The move can't be undone any more.
+		battle.fire(1)
+		expect(battle.machine.current).toBe("ExploreState")
+		expect(rogue.tile?.pos).toBe(Point.of(1, 2))
+	})
+
+	test("Wait picks the facing too; confirming ends the turn", async () => {
+		const battle = await started()
+		const rogue = battle.units[0]!
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		expect(battle.machine.current).toBe("EndFacingState")
 
 		battle.move(Point.of(0, -1))
-		expect(highlighted(battle)).toEqual(["(1,0)"])
+		expect(rogue.dir).toBe(Directions.South)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("SelectUnitState")
+		expect(rogue.dir).toBe(Directions.South)
+		expect(rogue.transform.localEulerAngles).toEqual([0, 180, 0])
 	})
 })

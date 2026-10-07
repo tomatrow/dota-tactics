@@ -4,6 +4,8 @@ import type { BattleController } from "#lib/controller/BattleController.svelte.t
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Ability } from "#lib/view-model-component/ability/Ability.ts"
+import { SpecifyAbilityArea } from "#lib/view-model-component/ability/area-of-effect/SpecifyAbilityArea.ts"
+import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
 import { ConstantAbilityRange } from "#lib/view-model-component/ability/range/ConstantAbilityRange.ts"
 import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
 import { WalkMovement } from "#lib/view-model-component/movement/WalkMovement.ts"
@@ -49,10 +51,13 @@ export function initBattleState(owner: BattleController) {
 
 			unit.movement = new WalkMovement(unit)
 
-			// The blog's Hero prefab gained an "Attack" child to demo ability ranges.
+			// The blog's Hero prefab gained an "Attack" child to demo ability ranges and areas (its
+			// effect target is on the "Attack" object itself).
 			unit.attack = new Ability({
 				name: "Attack",
-				range: new ConstantAbilityRange(unit, { horizontal: 3 })
+				range: new ConstantAbilityRange(unit, { horizontal: 3 }),
+				area: new SpecifyAbilityArea({ horizontal: 1, vertical: 1 }),
+				effects: [{ name: "Attack", target: new DefaultAbilityEffectTarget() }]
 			})
 
 			owner.units.push(unit)
