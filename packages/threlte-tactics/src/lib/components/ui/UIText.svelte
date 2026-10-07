@@ -55,7 +55,6 @@
 		inset: 0;
 		display: flex;
 		overflow: hidden;
-		font-family: Arial, Helvetica, sans-serif;
 		line-height: normal;
 		white-space: pre-wrap;
 	}

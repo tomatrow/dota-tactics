@@ -1,10 +1,14 @@
-import { describe, expect, expectTypeOf, test } from "vitest"
+import { beforeEach, describe, expect, expectTypeOf, test } from "vitest"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
+import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { BattleController } from "./BattleController.svelte.ts"
 
-/** A plus-shaped board around (1, 1), at height 2 (y 0.5). */
+/**
+ * A plus-shaped board around (1, 1), at height 2 (y 0.5). The test heroes start on the first three
+ * tiles: walking (1, 1), flying (0, 1) and teleporting (2, 1).
+ */
 const plus: LevelData = {
 	tiles: [
 		[1, 2, 1],
@@ -15,14 +19,27 @@ const plus: LevelData = {
 	]
 }
 
-/** A battle past its intro conversation. */
-async function started(levelData: LevelData) {
+beforeEach(useFakeTime)
+
+/** A battle past its intro conversation, at the first unit's command menu. */
+async function started(levelData = plus) {
 	const battle = new BattleController(levelData)
 	battle.start()
-	await expect.poll(() => battle.machine.current).toBe("CutSceneState")
+	await advance(0.1)
+	expect(battle.machine.current).toBe("CutSceneState")
 	battle.machine.done()
-	expect(battle.machine.current).toBe("SelectUnitState")
+	await advance(0.1)
+	expect(battle.machine.current).toBe("CommandSelectionState")
 	return battle
+}
+
+const menu = (battle: BattleController) => {
+	const { title, menuEntries, selection } = battle.abilityMenuPanelController
+	return {
+		title,
+		entries: menuEntries.map((e) => (e.isLocked ? `(${e.title})` : e.title)),
+		selected: menuEntries[selection]?.title
+	}
 }
 
 describe("BattleController", () => {
@@ -30,7 +47,11 @@ describe("BattleController", () => {
 		const battle = new BattleController(plus)
 		expectTypeOf(battle.machine.current).toEqualTypeOf<
 			| "None"
+			| "ActionSelectionState"
+			| "CategorySelectionState"
+			| "CommandSelectionState"
 			| "CutSceneState"
+			| "ExploreState"
 			| "InitBattleState"
 			| "MoveSequenceState"
 			| "MoveTargetState"
@@ -57,7 +78,8 @@ describe("InitBattleState", () => {
 		expect(battle.pos).toBe(Point.of(1, 5))
 		expect(battle.tileSelectionIndicator.localPosition).toEqual([1, 0.75, 5])
 
-		await expect.poll(() => battle.machine.current).toBe("CutSceneState")
+		await advance(0.1)
+		expect(battle.machine.current).toBe("CutSceneState")
 	})
 
 	test("spawns a walking, a flying and a teleporting hero on the first three tiles", () => {
@@ -81,38 +103,72 @@ describe("InitBattleState", () => {
 })
 
 describe("SelectUnitState", () => {
-	test("moves the selection over the board only", async () => {
-		const battle = await started(plus)
-		battle.move(Point.of(0, 1))
-		expect(battle.pos).toBe(Point.of(1, 2))
-		expect(battle.tileSelectionIndicator.localPosition).toEqual([1, 0.5, 2])
-		battle.move(Point.of(1, 0))
-		expect(battle.pos).toBe(Point.of(1, 2))
-	})
-
-	test("confirming an empty tile does nothing; a unit's tile picks it", async () => {
-		const battle = await started(plus)
-		battle.move(Point.of(0, 1))
-		battle.fire(0)
-		expect(battle.machine.current).toBe("SelectUnitState")
+	test("gives the units turns in order, a frame later", async () => {
+		const battle = await started()
+		expect(battle.turn.actor).toBe(battle.units[0])
 
 		battle.move(Point.of(0, -1))
+		battle.move(Point.of(0, -1))
+		expect(menu(battle).selected).toBe("Wait")
 		battle.fire(0)
-		expect(battle.machine.current).toBe("MoveTargetState")
-		expect(battle.currentUnit).toBe(battle.units[0])
+		expect(battle.machine.current).toBe("SelectUnitState")
+		expect(battle.turn.actor).toBe(battle.units[1])
+		await advance(0.1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		// The menu state selects the actor's tile.
+		expect(battle.pos).toBe(Point.of(0, 1))
+	})
+})
+
+describe("CommandSelectionState", () => {
+	test("shows the commands; right/down select the next entry, left/up the previous", async () => {
+		const battle = await started()
+		expect(menu(battle)).toEqual({
+			title: "Commands",
+			entries: ["Move", "Action", "Wait"],
+			selected: "Move"
+		})
+		expect(battle.abilityMenuPanelController.canvasActive).toBe(true)
+
+		battle.move(Point.of(1, 0))
+		expect(menu(battle).selected).toBe("Action")
+		battle.move(Point.of(0, -1))
+		expect(menu(battle).selected).toBe("Wait")
+		battle.move(Point.of(0, -1))
+		expect(menu(battle).selected).toBe("Move")
+		battle.move(Point.of(0, 1))
+		expect(menu(battle).selected).toBe("Wait")
+		battle.move(Point.of(-1, 0))
+		expect(menu(battle).selected).toBe("Action")
+	})
+
+	test("cancelling before moving explores the board until confirmed", async () => {
+		const battle = await started()
+		battle.fire(1)
+		expect(battle.machine.current).toBe("ExploreState")
+
+		battle.move(Point.of(0, 1))
+		expect(battle.pos).toBe(Point.of(1, 2))
+		battle.fire(1)
+		expect(battle.machine.current).toBe("ExploreState")
+		battle.fire(0)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(battle.pos).toBe(Point.of(1, 1))
 	})
 })
 
 describe("MoveTargetState and MoveSequenceState", () => {
-	test("highlights the reachable tiles, moves the unit there, then picks again", async () => {
-		const battle = await started(plus)
+	const highlighted = (battle: BattleController) =>
+		[...battle.board.tiles.values()].filter((t) => t.color !== "#ffffff").map((t) => `${t.pos}`)
+
+	test("highlights the reachable tiles, moves the unit there, then locks Move", async () => {
+		const battle = await started()
 		const walker = battle.units[0]!
 		battle.fire(0)
+		expect(battle.machine.current).toBe("MoveTargetState")
 
-		const highlighted = () =>
-			[...battle.board.tiles.values()].filter((t) => t.color !== "#ffffff").map((t) => `${t.pos}`)
 		// The other heroes block the walker's way east and west.
-		expect(highlighted()).toEqual(["(1,0)", "(1,2)"])
+		expect(highlighted(battle)).toEqual(["(1,0)", "(1,2)"])
 
 		// Can't move onto a tile out of range.
 		battle.move(Point.of(1, 0))
@@ -122,13 +178,111 @@ describe("MoveTargetState and MoveSequenceState", () => {
 		battle.move(Point.of(-1, 1))
 		battle.fire(0)
 		expect(battle.machine.current).toBe("MoveSequenceState")
-		expect(highlighted()).toEqual([])
+		expect(highlighted(battle)).toEqual([])
 		// No input while moving.
 		battle.move(Point.of(0, -1))
 		expect(battle.pos).toBe(Point.of(1, 2))
 
-		await expect.poll(() => battle.machine.current).toBe("SelectUnitState")
+		await advance(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(walker.tile?.pos).toBe(Point.of(1, 2))
 		expect(walker.transform.localPosition).toEqual([1, 0.5, 2])
+		expect(battle.turn.hasUnitMoved).toBe(true)
+		expect(menu(battle)).toMatchObject({
+			entries: ["(Move)", "Action", "Wait"],
+			selected: "Action"
+		})
+	})
+
+	test("cancelling goes back to the commands", async () => {
+		const battle = await started()
+		battle.fire(0)
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(highlighted(battle)).toEqual([])
+	})
+
+	test("cancelling in the commands undoes the move", async () => {
+		const battle = await started()
+		const walker = battle.units[0]!
+		battle.fire(0)
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		await advance(1)
+
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(walker.tile?.pos).toBe(Point.of(1, 1))
+		expect(walker.transform.localPosition).toEqual([1, 0.5, 1])
+		expect(battle.pos).toBe(Point.of(1, 1))
+		expect(battle.turn.hasUnitMoved).toBe(false)
+		expect(menu(battle)).toMatchObject({ entries: ["Move", "Action", "Wait"], selected: "Action" })
+	})
+})
+
+describe("CategorySelectionState and ActionSelectionState", () => {
+	test("attacking uses the action and locks the move it followed", async () => {
+		const battle = await started()
+		battle.fire(0)
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		await advance(1)
+
+		// Action
+		battle.fire(0)
+		expect(battle.machine.current).toBe("CategorySelectionState")
+		expect(menu(battle)).toEqual({
+			title: "Action",
+			entries: ["Attack", "White Magic", "Black Magic"],
+			selected: "Attack"
+		})
+		battle.fire(0)
+
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(menu(battle)).toMatchObject({
+			entries: ["(Move)", "(Action)", "Wait"],
+			selected: "Wait"
+		})
+		// The move can't be undone any more.
+		battle.fire(1)
+		expect(battle.machine.current).toBe("ExploreState")
+		expect(battle.units[0]!.tile?.pos).toBe(Point.of(1, 2))
+	})
+
+	test("a category lists its abilities; cancelling goes back a menu at a time", async () => {
+		const battle = await started()
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.move(Point.of(0, -1))
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ActionSelectionState")
+		expect(menu(battle)).toEqual({
+			title: "Black Magic",
+			entries: ["Fire", "Ice", "Lightning"],
+			selected: "Fire"
+		})
+
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CategorySelectionState")
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		expect(menu(battle).title).toBe("White Magic")
+		battle.fire(1)
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+	})
+
+	test("using an ability ends the action without locking an unmade move", async () => {
+		const battle = await started()
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.fire(0)
+
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(battle.turn).toMatchObject({ hasUnitActed: true, lockMove: false })
+		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
 	})
 })

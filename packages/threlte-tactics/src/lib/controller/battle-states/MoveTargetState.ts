@@ -4,12 +4,13 @@ import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import { selectTile, type BattleStateHandlers } from "./BattleState.ts"
 
 /** Port of `Controller/Battle States/MoveTargetState.cs`: the player picks where to move. */
+// TODO(part 13): stat panels. TODO(part 24): the computer's cursor.
 export function moveTargetState(owner: BattleController) {
 	let tiles: Tile[] = []
 
 	return {
 		_enter() {
-			const mover = owner.currentUnit!.movement!
+			const mover = owner.turn.actor!.movement!
 			tiles = mover.getTilesInRange(owner.board)
 			owner.board.selectTiles(tiles)
 		},
@@ -20,8 +21,12 @@ export function moveTargetState(owner: BattleController) {
 		move(direction: Point) {
 			selectTile(owner, direction.add(owner.pos))
 		},
-		fire() {
-			if (tiles.includes(owner.currentTile!)) return "MoveSequenceState"
+		fire(button: number) {
+			if (button === 0) {
+				if (tiles.includes(owner.currentTile!)) return "MoveSequenceState"
+			} else {
+				return "CommandSelectionState"
+			}
 		}
 	} satisfies BattleStateHandlers
 }

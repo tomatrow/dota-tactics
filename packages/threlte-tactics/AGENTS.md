@@ -67,7 +67,9 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   - The machine starts in `None` (Unity: no current state); `battle.start()` is Unity's `Start`.
   - Input arrives as `move(p)` / `fire(i)` actions; the Human-driver guard lives there
     (replaces `AddListeners`/`RemoveListeners`). `*` holds no-op defaults.
-  - `BaseAbilityMenuState` → a shared factory spread into the three menu states.
+  - `BaseAbilityMenuState` → `baseAbilityMenuState(owner, { loadMenu, confirm, cancel })` (its
+    abstract methods), spread into the three menu states. A state's own fields are variables in
+    its factory; Unity statics shared between states are `BattleController` fields.
   - Async completions are explicit typed actions (e.g. `machine.done()`). Nested transitions
     are allowed; where Unity relied on its ignore-during-transition guard, defer explicitly.
 - **Coroutines**: `TurnOrderController.Round()` → JS generator. Animated sequences → `async`

@@ -1,23 +1,26 @@
+import { nextFrame } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
-import type { Point } from "#lib/model/Point.ts"
-import { selectTile, type BattleStateHandlers } from "./BattleState.ts"
+import type { BattleStateHandlers } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/SelectUnitState.cs` as of the path finding part: the player
- * picks any unit to move.
+ * Port of `Controller/Battle States/SelectUnitState.cs` as of the ability menu part: the units
+ * take turns in order.
  */
-// TODO(part 16): let the turn order pick the unit instead.
+// TODO(part 16): the turn order's round picks the actor (and shows its stat panel).
 export function selectUnitState(owner: BattleController) {
+	let index = -1
+
+	async function changeCurrentUnit(): Promise<void> {
+		index = (index + 1) % owner.units.length
+		owner.turn.change(owner.units[index]!)
+		await nextFrame()
+		owner.machine.done()
+	}
+
 	return {
-		move(direction: Point) {
-			selectTile(owner, direction.add(owner.pos))
+		_enter() {
+			void changeCurrentUnit()
 		},
-		fire() {
-			const content = owner.currentTile!.content
-			if (content !== null) {
-				owner.currentUnit = content
-				return "MoveTargetState"
-			}
-		}
+		done: () => "CommandSelectionState"
 	} satisfies BattleStateHandlers
 }

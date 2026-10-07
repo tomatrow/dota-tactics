@@ -3,12 +3,18 @@ import { createContext } from "svelte"
 import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
+import { Turn } from "#lib/model/Turn.ts"
 import { Board } from "#lib/view-model-component/Board.svelte.ts"
 import { ConversationController } from "./ConversationController.svelte.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
+import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
+import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
 import { defaultBattleActions } from "./battle-states/BattleState.ts"
+import { categorySelectionState } from "./battle-states/CategorySelectionState.ts"
+import { commandSelectionState } from "./battle-states/CommandSelectionState.ts"
 import { cutSceneState } from "./battle-states/CutSceneState.ts"
+import { exploreState } from "./battle-states/ExploreState.ts"
 import { initBattleState } from "./battle-states/InitBattleState.ts"
 import { moveSequenceState } from "./battle-states/MoveSequenceState.ts"
 import { moveTargetState } from "./battle-states/MoveTargetState.ts"
@@ -19,7 +25,11 @@ function createStateMachine(owner: BattleController) {
 		"*": defaultBattleActions,
 		// Unity's state machine starts with no current state.
 		None: { start: () => "InitBattleState" },
+		ActionSelectionState: actionSelectionState(owner),
+		CategorySelectionState: categorySelectionState(owner),
+		CommandSelectionState: commandSelectionState(owner),
 		CutSceneState: cutSceneState(owner),
+		ExploreState: exploreState(owner),
 		InitBattleState: initBattleState(owner),
 		MoveSequenceState: moveSequenceState(owner),
 		MoveTargetState: moveTargetState(owner),
@@ -38,9 +48,11 @@ export class BattleController {
 	readonly conversationController = new ConversationController()
 	/** The selected board position. */
 	pos = Point.zero
+	readonly abilityMenuPanelController = new AbilityMenuPanelController()
+	readonly turn = new Turn()
 	units: Unit[] = $state([])
-	// TODO(part 16): replaced by the turn's actor.
-	currentUnit: Unit | null = null
+	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
+	actionSelectionCategory = 0
 	readonly machine: ReturnType<typeof createStateMachine>
 
 	constructor(levelData: LevelData) {

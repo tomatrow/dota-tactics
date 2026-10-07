@@ -40,5 +40,7 @@
 		bottom: 0;
 		left: 0;
 		height: 480px;
+		/* Unity's default font. */
+		font-family: Arial, Helvetica, sans-serif;
 	}
 </style>
