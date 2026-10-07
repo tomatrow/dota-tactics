@@ -17,7 +17,7 @@ export const unityAssets = path.resolve(root, "../tactics-rpg/Assets")
 export const resourcesDir = path.resolve(root, "src/lib/resources")
 
 /** Folders under `src/lib/resources/` that are generated. */
-export const generatedFolders = ["Conversations", "Levels"] as const
+export const generatedFolders = ["Conversations", "Jobs", "Levels"] as const
 
 /** Generated file contents, keyed by path relative to `src/lib/resources/`. */
 type Output = Map<string, string>
@@ -108,12 +108,70 @@ async function convertConversations(out: Output): Promise<void> {
 	}
 }
 
+// --- Jobs (`Editor/JobParser.cs`: `Settings/*.csv` → `Resources/Jobs/*.prefab`) ------------------
+
+/** `Job.statOrder`, the CSVs' stat columns after the name. */
+const jobStatOrder = ["MHP", "MMP", "ATK", "DEF", "MAT", "MDF", "SPD"] as const
+
+/** The rows after the header, split on commas (Unity's `File.ReadAllLines` + `Split(',')`). */
+async function csvRows(file: string): Promise<string[][]> {
+	const text = await readFile(path.join(unityAssets, file), "utf8")
+	return text
+		.split(/\r?\n/)
+		.slice(1)
+		.filter((line) => line.trim() !== "")
+		.map((line) => line.split(","))
+}
+
+const toInt32 = (value: string) => {
+	const n = Number(value)
+	if (!Number.isInteger(n)) throw new Error(`Not an integer: ${value}`)
+	return n
+}
+
+async function convertJobs(out: Output): Promise<void> {
+	const jobs = new Map<string, { baseStats: number[]; growStats: number[]; features: string[] }>()
+	const getOrCreate = (name: string) => {
+		if (!jobs.has(name)) jobs.set(name, { baseStats: [], growStats: [], features: [] })
+		return jobs.get(name)!
+	}
+
+	// ParseStartingStats: base stats, then EVD, RES, MOV and JMP as StatModifierFeatures.
+	for (const elements of await csvRows("Settings/JobStartingStats.csv")) {
+		const job = getOrCreate(elements[0]!)
+		job.baseStats = elements.slice(1, jobStatOrder.length + 1).map(toInt32)
+		job.features = (["EVD", "RES", "MOV", "JMP"] as const).map(
+			(type, i) => `{ type: StatTypes.${type}, amount: ${toInt32(elements[8 + i]!)} }`
+		)
+	}
+
+	// ParseGrowthStats
+	for (const elements of await csvRows("Settings/JobGrowthStats.csv")) {
+		getOrCreate(elements[0]!).growStats = elements.slice(1).map(Number)
+	}
+
+	for (const [name, job] of jobs) {
+		out.set(
+			`Jobs/${name}.ts`,
+			module(
+				"Settings/JobStartingStats.csv and Settings/JobGrowthStats.csv",
+				[
+					`import { StatTypes } from "#lib/enums/StatTypes.ts"`,
+					`import type { JobPrefab } from "#lib/view-model-component/actor/Job.ts"`
+				],
+				`export default { name: ${json(name)}, baseStats: ${json(job.baseStats)}, growStats: ${json(job.growStats)}, features: [${job.features.join(", ")}] } satisfies JobPrefab`
+			)
+		)
+	}
+}
+
 // ---------------------------------------------------------------------------------------------
 
 /** Runs every converter and returns the formatted output. */
 export async function convert(): Promise<Output> {
 	const out: Output = new Map()
 	await convertConversations(out)
+	await convertJobs(out)
 	await convertLevels(out)
 
 	const formatted: Output = new Map()

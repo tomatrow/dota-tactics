@@ -3,6 +3,7 @@
 	(DOM overlay) layered on top.
 -->
 <script lang="ts">
+	import { page } from "$app/state"
 	import { Canvas } from "@threlte/core"
 	import { onMount } from "svelte"
 	import { LinearSRGBColorSpace, NoToneMapping, PCFShadowMap } from "three"
@@ -17,7 +18,12 @@
 	const levelData = Resources.load<LevelData>("Levels/Level_0")
 	if (!levelData) throw new Error("Missing Resources/Levels/Level_0")
 
-	const battle = setBattleController(new BattleController(levelData))
+	// `?seed=` replays a battle's randomness.
+	const seed = page.url.searchParams.get("seed")
+	const battle = setBattleController(
+		new BattleController(levelData, seed === null ? {} : { seed: Number(seed) })
+	)
+	console.info(`Battle seed: ${battle.random.seed} (replay with ?seed=${battle.random.seed})`)
 	onMount(() => battle.start())
 </script>
 

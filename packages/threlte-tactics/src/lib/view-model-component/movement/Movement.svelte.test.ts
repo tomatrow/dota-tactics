@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest"
+import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { Directions } from "#lib/enums/Directions.ts"
+import { StatTypes } from "#lib/enums/StatTypes.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Board } from "../Board.svelte.ts"
@@ -25,12 +27,12 @@ function board(...rows: string[]): Board {
 type MovementClass = new (unit: Unit) => Movement
 
 function unitAt(b: Board, x: number, y: number, Kind: MovementClass, range = 5, jumpHeight = 1) {
-	const unit = new Unit({ name: "Hero", model: "Hero" })
+	const unit = new Unit({ name: "Hero", model: "Hero", notifications: new NotificationCenter() })
 	unit.place(b.getTile(Point.of(x, y)))
 	unit.match()
+	unit.stats.set(StatTypes.MOV, range)
+	unit.stats.set(StatTypes.JMP, jumpHeight)
 	const movement = new Kind(unit)
-	movement.range = range
-	movement.jumpHeight = jumpHeight
 	unit.movement = movement
 	return { unit, movement }
 }

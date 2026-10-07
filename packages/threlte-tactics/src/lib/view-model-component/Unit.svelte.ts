@@ -1,7 +1,11 @@
+import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { UnitModelName } from "#lib/components/prefabs/UnitModel.svelte"
 import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import type { Job } from "./actor/Job.ts"
+import { Rank } from "./actor/Rank.ts"
+import { Stats } from "./actor/Stats.ts"
 import type { Movement } from "./movement/Movement.ts"
 import type { Tile } from "./Tile.svelte.ts"
 
@@ -19,13 +23,27 @@ export class Unit {
 	readonly jumper = new Transform()
 
 	dir: Directions = Directions.North
+	readonly stats: Stats
+	readonly rank: Rank
+	job: Job | null = null
 	movement: Movement | null = null
 
 	#tile: Tile | null = null
 
-	constructor({ name, model }: { name: string; model: UnitModelName }) {
+	constructor({
+		name,
+		model,
+		notifications
+	}: {
+		name: string
+		model: UnitModelName
+		notifications: NotificationCenter
+	}) {
 		this.name = name
 		this.model = model
+		// Every unit has these (see `UnitFactory`); call `rank.init` to set its level.
+		this.stats = new Stats(notifications)
+		this.rank = new Rank(this.stats, notifications)
 	}
 
 	get tile(): Tile | null {

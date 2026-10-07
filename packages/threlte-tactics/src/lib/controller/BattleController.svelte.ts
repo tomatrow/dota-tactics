@@ -1,6 +1,7 @@
 import { fsm } from "runic-svelte-fsm"
 import { createContext } from "svelte"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
+import { Random } from "#lib/common/unity/Random.ts"
 import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
@@ -45,6 +46,8 @@ function createStateMachine(owner: BattleController) {
 export class BattleController {
 	/** Unity's `NotificationCenter.instance`, one per battle. */
 	readonly notifications = new NotificationCenter()
+	/** Unity's `UnityEngine.Random`, one per battle. */
+	readonly random: Random
 	readonly board = new Board()
 	readonly levelData: LevelData
 	readonly tileSelectionIndicator = new Transform()
@@ -58,8 +61,10 @@ export class BattleController {
 	actionSelectionCategory = 0
 	readonly machine: ReturnType<typeof createStateMachine>
 
-	constructor(levelData: LevelData) {
+	/** `seed`: for the battle's `random` (default: a random one). */
+	constructor(levelData: LevelData, { seed = Random.randomSeed() }: { seed?: number } = {}) {
 		this.levelData = levelData
+		this.random = new Random(seed)
 		this.machine = createStateMachine(this)
 	}
 

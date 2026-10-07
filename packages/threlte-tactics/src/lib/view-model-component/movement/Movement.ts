@@ -3,25 +3,34 @@ import { approximately } from "#lib/common/unity/mathf.ts"
 import type { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { Vector3 } from "#lib/common/unity/vector3.ts"
 import type { Directions } from "#lib/enums/Directions.ts"
+import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import type { Stats } from "../actor/Stats.ts"
 import type { Board } from "../Board.svelte.ts"
 import type { Tile } from "../Tile.svelte.ts"
 import type { Unit } from "../Unit.svelte.ts"
 
 /** Port of `View Model Component/Movement/Movement.cs`: how a unit gets around the board. */
 export abstract class Movement {
-	// TODO(part 10/12): read from the unit's MOV and JMP stats.
-	/** How many tiles the unit can move. */
-	range = 0
-	/** How many steps up or down the unit can jump. */
-	jumpHeight = 0
-
 	protected readonly unit: Unit
 	protected readonly jumper: Transform
+	protected readonly stats: Stats
 
+	/** Unity's `Awake` + `Start`. */
 	constructor(unit: Unit) {
 		this.unit = unit
 		this.jumper = unit.jumper
+		this.stats = unit.stats
+	}
+
+	/** How many tiles the unit can move. */
+	get range(): number {
+		return this.stats.get(StatTypes.MOV)
+	}
+
+	/** How many steps up or down the unit can jump. */
+	get jumpHeight(): number {
+		return this.stats.get(StatTypes.JMP)
 	}
 
 	getTilesInRange(board: Board): Tile[] {

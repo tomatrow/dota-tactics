@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, expectTypeOf, test } from "vitest"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
+import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
+import { Rank } from "#lib/view-model-component/actor/Rank.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { BattleController } from "./BattleController.svelte.ts"
 
 /**
  * A plus-shaped board around (1, 1), at height 2 (y 0.5). The test heroes start on the first three
- * tiles: walking (1, 1), flying (0, 1) and teleporting (2, 1).
+ * tiles: a Rogue (1, 1), a Warrior (0, 1) and a Wizard (2, 1).
  */
 const plus: LevelData = {
 	tiles: [
@@ -23,7 +25,7 @@ beforeEach(useFakeTime)
 
 /** A battle past its intro conversation, at the first unit's command menu. */
 async function started(levelData = plus) {
-	const battle = new BattleController(levelData)
+	const battle = new BattleController(levelData, { seed: 1 })
 	battle.start()
 	await advance(0.1)
 	expect(battle.machine.current).toBe("CutSceneState")
@@ -82,16 +84,44 @@ describe("InitBattleState", () => {
 		expect(battle.machine.current).toBe("CutSceneState")
 	})
 
-	test("spawns a walking, a flying and a teleporting hero on the first three tiles", () => {
+	test("spawns a level 10 walking Rogue, Warrior and Wizard on the first three tiles", () => {
 		const battle = new BattleController(plus)
 		battle.start()
 
-		expect(battle.units.map((u) => [u.tile?.pos, u.movement?.constructor.name])).toEqual([
-			[Point.of(1, 1), "WalkMovement"],
-			[Point.of(0, 1), "FlyMovement"],
-			[Point.of(2, 1), "TeleportMovement"]
+		expect(
+			battle.units.map((u) => [u.name, u.tile?.pos, u.job?.name, u.movement?.constructor.name])
+		).toEqual([
+			["Hero(Clone)", Point.of(1, 1), "Rogue", "WalkMovement"],
+			["Hero(Clone)", Point.of(0, 1), "Warrior", "WalkMovement"],
+			["Hero(Clone)", Point.of(2, 1), "Wizard", "WalkMovement"]
 		])
 		expect(battle.units[1]!.transform.localPosition).toEqual([0, 0.5, 1])
+
+		const { LVL, EXP, HP, MHP, MOV, JMP } = StatTypes
+		expect(battle.units.map((u) => [MOV, JMP, LVL, EXP].map((t) => u.stats.get(t)))).toEqual([
+			[5, 3, 10, Rank.experienceForLevel(10)],
+			[4, 1, 10, Rank.experienceForLevel(10)],
+			[3, 2, 10, Rank.experienceForLevel(10)]
+		])
+		// Nine level ups: the Warrior's MHP grows 8 or 9 points each, and HP is refilled.
+		const warrior = battle.units[1]!.stats
+		expect(warrior.get(MHP)).toBeGreaterThanOrEqual(43 + 9 * 8)
+		expect(warrior.get(MHP)).toBeLessThanOrEqual(43 + 9 * 9)
+		expect(warrior.get(HP)).toBe(warrior.get(MHP))
+	})
+
+	test("a seed replays the stats' growth", () => {
+		const stats = (seed: number) => {
+			const battle = new BattleController(plus, { seed })
+			battle.start()
+			return battle.units.map((u) =>
+				Object.values(StatTypes)
+					.slice(0, -1)
+					.map((t) => u.stats.get(t as StatTypes))
+			)
+		}
+		expect(stats(5)).toEqual(stats(5))
+		expect(stats(5)).not.toEqual(stats(6))
 	})
 
 	test("ignores input while it initializes", () => {

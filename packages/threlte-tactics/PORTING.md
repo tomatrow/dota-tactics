@@ -12,35 +12,35 @@ and what they looked like at that point.
 
 Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = milestone (pause for review).
 
-| #   | Part                                                                                               | Status | Notes                                                            |
-| --- | -------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
-| 0   | Setup (tooling, SPA, Vitest, docs)                                                                 | ✅     | Not a blog post.                                                 |
-| 1   | [Series Intro](https://theliquidfire.com/2015/05/04/tactics-rpg-series-intro/)                     | ➖     |                                                                  |
-| 2   | [Project Setup](https://theliquidfire.com/2015/05/11/tactics-rpg-project-setup/)                   | ✅     | Assets, materials, prefabs.                                      |
-| 3   | [Board Generator](https://theliquidfire.com/2015/05/18/tactics-rpg-board-generator/)               | ✅ 🛑  | `Level_0` renders via `Tile`/`Board`; editor deferred.           |
-| 4   | [User Input Controller](https://theliquidfire.com/2015/05/24/user-input-controller/)               | ✅     | Wired to the battle in part 5.                                   |
-| 5   | [State Machine](https://theliquidfire.com/2015/06/01/tactics-rpg-state-machine/)                   | ✅     | Part-5 `MoveTargetState`; the rest arrives with later parts.     |
-| 6   | [Path Finding](https://theliquidfire.com/2015/06/08/tactics-rpg-path-finding/)                     | ✅ 🛑  | Part-6 demo loop: pick any of 3 test heroes (walk/fly/teleport). |
-| 7   | [Anchored UI](https://theliquidfire.com/2015/06/22/tactics-rpg-anchored-ui/)                       | ✅     | `Panel`/`LayoutAnchor`, `<UICanvas>`; demo scene dropped.        |
-| 8   | [Conversations](https://theliquidfire.com/2015/06/29/tactics-rpg-conversations/)                   | ✅     | Intro plays before unit selection; outros wait for part 22.      |
-| 9   | [Ability Menu](https://theliquidfire.com/2015/07/13/ability-menu/)                                 | ✅ 🛑  | Turns rotate through the test heroes; placeholder menus.         |
-| 10  | [Stats](https://theliquidfire.com/2015/07/27/tactics-rpg-stats/)                                   | ✅     | Rules only; units get stats in part 12. Demo → tests.            |
-| 11  | [Items and Equipment](https://theliquidfire.com/2015/08/03/tactics-rpg-items-and-equipment/)       | ✅     | Rules only (no items in the final game). Demo → tests.           |
-| 12  | [Jobs](https://theliquidfire.com/2015/08/10/tactics-rpg-jobs/)                                     | ⬜     | Jobs generated from `Settings/*.csv`.                            |
-| 13  | [Stat Panel](https://theliquidfire.com/2015/08/17/tactics-rpg-stat-panel/)                         | ⬜ 🛑  |                                                                  |
-| 14  | [Ability Range](https://theliquidfire.com/2015/08/24/tactics-rpg-ability-range/)                   | ⬜     |                                                                  |
-| 15  | [Ability Area of Effect](https://theliquidfire.com/2015/08/31/tactics-rpg-ability-area-of-effect/) | ⬜     |                                                                  |
-| 16  | [Turn Order](https://theliquidfire.com/2015/09/07/tactics-rpg-turn-order/)                         | ⬜ 🛑  |                                                                  |
-| 17  | [Status Effects](https://theliquidfire.com/2015/09/14/tactics-rpg-status-effects/)                 | ⬜     |                                                                  |
-| 18  | [Hit Rate](https://theliquidfire.com/2015/09/21/tactics-rpg-hit-rate/)                             | ⬜     |                                                                  |
-| 19  | [Ability Effects](https://theliquidfire.com/2015/10/12/tactics-rpg-ability-effects/)               | ⬜     |                                                                  |
-| 20  | [Magic](https://theliquidfire.com/2015/10/19/tactics-rpg-magic/)                                   | ⬜ 🛑  |                                                                  |
-| 21  | [Unit Factory](https://theliquidfire.com/2015/11/02/tactics-rpg-unit-factory/)                     | ⬜     |                                                                  |
-| 22  | [Victory Conditions](https://theliquidfire.com/2015/11/16/tactics-rpg-victory-conditions/)         | ⬜ 🛑  |                                                                  |
-| 23  | [Intro To A.I.](https://theliquidfire.com/2015/11/30/tactics-rpg-intro-to-a-i/)                    | ⬜     |                                                                  |
-| 24  | [A.I. Part 1](https://theliquidfire.com/2015/12/07/tactics-rpg-a-i-part-1/)                        | ⬜     |                                                                  |
-| 25  | [A.I. Part 2](https://theliquidfire.com/2015/12/21/tactics-rpg-a-i-part-2/)                        | ⬜ 🛑  | Add Playwright e2e for a full battle.                            |
-| 26  | [Music](https://theliquidfire.com/2016/12/12/tactics-rpg-music/)                                   | ⬜ 🛑  | Transcode WAV → m4a; CC-BY credit.                               |
+| #   | Part                                                                                               | Status | Notes                                                                                          |
+| --- | -------------------------------------------------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| 0   | Setup (tooling, SPA, Vitest, docs)                                                                 | ✅     | Not a blog post.                                                                               |
+| 1   | [Series Intro](https://theliquidfire.com/2015/05/04/tactics-rpg-series-intro/)                     | ➖     |                                                                                                |
+| 2   | [Project Setup](https://theliquidfire.com/2015/05/11/tactics-rpg-project-setup/)                   | ✅     | Assets, materials, prefabs.                                                                    |
+| 3   | [Board Generator](https://theliquidfire.com/2015/05/18/tactics-rpg-board-generator/)               | ✅ 🛑  | `Level_0` renders via `Tile`/`Board`; editor deferred.                                         |
+| 4   | [User Input Controller](https://theliquidfire.com/2015/05/24/user-input-controller/)               | ✅     | Wired to the battle in part 5.                                                                 |
+| 5   | [State Machine](https://theliquidfire.com/2015/06/01/tactics-rpg-state-machine/)                   | ✅     | Part-5 `MoveTargetState`; the rest arrives with later parts.                                   |
+| 6   | [Path Finding](https://theliquidfire.com/2015/06/08/tactics-rpg-path-finding/)                     | ✅ 🛑  | Part-6 demo loop: pick any of 3 test heroes (walk/fly/teleport).                               |
+| 7   | [Anchored UI](https://theliquidfire.com/2015/06/22/tactics-rpg-anchored-ui/)                       | ✅     | `Panel`/`LayoutAnchor`, `<UICanvas>`; demo scene dropped.                                      |
+| 8   | [Conversations](https://theliquidfire.com/2015/06/29/tactics-rpg-conversations/)                   | ✅     | Intro plays before unit selection; outros wait for part 22.                                    |
+| 9   | [Ability Menu](https://theliquidfire.com/2015/07/13/ability-menu/)                                 | ✅ 🛑  | Turns rotate through the test heroes; placeholder menus.                                       |
+| 10  | [Stats](https://theliquidfire.com/2015/07/27/tactics-rpg-stats/)                                   | ✅     | Rules only; units get stats in part 12. Demo → tests.                                          |
+| 11  | [Items and Equipment](https://theliquidfire.com/2015/08/03/tactics-rpg-items-and-equipment/)       | ✅     | Rules only (no items in the final game). Demo → tests.                                         |
+| 12  | [Jobs](https://theliquidfire.com/2015/08/10/tactics-rpg-jobs/)                                     | ✅     | Jobs generated from `Settings/*.csv`. Test heroes: walking Rogue, Warrior, Wizard at level 10. |
+| 13  | [Stat Panel](https://theliquidfire.com/2015/08/17/tactics-rpg-stat-panel/)                         | ⬜ 🛑  |                                                                                                |
+| 14  | [Ability Range](https://theliquidfire.com/2015/08/24/tactics-rpg-ability-range/)                   | ⬜     |                                                                                                |
+| 15  | [Ability Area of Effect](https://theliquidfire.com/2015/08/31/tactics-rpg-ability-area-of-effect/) | ⬜     |                                                                                                |
+| 16  | [Turn Order](https://theliquidfire.com/2015/09/07/tactics-rpg-turn-order/)                         | ⬜ 🛑  |                                                                                                |
+| 17  | [Status Effects](https://theliquidfire.com/2015/09/14/tactics-rpg-status-effects/)                 | ⬜     |                                                                                                |
+| 18  | [Hit Rate](https://theliquidfire.com/2015/09/21/tactics-rpg-hit-rate/)                             | ⬜     |                                                                                                |
+| 19  | [Ability Effects](https://theliquidfire.com/2015/10/12/tactics-rpg-ability-effects/)               | ⬜     |                                                                                                |
+| 20  | [Magic](https://theliquidfire.com/2015/10/19/tactics-rpg-magic/)                                   | ⬜ 🛑  |                                                                                                |
+| 21  | [Unit Factory](https://theliquidfire.com/2015/11/02/tactics-rpg-unit-factory/)                     | ⬜     |                                                                                                |
+| 22  | [Victory Conditions](https://theliquidfire.com/2015/11/16/tactics-rpg-victory-conditions/)         | ⬜ 🛑  |                                                                                                |
+| 23  | [Intro To A.I.](https://theliquidfire.com/2015/11/30/tactics-rpg-intro-to-a-i/)                    | ⬜     |                                                                                                |
+| 24  | [A.I. Part 1](https://theliquidfire.com/2015/12/07/tactics-rpg-a-i-part-1/)                        | ⬜     |                                                                                                |
+| 25  | [A.I. Part 2](https://theliquidfire.com/2015/12/21/tactics-rpg-a-i-part-2/)                        | ⬜ 🛑  | Add Playwright e2e for a full battle.                                                          |
+| 26  | [Music](https://theliquidfire.com/2016/12/12/tactics-rpg-music/)                                   | ⬜ 🛑  | Transcode WAV → m4a; CC-BY credit.                                                             |
 
 ## File map
 
@@ -118,6 +118,9 @@ land.
 | `Scripts/View Model Component/Item/*.cs`                                                                  | `src/lib/view-model-component/item/*.ts`                                                                              | 11   |
 | `Scripts/View Model Component/Actor/Equipment.cs`                                                         | `src/lib/view-model-component/actor/Equipment.ts`                                                                     | 11   |
 | `TestItems.cs` (blog demo)                                                                                | Tests: `items.test.ts`                                                                                                | 11   |
+| `Scripts/View Model Component/Actor/Job.cs`                                                               | `src/lib/view-model-component/actor/Job.ts`                                                                           | 12   |
+| `Editor/JobParser.cs`, `Settings/Job*.csv` → `Resources/Jobs/*.prefab`                                    | `scripts/convert-unity.ts` → `src/lib/resources/Jobs/*.ts` (generated)                                                | 12   |
+| `UnityEngine.Random`                                                                                      | `src/lib/common/unity/Random.ts` (`BattleController.random`)                                                          | 12   |
 
 ## Divergences
 
@@ -145,6 +148,8 @@ Every `// PORT-FIX:` and every intentional behavioural difference from Unity.
 | Floats                                  | JS numbers are doubles. C#'s 32-bit float math is reproduced only where a truncation depends on it (`Rank.experienceForLevel`).                                                                                                                                         |                                                                |
 | `ExperienceManager`                     | PORT-FIX: a party whose levels are all equal shares the award evenly.                                                                                                                                                                                                   | Unity's weights are 0/0 = NaN, so nobody gains anything.       |
 | Features, items                         | An item is not a GameObject: `Equippable`/`Consumable` hold the item's `features`. Features target a unit (`FeatureTarget`, which has the components they use) instead of looking them up from a GameObject's parents, so `Equippable.onEquip(owner)` takes the wearer. | No scene hierarchy.                                            |
+| `Random`                                | A seeded mulberry32 per battle (`?seed=` replays one; the seed is logged). `value` is in [0, 1) (Unity's includes 1); the sequence isn't Unity's.                                                                                                                       | Replayable battles and deterministic tests.                    |
+| `Unit`                                  | `stats` and `rank` are created with the unit; Unity's spawners add them as components.                                                                                                                                                                                  | Every unit has them.                                           |
 
 ## Backlog (after parity)
 
