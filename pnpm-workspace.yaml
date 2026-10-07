@@ -1,0 +1,19 @@
+packages:
+  - "packages/*"
+
+# Every external dependency version lives here. Packages reference it with
+# "catalog:" (or "catalog:<name>" for named catalogs below).
+catalog:
+  "@types/node": ^26.6.4
+  typescript: ^7.0.2
+
+# catalogs:
+#   example:
+#     some-pkg: ^1.0.0
+
+# `pnpm add` refuses versions not in the catalog.
+catalogMode: strict
+# Drop catalog entries nobody references.
+catalogPrune: true
+
+strictPeerDependencies: true

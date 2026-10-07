@@ -1,0 +1,20 @@
+{
+  "name": "tactical-port",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.9.1",
+  "engines": {
+    "node": ">=26.10.0",
+    "pnpm": ">=12.9.1"
+  },
+  "scripts": {
+    "preinstall": "node scripts/check-catalog.mjs",
+    "check:catalog": "node scripts/check-catalog.mjs",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}
