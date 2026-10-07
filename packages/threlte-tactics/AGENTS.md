@@ -32,6 +32,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `master`; never push.
 - `pnpm lint`, `pnpm check` and `pnpm test` must be green before every commit.
 - Keep `PORTING.md` up to date: part status, Unity → port file map, divergences.
+- Mark per-part interim code that a later part replaces with `// TODO(part N): <what>`
+  (`rg "TODO\(part"` lists them); resolve them when part N lands.
 
 ## Fidelity rules
 
@@ -73,8 +75,12 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   missing); `yield return null` / `WaitForSeconds` → `nextFrame()` / `waitForSeconds()`
   (`#lib/common/unity/time.ts`). Per-frame behaviour → Threlte `useTask` (with
   `autoInvalidate: false` + `invalidate()` when something moved, so on-demand rendering idles).
-- **Transforms** that rules move (e.g. the tile selection indicator) are `Transform` instances
-  (`#lib/common/unity/Transform.svelte.ts`); views render them.
+- **Transforms** that game code moves (the tile selection indicator, units and their `Jumper`)
+  are `Transform` instances (`#lib/common/unity/Transform.svelte.ts`); views render them.
+  Assigning `localPosition`… snaps; `moveTo`/`moveToLocal`/`rotateToLocal`/`scaleTo` (Unity's
+  `TransformAnimationExtensions`) tween and return a promise that resolves on completion. Don't
+  overlap tweens on the same property: an interrupted `Tween`'s promise never resolves.
+- **Unused parameters** kept for Unity's signatures (base virtuals) get a `_` prefix.
 - **Randomness**: one injectable seeded PRNG; `?seed=` overrides.
 - **Coordinates**: Unity is left-handed. Everything from Unity renders inside `<UnityWorld>` (a
   Z-mirroring group), so Unity positions/rotations/meshes are used verbatim. Unity Euler degrees

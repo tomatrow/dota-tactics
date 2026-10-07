@@ -1,5 +1,6 @@
 import type { Vector3 } from "#lib/common/unity/vector3.ts"
 import { Point } from "#lib/model/Point.ts"
+import type { Unit } from "./Unit.svelte.ts"
 
 /**
  * Port of `View Model Component/Tile.cs`: one column of the board.
@@ -13,6 +14,14 @@ export class Tile {
 
 	pos = $state.raw(Point.zero)
 	height = $state(0)
+	/** What stands on the tile. Unity's is a `GameObject`; only units ever stand on tiles. */
+	content: Unit | null = null
+	/** Pathfinding: the tile the last `Board.search` reached this one from. */
+	prev: Tile | null = null
+	/** Pathfinding: how many steps the last `Board.search` took to reach this tile. */
+	distance = 0
+	/** Its renderer's material color (Unity's `_Color`), which `Board` uses to highlight tiles. */
+	color = $state("#ffffff")
 
 	/** The middle of the top of the tile, where units stand. */
 	get center(): Vector3 {

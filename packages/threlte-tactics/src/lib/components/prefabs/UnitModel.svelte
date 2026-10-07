@@ -17,7 +17,15 @@
 	import { T, type Props } from "@threlte/core"
 	import type { Group } from "three"
 
-	let { model, ...props }: Props<Group> & { model: UnitModelName } = $props()
+	let {
+		model,
+		jumper,
+		...props
+	}: Props<Group> & {
+		model: UnitModelName
+		/** Props for the `Jumper` child. */
+		jumper?: Props<Group>
+	} = $props()
 
 	const eyes: { name: string; position: [number, number, number] }[] = [
 		{ name: "Sphere", position: [0.17, 0.32, 0.3] },
@@ -26,7 +34,7 @@
 </script>
 
 <T.Group name={model} {...props}>
-	<T.Group name="Jumper">
+	<T.Group name="Jumper" {...jumper}>
 		<T.Mesh name="Sphere" castShadow receiveShadow scale={0.8}>
 			<T.SphereGeometry args={[0.5, 32, 16]} />
 			<T.MeshStandardMaterial {...bodies[model]} />

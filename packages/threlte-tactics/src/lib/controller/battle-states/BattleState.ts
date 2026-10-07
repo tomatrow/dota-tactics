@@ -11,7 +11,8 @@ import type { Point } from "#lib/model/Point.ts"
  * nothing to stay. The base class's helpers are the functions below.
  */
 
-export type BattleStateName = "InitBattleState" | "MoveTargetState"
+export type BattleStateName =
+	"InitBattleState" | "MoveSequenceState" | "MoveTargetState" | "SelectUnitState"
 
 // A type, not an interface: `fsm` needs handler maps to be assignable to an index signature.
 export type BattleActions = {

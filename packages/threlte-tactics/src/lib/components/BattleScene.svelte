@@ -10,6 +10,7 @@
 	import CameraRig from "./CameraRig.svelte"
 	import Lighting from "./Lighting.svelte"
 	import TileSelectionIndicator from "./prefabs/TileSelectionIndicator.svelte"
+	import UnitView from "./UnitView.svelte"
 
 	const battle = getBattleController()
 </script>
@@ -20,5 +21,10 @@
 		<CameraRig follow={battle.tileSelectionIndicator.localPosition} />
 		<BoardView board={battle.board} />
 		<TileSelectionIndicator position={battle.tileSelectionIndicator.localPosition} />
+		<T.Group name="Units">
+			{#each battle.units as unit (unit)}
+				<UnitView {unit} />
+			{/each}
+		</T.Group>
 	</T.Group>
 </UnityWorld>
