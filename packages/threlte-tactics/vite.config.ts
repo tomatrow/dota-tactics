@@ -1,6 +1,7 @@
-import adapter from "@sveltejs/adapter-auto"
+import adapter from "@sveltejs/adapter-static"
 import { sveltekit } from "@sveltejs/kit/vite"
-import { defineConfig } from "vite"
+import { playwright } from "@vitest/browser-playwright"
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
 	plugins: [
@@ -11,12 +12,37 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes("node_modules") ? undefined : true,
 				experimental: { async: true }
 			},
-
-			// adapter-auto only supports some environments, see https://svelte.dev/docs/kit/adapter-auto for a list.
-			// If your environment is not supported, or you settled on a specific environment, switch out the adapter.
-			// See https://svelte.dev/docs/kit/adapters for more information about adapters.
-			adapter: adapter(),
-			experimental: { remoteFunctions: true }
+			// Fully client-rendered: every route is prerendered as an empty shell (see src/routes/+layout.ts).
+			adapter: adapter()
 		})
-	]
+	],
+	test: {
+		expect: { requireAssertions: true },
+		passWithNoTests: true,
+		projects: [
+			{
+				// Anything touching runes or components runs in a real browser (client-compiled Svelte, WebGL).
+				extends: true,
+				test: {
+					name: "client",
+					browser: {
+						enabled: true,
+						provider: playwright(),
+						instances: [{ browser: "chromium", headless: true }]
+					},
+					include: ["src/**/*.svelte.{test,spec}.ts"]
+				}
+			},
+			{
+				// Plain TS with no runes (e.g. the Unity data converter) runs in Node.
+				extends: true,
+				test: {
+					name: "server",
+					environment: "node",
+					include: ["src/**/*.{test,spec}.ts", "scripts/**/*.{test,spec}.ts"],
+					exclude: ["src/**/*.svelte.{test,spec}.ts"]
+				}
+			}
+		]
+	}
 })

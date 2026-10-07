@@ -1,56 +1,36 @@
-# sv
+# threlte-tactics
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-pnpm dlx sv@1.1.0 create --template minimal --types ts --add prettier eslint ai-tools="ide:other" experimental="features:async,remoteFunctions" --install pnpm threlte-version
-```
-
-## Adding features
-
-Add features to your project with `sv add`:
-
-```sh
-npx sv add
-```
-
-For example, to add Tailwind CSS:
-
-```sh
-npx sv add tailwindcss
-```
+A [Threlte](https://threlte.xyz) + [SvelteKit](https://svelte.dev/docs/kit) port of
+[The Liquid Fire](https://theliquidfire.com)'s Unity
+[Tactics RPG](https://theliquidfire.com/category/projects/tactics-rpg/) tutorial (in
+`../tactics-rpg`). Progress is tracked in [PORTING.md](./PORTING.md); conventions in
+[AGENTS.md](./AGENTS.md).
 
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install
+pnpm test:install-browsers # once: Playwright Chromium for browser-mode tests
+pnpm dev
 ```
 
-## Building
+| Script        | What it does                                         |
+| ------------- | ---------------------------------------------------- |
+| `pnpm dev`    | Vite dev server                                      |
+| `pnpm build`  | Static build (`adapter-static`) into `build/`        |
+| `pnpm check`  | `svelte-check`                                       |
+| `pnpm lint`   | Prettier + ESLint                                    |
+| `pnpm format` | Prettier write                                       |
+| `pnpm test`   | Vitest (browser-mode `client` + Node `server` tests) |
 
-To create a production version of your app:
+## Controls
 
-```sh
-npm run build
-```
+| Action  | Keys               |
+| ------- | ------------------ |
+| Move    | Arrows / WASD      |
+| Confirm | Enter / Space      |
+| Cancel  | Escape / Backspace |
 
-You can preview the production build with `npm run preview`.
+## Credits
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+- Original tutorial, code and assets: Jonathan Parham, [The Liquid Fire](https://theliquidfire.com).
