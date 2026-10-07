@@ -27,7 +27,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = 
 | 10  | [Stats](https://theliquidfire.com/2015/07/27/tactics-rpg-stats/)                                   | ✅     | Rules only; units get stats in part 12. Demo → tests.                                          |
 | 11  | [Items and Equipment](https://theliquidfire.com/2015/08/03/tactics-rpg-items-and-equipment/)       | ✅     | Rules only (no items in the final game). Demo → tests.                                         |
 | 12  | [Jobs](https://theliquidfire.com/2015/08/10/tactics-rpg-jobs/)                                     | ✅     | Jobs generated from `Settings/*.csv`. Test heroes: walking Rogue, Warrior, Wizard at level 10. |
-| 13  | [Stat Panel](https://theliquidfire.com/2015/08/17/tactics-rpg-stat-panel/)                         | ⬜ 🛑  |                                                                                                |
+| 13  | [Stat Panel](https://theliquidfire.com/2015/08/17/tactics-rpg-stat-panel/)                         | ✅ 🛑  | Primary panel follows the actor and the cursor; random background until part 22.               |
 | 14  | [Ability Range](https://theliquidfire.com/2015/08/24/tactics-rpg-ability-range/)                   | ⬜     |                                                                                                |
 | 15  | [Ability Area of Effect](https://theliquidfire.com/2015/08/31/tactics-rpg-ability-area-of-effect/) | ⬜     |                                                                                                |
 | 16  | [Turn Order](https://theliquidfire.com/2015/09/07/tactics-rpg-turn-order/)                         | ⬜ 🛑  |                                                                                                |
@@ -121,6 +121,9 @@ land.
 | `Scripts/View Model Component/Actor/Job.cs`                                                               | `src/lib/view-model-component/actor/Job.ts`                                                                           | 12   |
 | `Editor/JobParser.cs`, `Settings/Job*.csv` → `Resources/Jobs/*.prefab`                                    | `scripts/convert-unity.ts` → `src/lib/resources/Jobs/*.ts` (generated)                                                | 12   |
 | `UnityEngine.Random`                                                                                      | `src/lib/common/unity/Random.ts` (`BattleController.random`)                                                          | 12   |
+| `Scripts/View Model Component/StatPanel.cs`                                                               | `src/lib/view-model-component/StatPanel.svelte.ts`, `src/lib/components/StatPanelView.svelte`                         | 13   |
+| `Scripts/Controller/StatPanelController.cs`, `Prefabs/Stat Panel Controller.prefab`                       | `src/lib/controller/StatPanelController.svelte.ts`, `src/lib/components/StatPanelControllerView.svelte`               | 13   |
+| uGUI `Shadow`                                                                                             | `<UIText shadow>`                                                                                                     | 13   |
 
 ## Divergences
 

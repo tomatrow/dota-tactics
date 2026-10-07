@@ -30,12 +30,17 @@
 				const dx = [0, Math.round(left * k), canvas.width - Math.round(right * k), canvas.width]
 				const dy = [0, Math.round(top * k), canvas.height - Math.round(bottom * k), canvas.height]
 				context.clearRect(0, 0, canvas.width, canvas.height)
+				// A slice with no sprite pixels between its borders (e.g. `BlueAttackPanel`'s center)
+				// still fills its space: Unity stretches the line of texels at the border.
+				const span = (from: number, to: number, size: number) =>
+					to > from ? [from, to - from] : [Math.min(from, size - 1), 1]
 				for (let row = 0; row < 3; ++row)
 					for (let column = 0; column < 3; ++column) {
-						const [x, y, w, h] = [sx[column]!, sy[row]!, sx[column + 1]!, sy[row + 1]!]
+						const [x, w] = span(sx[column]!, sx[column + 1]!, width)
+						const [y, h] = span(sy[row]!, sy[row + 1]!, height)
 						const [dX, dY, dW, dH] = [dx[column]!, dy[row]!, dx[column + 1]!, dy[row + 1]!]
-						if (w > x && h > y && dW > dX && dH > dY)
-							context.drawImage(image, x, y, w - x, h - y, dX, dY, dW - dX, dH - dY)
+						if (dW > dX && dH > dY)
+							context.drawImage(image, x!, y!, w!, h!, dX, dY, dW - dX, dH - dY)
 					}
 			}
 

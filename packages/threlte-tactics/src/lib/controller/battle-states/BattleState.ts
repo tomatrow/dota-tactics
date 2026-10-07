@@ -1,6 +1,7 @@
 import type { TransitionEvent } from "runic-svelte-fsm"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import type { Point } from "#lib/model/Point.ts"
+import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
 /**
  * Port of `Controller/Battle States/BattleState.cs`, the base class of every battle state.
@@ -60,4 +61,24 @@ export function selectTile(owner: BattleController, p: Point): void {
 
 	owner.pos = p
 	owner.tileSelectionIndicator.localPosition = tile.center
+}
+
+/** The unit on the tile at `p`, if any. */
+export function getUnit(owner: BattleController, p: Point): Unit | null {
+	const t = owner.board.getTile(p)
+	return t !== null ? t.content : null
+}
+
+/** Shows the primary stat panel for the unit at `p`, or hides it if there is none. */
+export function refreshPrimaryStatPanel(owner: BattleController, p: Point): void {
+	const target = getUnit(owner, p)
+	if (target !== null) owner.statPanelController.showPrimary(target)
+	else owner.statPanelController.hidePrimary()
+}
+
+/** Shows the secondary stat panel for the unit at `p`, or hides it if there is none. */
+export function refreshSecondaryStatPanel(owner: BattleController, p: Point): void {
+	const target = getUnit(owner, p)
+	if (target !== null) owner.statPanelController.showSecondary(target)
+	else owner.statPanelController.hideSecondary()
 }

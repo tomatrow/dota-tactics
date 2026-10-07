@@ -14,6 +14,7 @@
 	import BattleScene from "./BattleScene.svelte"
 	import ConversationControllerView from "./ConversationControllerView.svelte"
 	import Input from "./Input.svelte"
+	import StatPanelControllerView from "./StatPanelControllerView.svelte"
 
 	const levelData = Resources.load<LevelData>("Levels/Level_0")
 	if (!levelData) throw new Error("Missing Resources/Levels/Level_0")
@@ -47,6 +48,7 @@
 	<!-- The UI prefabs, in `Battle.unity`'s order (later canvases draw on top). -->
 	<ConversationControllerView controller={battle.conversationController} />
 	<AbilityMenuPanelControllerView controller={battle.abilityMenuPanelController} />
+	<StatPanelControllerView controller={battle.statPanelController} />
 </div>
 
 <style>

@@ -11,6 +11,7 @@ import { ConversationController } from "./ConversationController.svelte.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
+import { StatPanelController } from "./StatPanelController.svelte.ts"
 import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
 import { defaultBattleActions } from "./battle-states/BattleState.ts"
 import { categorySelectionState } from "./battle-states/CategorySelectionState.ts"
@@ -55,6 +56,7 @@ export class BattleController {
 	/** The selected board position. */
 	pos = Point.zero
 	readonly abilityMenuPanelController = new AbilityMenuPanelController()
+	readonly statPanelController: StatPanelController
 	readonly turn = new Turn()
 	units: Unit[] = $state([])
 	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
@@ -65,6 +67,7 @@ export class BattleController {
 	constructor(levelData: LevelData, { seed = Random.randomSeed() }: { seed?: number } = {}) {
 		this.levelData = levelData
 		this.random = new Random(seed)
+		this.statPanelController = new StatPanelController(this.random)
 		this.machine = createStateMachine(this)
 	}
 

@@ -50,3 +50,28 @@ test("a sliced UIImage draws its sprite's 9 slices, edges unscaled", async () =>
 	// The middle stretches all the way to the right edge.
 	expect(alpha(463, 70)).toBe(255)
 })
+
+test("a sliced UIImage stretches a center with no sprite pixels (BlueAttackPanel)", async () => {
+	const screen = await render(
+		UIImage,
+		{ props: { sprite: "BlueAttackPanel", type: "Sliced" } },
+		{ baseElement: box(319, 100) }
+	)
+	const canvas = screen.container.querySelector("canvas")!
+	const k = canvas.width / 319
+	const pixel = (x: number, y: number) => [
+		...canvas.getContext("2d")!.getImageData(Math.floor(x * k), Math.floor(y * k), 1, 1).data
+	]
+	await expect.poll(() => pixel(150, 50)).toEqual([21, 77, 125, 255])
+})
+
+test("UIText draws a uGUI Shadow below and to the right", async () => {
+	const screen = await render(
+		UIText,
+		{ props: { text: "HP 1 / 2", shadow: ["rgb(0 0 0 / 0.5)", [1, -1]] } },
+		{ baseElement: box(100, 30) }
+	)
+	expect(screen.container.querySelector("div")!.style.textShadow).toBe(
+		"rgba(0, 0, 0, 0.5) 1px 1px 0px"
+	)
+})

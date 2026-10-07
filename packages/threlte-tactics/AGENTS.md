@@ -117,7 +117,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   (`#lib/components/ui/`: Canvas + CanvasScaler, laid out in 640×480 reference pixels, match
   height). Port prefab hierarchies with `<RectTransform>` (the prefab's anchors, pivot, position,
   size and scale, verbatim), `<UIImage>` (sprites from `sprites.ts`, `Sliced` 9-slicing) and
-  `<UIText>` (alignment, color, Best Fit). Unity's `Panel` →
+  `<UIText>` (alignment, color, Best Fit, `Shadow`). Unity's `Panel` →
   a `Panel` (`#lib/common/ui/Panel.ts`, positions as data) rendered by `<PanelView>`;
   `setPosition(name, animated, { duration, equation })` returns the completion promise (Unity's
   `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.

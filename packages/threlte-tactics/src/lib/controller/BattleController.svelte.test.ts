@@ -316,3 +316,45 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
 	})
 })
+
+describe("stat panel", () => {
+	const shown = (battle: BattleController) => {
+		const { primaryPanel } = battle.statPanelController
+		return primaryPanel.panel.currentPosition?.name === "Show" ? primaryPanel.nameLabel : null
+	}
+
+	test("the menus show the actor's stats", async () => {
+		const battle = await started()
+		battle.units[0]!.stats.setValue(StatTypes.HP, 12, false)
+		battle.fire(1)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(battle.statPanelController.primaryPanel.hpLabel).toMatch(/^HP 12 \//)
+
+		battle.fire(0)
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		expect(battle.machine.current).toBe("MoveSequenceState")
+		expect(shown(battle)).toBeNull()
+	})
+
+	test("exploring and moving show whoever is under the cursor", async () => {
+		const battle = await started()
+		battle.fire(1)
+		expect(battle.machine.current).toBe("ExploreState")
+		expect(shown(battle)).toBe("Hero(Clone)")
+		battle.move(Point.of(0, 1))
+		expect(shown(battle)).toBeNull()
+		battle.move(Point.of(1, -1))
+		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(battle.statPanelController.primaryPanel.lvLabel).toBe("LV. 10")
+
+		battle.fire(0)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("MoveTargetState")
+		expect(shown(battle)).toBe("Hero(Clone)")
+		battle.move(Point.of(0, 1))
+		expect(shown(battle)).toBeNull()
+	})
+})

@@ -1,24 +1,28 @@
 <!--
 	A uGUI `Text` filling its rect: wraps, keeps runs of spaces, and clips what doesn't fit
 	(horizontal overflow Wrap, vertical overflow Truncate). `bestFit` is Unity's Best Fit: the
-	largest whole font size in [min, max] at which the text fits.
+	largest whole font size in [min, max] at which the text fits. `shadow` is a uGUI `Shadow`
+	effect: its color and distance (reference pixels, y up).
 -->
 <script lang="ts">
 	import type { Attachment } from "svelte/attachments"
 	import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
+	import type { Vector2 } from "#lib/common/unity/vector2.ts"
 
 	let {
 		text,
 		fontSize = 14,
 		bestFit,
 		alignment = TextAnchor.UpperLeft,
-		color = "#323232"
+		color = "#323232",
+		shadow
 	}: {
 		text: string
 		fontSize?: number
 		bestFit?: [min: number, max: number]
 		alignment?: TextAnchor
 		color?: string
+		shadow?: [color: string, distance: Vector2]
 	} = $props()
 
 	const flexAlign = ["flex-start", "center", "flex-end"] as const
@@ -41,6 +45,7 @@
 <div
 	style:font-size={bestFit ? undefined : `${fontSize}px`}
 	style:color
+	style:text-shadow={shadow && `${shadow[1][0]}px ${-shadow[1][1]}px 0 ${shadow[0]}`}
 	style:align-items={flexAlign[Math.floor(alignment / 3)]}
 	style:justify-content={flexAlign[alignment % 3]}
 	style:text-align={textAlign[alignment % 3]}
