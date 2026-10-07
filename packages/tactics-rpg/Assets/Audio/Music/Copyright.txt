@@ -1,0 +1,5 @@
+Music copyright by Brennan Anderson:
+ * Strategy RPG Battle_Intro
+ * Strategy RPG Battle_Loop
+
+Shared with Creative Commons Attribution 4.0 International Public License.  See attached "CC Attribution License" for details.

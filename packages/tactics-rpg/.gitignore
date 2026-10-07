@@ -1,0 +1,15 @@
+# All we need are the Assets and ProjectSettings folders
+*.[o]
+*~
+*.csproj
+*.pidb
+*.unityproj
+*.sln
+*.userprefs
+Library/
+Temp/
+Build/
+Assets/Resources/Jobs/
+*.orig
+*.orig.meta
+Jobs.meta
