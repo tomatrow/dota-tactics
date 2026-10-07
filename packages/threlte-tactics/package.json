@@ -23,6 +23,7 @@
 		"@sveltejs/vite-plugin-svelte": "catalog:",
 		"@threlte/core": "catalog:",
 		"@threlte/extras": "catalog:",
+		"@threlte/test": "catalog:",
 		"@types/node": "catalog:",
 		"@types/three": "catalog:",
 		"@vitest/browser-playwright": "catalog:",

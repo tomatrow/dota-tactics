@@ -24,7 +24,10 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - Port the blog parts in chronological order (see `PORTING.md`). Read each blog post before
   porting it.
 - Port the **final** Unity version of each file at the part where it first appears; skip
-  throwaway tutorial demo code.
+  throwaway tutorial demo code. Where the final version depends on parts not ported yet, port
+  the version from that part's commit in
+  [theliquidfire/blogtacticsrpg](https://github.com/theliquidfire/blogtacticsrpg) (one commit per
+  post) and evolve it as later parts land.
 - One or more commits per part, imperative messages: `Port part 6: path finding`. Commit on
   `master`; never push.
 - `pnpm lint`, `pnpm check` and `pnpm test` must be green before every commit.
@@ -64,10 +67,14 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   functions awaiting `svelte/motion` `Tween`s (`svelte/easing`; hand-port a curve only if
   missing). Per-frame behaviour → Threlte `useTask`.
 - **Randomness**: one injectable seeded PRNG; `?seed=` overrides.
+- **Coordinates**: Unity is left-handed. Everything from Unity renders inside `<UnityWorld>` (a
+  Z-mirroring group), so Unity positions/rotations/meshes are used verbatim. Unity Euler degrees
+  → `unityEuler()`. Cameras inside it need their own `scale={[1, 1, -1]}`.
 - **Enums**: `as const` numeric objects + derived union types. No TS `enum`.
 - **Layout**: mirror Unity folders in kebab-case under `src/lib/` (`controller/battle-states/`,
   `view-model-component/ability/range/`, `common/notification-center/`…); files keep Unity
-  class names (`ConeAbilityRange.svelte.ts`); methods camelCase. Import via `#lib/...`.
+  class names (`ConeAbilityRange.svelte.ts`); methods camelCase. Import via `#lib/...` with the
+  real file extension (`#lib/materials/materials.ts`).
 - **Data**: `scripts/convert-unity.ts` (`pnpm convert`) turns Unity YAML/CSV into committed,
   generated `.ts` modules (`satisfies` our types) in `src/lib/data/generated/`. Never edit
   generated files by hand. The 12 abilities and 3 attack patterns are hand-written TS.
@@ -92,6 +99,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   - `client` (browser mode, Playwright Chromium): `src/**/*.svelte.test.ts`. Use this for anything
     touching runes, rules classes or components (incl. Threlte scenes).
   - `server` (Node): `src/**/*.test.ts`, `scripts/**/*.test.ts` for plain TS (e.g. the converter).
+- 3D components: `@threlte/test`'s `render` (queries the three `Scene` directly).
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#. Components get light smoke tests.
 - Playwright e2e is added once a battle is playable.

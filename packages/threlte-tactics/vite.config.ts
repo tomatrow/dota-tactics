@@ -30,7 +30,8 @@ export default defineConfig({
 						provider: playwright(),
 						instances: [{ browser: "chromium", headless: true }]
 					},
-					include: ["src/**/*.svelte.{test,spec}.ts"]
+					include: ["src/**/*.svelte.{test,spec}.ts"],
+					setupFiles: ["src/lib/testing/setup-client.ts"]
 				}
 			},
 			{

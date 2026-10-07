@@ -3,6 +3,11 @@
 Port of The Liquid Fire's Unity [Tactics RPG](https://theliquidfire.com/category/projects/tactics-rpg/)
 tutorial (`packages/tactics-rpg`) to Threlte + SvelteKit. Conventions live in `AGENTS.md`.
 
+The author's [blogtacticsrpg](https://github.com/theliquidfire/blogtacticsrpg) repo has one commit
+per blog post (its "Part N" is our part N+1 up to Victory Conditions; Intro To A.I. had no commit),
+and its last commit is identical to `packages/tactics-rpg`. Use it to see which files a part adds
+and what they looked like at that point.
+
 ## Parts
 
 Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = milestone (pause for review).
@@ -42,15 +47,25 @@ Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = 
 Unity (`packages/tactics-rpg/Assets/…`) → port (`packages/threlte-tactics/…`). Filled in as parts
 land.
 
-| Unity | Port | Part |
-| ----- | ---- | ---- |
+| Unity                                     | Port                                                       | Part |
+| ----------------------------------------- | ---------------------------------------------------------- | ---- |
+| `Materials/*.mat`                         | `src/lib/materials/materials.ts`                           | 2    |
+| `Textures/Dirt.png`                       | `src/lib/assets/textures/Dirt.png`                         | 2    |
+| `Textures/UI/*.png` (+ `.meta` 9-slices)  | `src/lib/assets/textures/ui/` (`sprites.ts`)               | 2    |
+| `Prefabs/Tile.prefab`                     | `src/lib/components/prefabs/Tile.svelte`                   | 2    |
+| `Resources/Units/{Hero,Monster}.prefab`   | `src/lib/components/prefabs/UnitModel.svelte`              | 2    |
+| `Prefabs/Tile Selection Indicator.prefab` | `src/lib/components/prefabs/TileSelectionIndicator.svelte` | 2    |
+| `Scripts/Common/Animation/*` (tweening)   | Replaced by `svelte/motion` `Tween` + `svelte/easing`      | 2    |
+| Unity's left-handed coordinate system     | `src/lib/common/unity/` (`<UnityWorld>`, `unityEuler`)     | 2    |
 
 ## Divergences
 
 Every `// PORT-FIX:` and every intentional behavioural difference from Unity.
 
-| Where | What | Why |
-| ----- | ---- | --- |
+| Where              | What                                                             | Why                                               |
+| ------------------ | ---------------------------------------------------------------- | ------------------------------------------------- |
+| Lighting / colors  | three's linear workflow instead of Unity's gamma-space lighting. | "Same at a glance" fidelity; colors are the same. |
+| `UnitModel.svelte` | Hero and Monster prefabs are one component with a `model` prop.  | They differ only by body material.                |
 
 ## Backlog (after parity)
 

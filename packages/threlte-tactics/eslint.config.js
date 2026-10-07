@@ -29,7 +29,9 @@ export default defineConfig(
 			parserOptions: {
 				projectService: true,
 				extraFileExtensions: [".svelte"],
-				parser: ts.parser
+				parser: ts.parser,
+				// Mirrors the compiler options in vite.config.ts (there is no svelte.config.js to read).
+				svelteConfig: { compilerOptions: { experimental: { async: true } } }
 			}
 		}
 	},
