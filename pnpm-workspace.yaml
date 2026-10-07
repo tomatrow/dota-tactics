@@ -1,15 +1,25 @@
 packages:
   - "packages/*"
 
-# Every external dependency version lives here. Packages reference it with
-# "catalog:" (or "catalog:<name>" for named catalogs below).
+# Every external dependency version lives here, one version each.
+# Packages reference it with "catalog:".
 catalog:
-  "@types/node": ^26.6.4
-  typescript: ^7.0.2
-
-# catalogs:
-#   example:
-#     some-pkg: ^1.0.0
+  "@eslint/js": ^10.0.1
+  "@sveltejs/adapter-auto": ^8.0.0
+  "@sveltejs/kit": ^3.0.0
+  "@sveltejs/vite-plugin-svelte": ^7.2.0
+  "@types/node": ^24
+  eslint: ^10.4.1
+  eslint-config-prettier: ^10.1.8
+  eslint-plugin-svelte: ^3.19.0
+  globals: ^17.6.0
+  prettier: ^3.8.3
+  prettier-plugin-svelte: ^4.1.0
+  svelte: ^5.57.1
+  svelte-check: ^4.6.0
+  typescript: ^6.0.3
+  typescript-eslint: ^8.60.1
+  vite: ^8.3.0
 
 # `pnpm add` refuses versions not in the catalog.
 catalogMode: strict
@@ -17,3 +27,5 @@ catalogMode: strict
 catalogPrune: true
 
 strictPeerDependencies: true
+allowBuilds:
+  esbuild: true
