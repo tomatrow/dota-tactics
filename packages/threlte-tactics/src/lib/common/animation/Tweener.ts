@@ -38,7 +38,9 @@ export async function tween<T>(
 	{ loopCount = 0, loopType = "Repeat" }: LoopOptions = {}
 ): Promise<void> {
 	const ms = duration * 1000
-	await target.set(start, { duration: 0 })
+	// Snapping is synchronous, so a later snap or tween of the same target in this tick wins, as
+	// Unity's `Stop` would make it.
+	void target.set(start, { duration: 0 })
 
 	let forward = true
 	for (let loops = 1; ; ++loops) {
@@ -48,7 +50,7 @@ export async function tween<T>(
 		})
 		if (loopCount >= 0 && loops > loopCount) return
 
-		if (loopType === "Repeat") await target.set(start, { duration: 0 })
+		if (loopType === "Repeat") void target.set(start, { duration: 0 })
 		else forward = !forward
 	}
 }

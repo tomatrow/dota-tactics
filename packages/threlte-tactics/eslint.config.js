@@ -41,7 +41,11 @@ export default defineConfig(
 		// Override or add rule settings here, such as:
 		// 'svelte/button-has-type': 'error'
 		rules: {
-			"svelte/block-lang": "off"
+			"svelte/block-lang": "off",
+			// UI placement and scale come from game state (anchored panels, the canvas scaler).
+			"svelte/no-inline-styles": "off",
+			// Ids aren't unique once a component renders more than once.
+			"svelte/consistent-selector-style": ["error", { style: ["type", "class"] }]
 		}
 	}
 )

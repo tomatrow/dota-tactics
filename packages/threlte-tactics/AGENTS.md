@@ -108,9 +108,12 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - `/` is the battle. `<Battle>` creates the `BattleController` + notification center, provides
   them via context, and renders the Threlte `<Canvas>` (`renderMode="on-demand"`) plus a DOM
   overlay for UI.
-- UI (uGUI) → DOM overlay scaled from the 640×480 reference resolution (match height). Reuse the
-  original PNGs (`border-image` 9-slicing). `Panel`/`LayoutAnchor` → a `<Panel>` with named
-  positions and tweened transitions. `FacingIndicator` stays 3D.
+- UI (uGUI) → DOM overlay. Each Unity canvas prefab → content inside a `<UICanvas>`
+  (`#lib/components/ui/`: Canvas + CanvasScaler, laid out in 640×480 reference pixels, match
+  height). Reuse the original PNGs (`sprites.ts`, `border-image` 9-slicing). Unity's `Panel` →
+  a `Panel` (`#lib/common/ui/Panel.ts`, positions as data) rendered by `<PanelView>`;
+  `setPosition(name, animated, { duration, equation })` returns the completion promise (Unity's
+  `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.
 - Input: one `<Input>` component via `<svelte:window>`. Move: arrows/WASD with Unity's repeater
   (0.5 s threshold, 0.25 s rate). Confirm (Fire1): Enter/Space. Cancel (Fire2): Escape/Backspace.
 - Audio: Web Audio, gapless intro → loop, starts on first key press. Music is CC-BY (credit in
