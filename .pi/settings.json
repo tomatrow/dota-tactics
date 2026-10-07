@@ -1,0 +1,11 @@
+{
+  "packages": [
+    {
+      "source": "../../../../../pi/pi-svelte-extension",
+      "autoload": false,
+      "extensions": [
+        "+index.ts"
+      ]
+    }
+  ]
+}
