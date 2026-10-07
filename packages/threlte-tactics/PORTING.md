@@ -18,7 +18,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = 
 | 1   | [Series Intro](https://theliquidfire.com/2015/05/04/tactics-rpg-series-intro/)                     | ➖     |                                                        |
 | 2   | [Project Setup](https://theliquidfire.com/2015/05/11/tactics-rpg-project-setup/)                   | ✅     | Assets, materials, prefabs.                            |
 | 3   | [Board Generator](https://theliquidfire.com/2015/05/18/tactics-rpg-board-generator/)               | ✅ 🛑  | `Level_0` renders via `Tile`/`Board`; editor deferred. |
-| 4   | [User Input Controller](https://theliquidfire.com/2015/05/24/user-input-controller/)               | ⬜     |                                                        |
+| 4   | [User Input Controller](https://theliquidfire.com/2015/05/24/user-input-controller/)               | ✅     | Wired to the battle in part 5.                         |
 | 5   | [State Machine](https://theliquidfire.com/2015/06/01/tactics-rpg-state-machine/)                   | ⬜     |                                                        |
 | 6   | [Path Finding](https://theliquidfire.com/2015/06/08/tactics-rpg-path-finding/)                     | ⬜ 🛑  |                                                        |
 | 7   | [Anchored UI](https://theliquidfire.com/2015/06/22/tactics-rpg-anchored-ui/)                       | ⬜     | `<Panel>` only; demo scene dropped.                    |
@@ -47,38 +47,42 @@ Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = 
 Unity (`packages/tactics-rpg/Assets/…`) → port (`packages/threlte-tactics/…`). Filled in as parts
 land.
 
-| Unity                                     | Port                                                       | Part |
-| ----------------------------------------- | ---------------------------------------------------------- | ---- |
-| `Materials/*.mat`                         | `src/lib/materials/materials.ts`                           | 2    |
-| `Textures/Dirt.png`                       | `src/lib/assets/textures/Dirt.png`                         | 2    |
-| `Textures/UI/*.png` (+ `.meta` 9-slices)  | `src/lib/assets/textures/ui/` (`sprites.ts`)               | 2    |
-| `Prefabs/Tile.prefab`                     | `src/lib/components/prefabs/Tile.svelte`                   | 2    |
-| `Resources/Units/{Hero,Monster}.prefab`   | `src/lib/components/prefabs/UnitModel.svelte`              | 2    |
-| `Prefabs/Tile Selection Indicator.prefab` | `src/lib/components/prefabs/TileSelectionIndicator.svelte` | 2    |
-| `Scripts/Common/Animation/*` (tweening)   | Replaced by `svelte/motion` `Tween` + `svelte/easing`      | 2    |
-| Unity's left-handed coordinate system     | `src/lib/common/unity/` (`<UnityWorld>`, `unityEuler`)     | 2    |
-| `Scripts/Model/Point.cs`                  | `src/lib/model/Point.ts`                                   | 3    |
-| `Scripts/Model/LevelData.cs`              | `src/lib/model/LevelData.ts`                               | 3    |
-| `Scripts/View Model Component/Tile.cs`    | `src/lib/view-model-component/Tile.svelte.ts`              | 3    |
-| `Scripts/View Model Component/Board.cs`   | `src/lib/view-model-component/Board.svelte.ts`             | 3    |
-| `Resources/Levels/*.asset`                | `src/lib/resources/Levels/*.ts` (generated)                | 3    |
-| `Resources.Load`                          | `src/lib/common/unity/Resources.ts`                        | 3    |
-| `Battle.unity`: Board                     | `src/lib/components/BoardView.svelte`                      | 3    |
-| `Battle.unity`: Camera Rig (transforms)   | `src/lib/components/CameraRig.svelte`                      | 3    |
-| `Battle.unity`: Directional Light         | `src/lib/components/Lighting.svelte`                       | 3    |
-| `Battle.unity`: scene, skybox             | `src/lib/components/Battle.svelte`, `BattleScene.svelte`   | 3    |
+| Unity                                     | Port                                                                       | Part |
+| ----------------------------------------- | -------------------------------------------------------------------------- | ---- |
+| `Materials/*.mat`                         | `src/lib/materials/materials.ts`                                           | 2    |
+| `Textures/Dirt.png`                       | `src/lib/assets/textures/Dirt.png`                                         | 2    |
+| `Textures/UI/*.png` (+ `.meta` 9-slices)  | `src/lib/assets/textures/ui/` (`sprites.ts`)                               | 2    |
+| `Prefabs/Tile.prefab`                     | `src/lib/components/prefabs/Tile.svelte`                                   | 2    |
+| `Resources/Units/{Hero,Monster}.prefab`   | `src/lib/components/prefabs/UnitModel.svelte`                              | 2    |
+| `Prefabs/Tile Selection Indicator.prefab` | `src/lib/components/prefabs/TileSelectionIndicator.svelte`                 | 2    |
+| `Scripts/Common/Animation/*` (tweening)   | Replaced by `svelte/motion` `Tween` + `svelte/easing`                      | 2    |
+| Unity's left-handed coordinate system     | `src/lib/common/unity/` (`<UnityWorld>`, `unityEuler`)                     | 2    |
+| `Scripts/Model/Point.cs`                  | `src/lib/model/Point.ts`                                                   | 3    |
+| `Scripts/Model/LevelData.cs`              | `src/lib/model/LevelData.ts`                                               | 3    |
+| `Scripts/View Model Component/Tile.cs`    | `src/lib/view-model-component/Tile.svelte.ts`                              | 3    |
+| `Scripts/View Model Component/Board.cs`   | `src/lib/view-model-component/Board.svelte.ts`                             | 3    |
+| `Resources/Levels/*.asset`                | `src/lib/resources/Levels/*.ts` (generated)                                | 3    |
+| `Resources.Load`                          | `src/lib/common/unity/Resources.ts`                                        | 3    |
+| `Battle.unity`: Board                     | `src/lib/components/BoardView.svelte`                                      | 3    |
+| `Battle.unity`: Camera Rig (transforms)   | `src/lib/components/CameraRig.svelte`                                      | 3    |
+| `Battle.unity`: Directional Light         | `src/lib/components/Lighting.svelte`                                       | 3    |
+| `Battle.unity`: scene, skybox             | `src/lib/components/Battle.svelte`, `BattleScene.svelte`                   | 3    |
+| `Scripts/Controller/InputController.cs`   | `src/lib/controller/InputController.ts`, `src/lib/components/Input.svelte` | 4    |
+| `ProjectSettings/InputManager.asset`      | `axes`, `buttons` in `src/lib/controller/InputController.ts`               | 4    |
+| `Scripts/EventArgs/InfoEventArgs.cs`      | Not ported: input callbacks receive the value directly                     | 4    |
 
 ## Divergences
 
 Every `// PORT-FIX:` and every intentional behavioural difference from Unity.
 
-| Where              | What                                                            | Why                                              |
-| ------------------ | --------------------------------------------------------------- | ------------------------------------------------ |
-| Lighting / colors  | Gamma space mimicked (color management off, linear output).     | Unity project uses Gamma color space.            |
-| `Lighting.svelte`  | Skybox ambient approximated with ambient + hemisphere lights.   | Tuned by eye against footage of the Unity build. |
-| `Battle.svelte`    | Default skybox → fixed CSS gradient behind the canvas.          | The battle camera never rotates.                 |
-| `UnitModel.svelte` | Hero and Monster prefabs are one component with a `model` prop. | They differ only by body material.               |
-| `Point.ts`         | Points are interned (`Point.of`), not structs.                  | `===` equality; usable as `Map` keys.            |
+| Where                | What                                                                                            | Why                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Lighting / colors    | Gamma space mimicked (color management off, linear output).                                     | Unity project uses Gamma color space.                     |
+| `Lighting.svelte`    | Skybox ambient approximated with ambient + hemisphere lights.                                   | Tuned by eye against footage of the Unity build.          |
+| `Battle.svelte`      | Default skybox → fixed CSS gradient behind the canvas.                                          | The battle camera never rotates.                          |
+| `UnitModel.svelte`   | Hero and Monster prefabs are one component with a `model` prop.                                 | They differ only by body material.                        |
+| `Point.ts`           | Points are interned (`Point.of`), not structs.                                                  | `===` equality; usable as `Map` keys.                     |
+| `InputController.ts` | Fire1 = Enter/Space, Fire2 = Escape/Backspace, Fire3 unbound (Unity: left ctrl/alt/cmd, mouse). | Keyboard only; Unity's keys clash with browser shortcuts. |
 
 ## Backlog (after parity)
 
