@@ -56,8 +56,13 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - **NotificationCenter** is kept: typed (notification name → payload map), one instance per
   battle (context), synchronous, listeners may mutate payloads (`BaseException`,
   `ValueChangeException`…), sender filtering and add/remove-during-dispatch semantics as Unity.
-- **State machine**: `runic-svelte-fsm`, owned by `BattleController`.
-  - Each Unity state is a module exporting a handler-object factory taking the battle context.
+- **State machine**: `runic-svelte-fsm`, owned by `BattleController` (`createStateMachine`).
+  - Each Unity state is `controller/battle-states/<UnityName>.ts` exporting a factory
+    (`moveTargetState(owner)`) whose handlers `satisfies BattleStateHandlers`. Register it in
+    `createStateMachine` and add its name to `BattleStateName`. Handlers return the next state's
+    name (Unity's `owner.ChangeState<T>()`). Unity's base-class helpers (`SelectTile`…) are
+    functions in `BattleState.ts` taking `owner`.
+  - The machine starts in `None` (Unity: no current state); `battle.start()` is Unity's `Start`.
   - Input arrives as `move(p)` / `fire(i)` actions; the Human-driver guard lives there
     (replaces `AddListeners`/`RemoveListeners`). `*` holds no-op defaults.
   - `BaseAbilityMenuState` → a shared factory spread into the three menu states.
@@ -65,7 +70,11 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
     are allowed; where Unity relied on its ignore-during-transition guard, defer explicitly.
 - **Coroutines**: `TurnOrderController.Round()` → JS generator. Animated sequences → `async`
   functions awaiting `svelte/motion` `Tween`s (`svelte/easing`; hand-port a curve only if
-  missing). Per-frame behaviour → Threlte `useTask`.
+  missing); `yield return null` / `WaitForSeconds` → `nextFrame()` / `waitForSeconds()`
+  (`#lib/common/unity/time.ts`). Per-frame behaviour → Threlte `useTask` (with
+  `autoInvalidate: false` + `invalidate()` when something moved, so on-demand rendering idles).
+- **Transforms** that rules move (e.g. the tile selection indicator) are `Transform` instances
+  (`#lib/common/unity/Transform.svelte.ts`); views render them.
 - **Randomness**: one injectable seeded PRNG; `?seed=` overrides.
 - **Coordinates**: Unity is left-handed. Everything from Unity renders inside `<UnityWorld>` (a
   Z-mirroring group), so Unity positions/rotations/meshes are used verbatim. Unity Euler degrees

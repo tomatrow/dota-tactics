@@ -4,16 +4,22 @@
 -->
 <script lang="ts">
 	import { Canvas } from "@threlte/core"
+	import { onMount } from "svelte"
 	import { LinearSRGBColorSpace, NoToneMapping, PCFShadowMap } from "three"
 	import { Resources } from "#lib/common/unity/Resources.ts"
+	import { BattleController, setBattleController } from "#lib/controller/BattleController.svelte.ts"
 	import type { LevelData } from "#lib/model/LevelData.ts"
-	import { Board } from "#lib/view-model-component/Board.svelte.ts"
 	import BattleScene from "./BattleScene.svelte"
+	import Input from "./Input.svelte"
 
-	const board = new Board()
-	const level = Resources.load<LevelData>("Levels/Level_0")
-	if (level) board.load(level)
+	const levelData = Resources.load<LevelData>("Levels/Level_0")
+	if (!levelData) throw new Error("Missing Resources/Levels/Level_0")
+
+	const battle = setBattleController(new BattleController(levelData))
+	onMount(() => battle.start())
 </script>
+
+<Input onfire={(button) => battle.fire(button)} onmove={(direction) => battle.move(direction)} />
 
 <div>
 	<!--
@@ -28,7 +34,7 @@
 		shadows={PCFShadowMap}
 		toneMapping={NoToneMapping}
 	>
-		<BattleScene {board} />
+		<BattleScene />
 	</Canvas>
 </div>
 
