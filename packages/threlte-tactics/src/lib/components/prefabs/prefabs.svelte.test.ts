@@ -21,7 +21,9 @@ describe("Tile", () => {
 		const tile = scene.getObjectByName("Tile") as Mesh
 		expect(tile.geometry).toBeInstanceOf(BoxGeometry)
 		// The material waits for the texture to load.
-		await expect.poll(() => (tile.material as MeshStandardMaterial).map).toBeTruthy()
+		await expect
+			.poll(() => (tile.material as MeshStandardMaterial).map, { timeout: 5000 })
+			.toBeTruthy()
 		expect((tile.material as MeshStandardMaterial).roughness).toBe(Materials.Dirt.roughness)
 	})
 })

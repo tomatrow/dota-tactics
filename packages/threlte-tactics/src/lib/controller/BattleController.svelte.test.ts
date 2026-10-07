@@ -13,6 +13,7 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { BattleController } from "./BattleController.svelte.ts"
+import { TurnOrderController } from "./TurnOrderController.ts"
 
 /**
  * A plus-shaped board around (1, 1), at height 2 (y 0.5). The test heroes start on the first three
@@ -154,22 +155,34 @@ describe("InitBattleState", () => {
 })
 
 describe("SelectUnitState", () => {
-	test("gives the units turns in order, a frame later", async () => {
+	test("the turn order picks the actor, whose commands open a frame later", async () => {
 		const battle = await started()
-		expect(battle.turn.actor).toBe(battle.units[0])
+		const [rogue, warrior] = battle.units as [Unit, Unit]
+		const ctr = (u: Unit) => u.stats.get(StatTypes.CTR)
+		// The Rogue is the fastest: first over 1000.
+		expect(battle.turn.actor).toBe(rogue)
+		expect(ctr(rogue)).toBeGreaterThanOrEqual(1000)
+		expect(battle.units.map(ctr).filter((c) => c >= 1000)).toEqual([ctr(rogue)])
 
-		battle.move(Point.of(0, -1))
-		battle.move(Point.of(0, -1))
-		expect(menu(battle).selected).toBe("Wait")
+		let charged: number | null = null
+		battle.notifications.addObserver((unit) => {
+			charged = ctr(unit)
+		}, TurnOrderController.turnCompletedNotification)
+		const before = ctr(rogue)
+
+		// Wait, then keep facing north.
+		battle.move(Point.of(0, 1))
 		battle.fire(0)
-		expect(battle.machine.current).toBe("EndFacingState")
 		battle.fire(0)
 		expect(battle.machine.current).toBe("SelectUnitState")
-		expect(battle.turn.actor).toBe(battle.units[1])
+		expect(charged).toBe(before - 500)
+		expect(battle.turn.actor).toBe(warrior)
+		expect(battle.pos).toBe(warrior.tile!.pos)
+		expect(shownHp(battle.statPanelController.primaryPanel)).toBe(hp(warrior))
+
 		await advance(0.1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
-		// The menu state selects the actor's tile.
-		expect(battle.pos).toBe(Point.of(0, 1))
+		expect(menu(battle).title).toBe("Commands")
 	})
 })
 

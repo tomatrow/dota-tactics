@@ -1,6 +1,7 @@
 import { Resources } from "#lib/common/unity/Resources.ts"
 import { nextFrame } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
+import { TurnOrderController } from "#lib/controller/TurnOrderController.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Ability } from "#lib/view-model-component/ability/Ability.ts"
@@ -19,6 +20,7 @@ export function initBattleState(owner: BattleController) {
 		const [x, , z] = owner.levelData.tiles[0]!
 		selectTile(owner, Point.of(Math.trunc(x), Math.trunc(z)))
 		spawnTestUnits()
+		owner.round = new TurnOrderController(owner).round()
 		// Unity can't change state during a transition (`Enter`), so it waits a frame.
 		await nextFrame()
 		owner.machine.done()

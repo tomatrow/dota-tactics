@@ -67,6 +67,8 @@ export class BattleController {
 	readonly statPanelController: StatPanelController
 	readonly turn = new Turn()
 	units: Unit[] = $state([])
+	/** `TurnOrderController.round()`, which `SelectUnitState` steps through. */
+	round: Iterator<Unit> | null = null
 	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
 	actionSelectionCategory = 0
 	readonly machine: ReturnType<typeof createStateMachine>
