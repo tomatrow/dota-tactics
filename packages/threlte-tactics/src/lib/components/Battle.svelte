@@ -10,6 +10,7 @@
 	import { BattleController, setBattleController } from "#lib/controller/BattleController.svelte.ts"
 	import type { LevelData } from "#lib/model/LevelData.ts"
 	import BattleScene from "./BattleScene.svelte"
+	import ConversationControllerView from "./ConversationControllerView.svelte"
 	import Input from "./Input.svelte"
 
 	const levelData = Resources.load<LevelData>("Levels/Level_0")
@@ -36,6 +37,7 @@
 	>
 		<BattleScene />
 	</Canvas>
+	<ConversationControllerView controller={battle.conversationController} />
 </div>
 
 <style>

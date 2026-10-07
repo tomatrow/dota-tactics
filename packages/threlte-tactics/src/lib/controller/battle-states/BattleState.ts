@@ -12,7 +12,7 @@ import type { Point } from "#lib/model/Point.ts"
  */
 
 export type BattleStateName =
-	"InitBattleState" | "MoveSequenceState" | "MoveTargetState" | "SelectUnitState"
+	"CutSceneState" | "InitBattleState" | "MoveSequenceState" | "MoveTargetState" | "SelectUnitState"
 
 // A type, not an interface: `fsm` needs handler maps to be assignable to an index signature.
 export type BattleActions = {

@@ -15,10 +15,13 @@ const plus: LevelData = {
 	]
 }
 
+/** A battle past its intro conversation. */
 async function started(levelData: LevelData) {
 	const battle = new BattleController(levelData)
 	battle.start()
-	await expect.poll(() => battle.machine.current).toBe("SelectUnitState")
+	await expect.poll(() => battle.machine.current).toBe("CutSceneState")
+	battle.machine.done()
+	expect(battle.machine.current).toBe("SelectUnitState")
 	return battle
 }
 
@@ -26,7 +29,12 @@ describe("BattleController", () => {
 	test("has a typed state machine", () => {
 		const battle = new BattleController(plus)
 		expectTypeOf(battle.machine.current).toEqualTypeOf<
-			"None" | "InitBattleState" | "MoveSequenceState" | "MoveTargetState" | "SelectUnitState"
+			| "None"
+			| "CutSceneState"
+			| "InitBattleState"
+			| "MoveSequenceState"
+			| "MoveTargetState"
+			| "SelectUnitState"
 		>()
 		expectTypeOf(battle.machine.move).parameters.toEqualTypeOf<[Point]>()
 		// @ts-expect-error Not an action.
@@ -49,7 +57,7 @@ describe("InitBattleState", () => {
 		expect(battle.pos).toBe(Point.of(1, 5))
 		expect(battle.tileSelectionIndicator.localPosition).toEqual([1, 0.75, 5])
 
-		await expect.poll(() => battle.machine.current).toBe("SelectUnitState")
+		await expect.poll(() => battle.machine.current).toBe("CutSceneState")
 	})
 
 	test("spawns a walking, a flying and a teleporting hero on the first three tiles", () => {

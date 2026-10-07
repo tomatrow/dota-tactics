@@ -44,6 +44,6 @@ export function initBattleState(owner: BattleController) {
 		_enter() {
 			void init()
 		},
-		done: () => "SelectUnitState"
+		done: () => "CutSceneState"
 	} satisfies BattleStateHandlers
 }

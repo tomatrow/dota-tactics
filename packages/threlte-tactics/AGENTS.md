@@ -110,7 +110,9 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   overlay for UI.
 - UI (uGUI) → DOM overlay. Each Unity canvas prefab → content inside a `<UICanvas>`
   (`#lib/components/ui/`: Canvas + CanvasScaler, laid out in 640×480 reference pixels, match
-  height). Reuse the original PNGs (`sprites.ts`, `border-image` 9-slicing). Unity's `Panel` →
+  height). Port prefab hierarchies with `<RectTransform>` (the prefab's anchors, pivot, position,
+  size and scale, verbatim), `<UIImage>` (sprites from `sprites.ts`, `Sliced` 9-slicing) and
+  `<UIText>` (alignment, color, Best Fit). Unity's `Panel` →
   a `Panel` (`#lib/common/ui/Panel.ts`, positions as data) rendered by `<PanelView>`;
   `setPosition(name, animated, { duration, equation })` returns the completion promise (Unity's
   `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.
@@ -126,6 +128,9 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
     touching runes, rules classes or components (incl. Threlte scenes).
   - `server` (Node): `src/**/*.test.ts`, `scripts/**/*.test.ts` for plain TS (e.g. the converter).
 - 3D components: `@threlte/test`'s `render` (queries the three `Scene` directly).
+- Animated rules (tweens, `nextFrame`, `waitForSeconds`) are tested on fake clocks:
+  `useFakeTime()` + `await advance(seconds)` (`#lib/testing/time.ts`). Read its caveat about
+  mixing real and fake time in one file.
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#. Components get light smoke tests.
 - Playwright e2e is added once a battle is playable.

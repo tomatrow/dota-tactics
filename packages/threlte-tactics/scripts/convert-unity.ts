@@ -9,14 +9,15 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { format, resolveConfig } from "prettier"
-import { readScriptableObject } from "./unity-yaml.ts"
+import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
+import { readGuid, readScriptableObject, type UnityRef } from "./unity-yaml.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 export const unityAssets = path.resolve(root, "../tactics-rpg/Assets")
 export const resourcesDir = path.resolve(root, "src/lib/resources")
 
 /** Folders under `src/lib/resources/` that are generated. */
-export const generatedFolders = ["Levels"] as const
+export const generatedFolders = ["Conversations", "Levels"] as const
 
 /** Generated file contents, keyed by path relative to `src/lib/resources/`. */
 type Output = Map<string, string>
@@ -63,11 +64,56 @@ async function convertLevels(out: Output): Promise<void> {
 	}
 }
 
+// --- Conversations (`Model/ConversationData.cs`, `Model/SpeakerData.cs`) ------------------------
+
+/** `Textures/UI` sprites by GUID, named as in `src/lib/assets/textures/ui/sprites.ts`. */
+async function uiSprites(): Promise<Map<string, string>> {
+	const folder = path.join(unityAssets, "Textures/UI")
+	const sprites = new Map<string, string>()
+	for (const file of (await readdir(folder)).filter((name) => name.endsWith(".png"))) {
+		sprites.set(await readGuid(path.join(folder, file)), file.replace(/\.png$/, ""))
+	}
+	return sprites
+}
+
+const textAnchorNames = new Map(Object.entries(TextAnchor).map(([name, value]) => [value, name]))
+
+interface UnitySpeakerData {
+	messages: string[]
+	speaker: UnityRef
+	anchor: number
+}
+
+async function convertConversations(out: Output): Promise<void> {
+	const sprites = await uiSprites()
+	for (const file of await assetsIn("Resources/Conversations")) {
+		const data = await readScriptableObject(path.join(unityAssets, "Resources/Conversations", file))
+		const list = (data.list as UnitySpeakerData[]).map((sd) => {
+			const speaker = sprites.get(sd.speaker.guid ?? "")
+			const anchor = textAnchorNames.get(sd.anchor as TextAnchor)
+			if (!speaker || !anchor) throw new Error(`Unknown speaker or anchor in ${file}`)
+			return `{ messages: ${json(sd.messages.map(String))}, speaker: ${json(speaker)}, anchor: TextAnchor.${anchor} }`
+		})
+		out.set(
+			`Conversations/${basename(file)}.ts`,
+			module(
+				`Resources/Conversations/${file}`,
+				[
+					`import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"`,
+					`import type { ConversationData } from "#lib/model/ConversationData.ts"`
+				],
+				`export default { list: [${list.join(", ")}] } satisfies ConversationData`
+			)
+		)
+	}
+}
+
 // ---------------------------------------------------------------------------------------------
 
 /** Runs every converter and returns the formatted output. */
 export async function convert(): Promise<Output> {
 	const out: Output = new Map()
+	await convertConversations(out)
 	await convertLevels(out)
 
 	const formatted: Output = new Map()

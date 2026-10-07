@@ -86,7 +86,9 @@ describe("traverse", () => {
 		// East, then north again.
 		expect(unit.dir).toBe(Directions.North)
 		expect(unit.transform.localEulerAngles).toEqual([0, 0, 0])
-		expect(unit.jumper.localPosition).toEqual([0, 0, 0])
+		// Like Unity's `Jump`, `traverse` waits for the move, not the hop, which can land a frame
+		// later.
+		await expect.poll(() => unit.jumper.localPosition).toEqual([0, 0, 0])
 	})
 
 	test("teleporting shrinks away and grows back on the target", async () => {

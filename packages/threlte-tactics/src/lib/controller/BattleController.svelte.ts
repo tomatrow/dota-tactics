@@ -4,9 +4,11 @@ import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Board } from "#lib/view-model-component/Board.svelte.ts"
+import { ConversationController } from "./ConversationController.svelte.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { defaultBattleActions } from "./battle-states/BattleState.ts"
+import { cutSceneState } from "./battle-states/CutSceneState.ts"
 import { initBattleState } from "./battle-states/InitBattleState.ts"
 import { moveSequenceState } from "./battle-states/MoveSequenceState.ts"
 import { moveTargetState } from "./battle-states/MoveTargetState.ts"
@@ -17,6 +19,7 @@ function createStateMachine(owner: BattleController) {
 		"*": defaultBattleActions,
 		// Unity's state machine starts with no current state.
 		None: { start: () => "InitBattleState" },
+		CutSceneState: cutSceneState(owner),
 		InitBattleState: initBattleState(owner),
 		MoveSequenceState: moveSequenceState(owner),
 		MoveTargetState: moveTargetState(owner),
@@ -32,6 +35,7 @@ export class BattleController {
 	readonly board = new Board()
 	readonly levelData: LevelData
 	readonly tileSelectionIndicator = new Transform()
+	readonly conversationController = new ConversationController()
 	/** The selected board position. */
 	pos = Point.zero
 	units: Unit[] = $state([])
