@@ -4,11 +4,31 @@
 -->
 <script lang="ts">
 	import { Canvas } from "@threlte/core"
+	import { LinearSRGBColorSpace, NoToneMapping, PCFShadowMap } from "three"
+	import { Resources } from "#lib/common/unity/Resources.ts"
+	import type { LevelData } from "#lib/model/LevelData.ts"
+	import { Board } from "#lib/view-model-component/Board.svelte.ts"
+	import BattleScene from "./BattleScene.svelte"
+
+	const board = new Board()
+	const level = Resources.load<LevelData>("Levels/Level_0")
+	if (level) board.load(level)
 </script>
 
 <div>
-	<Canvas renderMode="on-demand">
-		<!-- Scene content arrives with the tutorial parts. -->
+	<!--
+		The Unity project renders in Gamma color space with no tone mapping. Turning three's color
+		management off and writing the result untouched (linear output) reproduces that: colors and
+		textures are used as authored and lighting happens in gamma space.
+	-->
+	<Canvas
+		colorManagementEnabled={false}
+		colorSpace={LinearSRGBColorSpace}
+		renderMode="on-demand"
+		shadows={PCFShadowMap}
+		toneMapping={NoToneMapping}
+	>
+		<BattleScene {board} />
 	</Canvas>
 </div>
 
@@ -16,5 +36,20 @@
 	div {
 		position: fixed;
 		inset: 0;
+		/*
+			Unity's default procedural skybox as the orthographic battle camera sees it: a sliver of
+			sky above the horizon glow, then the gray "ground" half. Sampled from footage of the
+			Unity build.
+		*/
+		background: linear-gradient(
+			rgb(150 180 208) 0%,
+			rgb(174 204 232) 6.7%,
+			rgb(205 241 253) 11%,
+			rgb(224 251 255) 13.3%,
+			rgb(221 253 250) 15.5%,
+			rgb(172 174 173) 17.8%,
+			rgb(102 102 102) 20%,
+			rgb(100 100 100) 100%
+		);
 	}
 </style>

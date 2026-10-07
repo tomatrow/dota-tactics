@@ -75,10 +75,18 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `view-model-component/ability/range/`, `common/notification-center/`…); files keep Unity
   class names (`ConeAbilityRange.svelte.ts`); methods camelCase. Import via `#lib/...` with the
   real file extension (`#lib/materials/materials.ts`).
-- **Data**: `scripts/convert-unity.ts` (`pnpm convert`) turns Unity YAML/CSV into committed,
-  generated `.ts` modules (`satisfies` our types) in `src/lib/data/generated/`. Never edit
-  generated files by hand. The 12 abilities and 3 attack patterns are hand-written TS.
+- **Data**: `src/lib/resources/` mirrors Unity's `Assets/Resources` (same names and paths); load
+  with `Resources.load<T>("Levels/Level_0")` (`#lib/common/unity/Resources.ts`).
+  `scripts/convert-unity.ts` (`pnpm convert`) turns Unity YAML/CSV into committed `.ts` modules
+  (`satisfies` our types) in the folders it owns (`generatedFolders`); never edit those by hand.
+  A test fails when they are stale. The 12 abilities and 3 attack patterns are hand-written TS
+  in the same tree. `scripts/` runs on Node's native TypeScript: erasable syntax, `.ts` imports.
 - **Assets**: imported from `src/lib/assets/` (hashed, type-checked).
+- **Rendering**: Unity's Gamma color space is reproduced with color management off and linear
+  output (see `Battle.svelte`), so material/light colors are the raw Unity values. three lights
+  are physically based: Unity intensity `i` → three intensity `i * Math.PI`.
+- **Naming views**: a component that renders a rules class is `<Class>View.svelte`
+  (`BoardView.svelte` renders `Board`); pure view components (`CameraRig.svelte`) keep Unity's name.
 
 ## Views & input
 

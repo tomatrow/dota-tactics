@@ -69,7 +69,8 @@ Every `// PORT-FIX:` and every intentional behavioural difference from Unity.
 
 ## Backlog (after parity)
 
-- Board Creator at `/dev/board-creator` (Unity `Board Creator.unity`, `BoardCreator.cs`).
+- Board Creator at `/dev/board-creator` (Unity `Board Creator.unity`, `BoardCreator.cs`,
+  `Editor/BoardCreatorInspector.cs`). `Tile.grow`/`shrink` are already ported.
 - GodotTactics extras: orbit/zoom camera, i18n (en/ja/es), knockback/earthquake effects,
   cross/diagonal ranges, JSON map saves.
 - Mouse/touch/gamepad input, mobile layout.

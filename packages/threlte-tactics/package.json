@@ -14,7 +14,8 @@
 		"format": "prettier --cache --cache-strategy content --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"test:install-browsers": "playwright install chromium"
+		"test:install-browsers": "playwright install chromium",
+		"convert": "node scripts/convert-unity.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
@@ -42,7 +43,8 @@
 		"typescript-eslint": "catalog:",
 		"vite": "catalog:",
 		"vitest": "catalog:",
-		"vitest-browser-svelte": "catalog:"
+		"vitest-browser-svelte": "catalog:",
+		"yaml": "catalog:"
 	},
 	"imports": {
 		"#lib": "./src/lib/index.js",
