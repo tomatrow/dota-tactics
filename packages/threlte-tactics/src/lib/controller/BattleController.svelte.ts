@@ -1,5 +1,6 @@
 import { fsm } from "runic-svelte-fsm"
 import { createContext } from "svelte"
+import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
@@ -42,6 +43,8 @@ function createStateMachine(owner: BattleController) {
  * base class is `runic-svelte-fsm`) and everything its states share.
  */
 export class BattleController {
+	/** Unity's `NotificationCenter.instance`, one per battle. */
+	readonly notifications = new NotificationCenter()
 	readonly board = new Board()
 	readonly levelData: LevelData
 	readonly tileSelectionIndicator = new Transform()

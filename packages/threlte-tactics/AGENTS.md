@@ -55,9 +55,12 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `unit.status.effects`, `ability.range`, `ability.effects: { hitRate, effect, target }[]`.
   Unity class hierarchies (ranges, areas, effects, status effects, movement) stay TS classes.
   Dynamic Unity children (status effects, features, equipment) become lists queried by class.
-- **NotificationCenter** is kept: typed (notification name → payload map), one instance per
-  battle (context), synchronous, listeners may mutate payloads (`BaseException`,
-  `ValueChangeException`…), sender filtering and add/remove-during-dispatch semantics as Unity.
+- **NotificationCenter** is kept: one instance per battle (`battle.notifications`), passed to
+  the constructors of the objects that post or observe; synchronous; listeners may mutate
+  payloads (`BaseException`, `ValueChangeException`…); sender filtering and
+  add/remove-during-dispatch semantics as Unity. Typed: a module that posts notifications
+  augments the `Notifications` interface (name → `[sender, args]`, see `Stats.ts`). Handlers that
+  get removed later are stable arrow-function fields (Unity compares delegates).
 - **State machine**: `runic-svelte-fsm`, owned by `BattleController` (`createStateMachine`).
   - Each Unity state is `controller/battle-states/<UnityName>.ts` exporting a factory
     (`moveTargetState(owner)`) whose handlers `satisfies BattleStateHandlers`. Register it in
@@ -107,8 +110,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 
 ## Views & input
 
-- `/` is the battle. `<Battle>` creates the `BattleController` + notification center, provides
-  them via context, and renders the Threlte `<Canvas>` (`renderMode="on-demand"`) plus a DOM
+- `/` is the battle. `<Battle>` creates the `BattleController` (which owns the notification
+  center and the PRNG), provides it via context, and renders the Threlte `<Canvas>` (`renderMode="on-demand"`) plus a DOM
   overlay for UI.
 - UI (uGUI) → DOM overlay. Each Unity canvas prefab → content inside a `<UICanvas>`
   (`#lib/components/ui/`: Canvas + CanvasScaler, laid out in 640×480 reference pixels, match
@@ -136,7 +139,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#. Components get light smoke tests.
 - Playwright e2e is added once a battle is playable.
-- Visual checks: the browser-tools skill.
+- Visual checks: a headless browser (Playwright's Chromium with `--headless=new`, driven over
+  CDP by puppeteer-core from the browser-tools skill). Never drive the user's own Chrome.
 - First run: `pnpm test:install-browsers`.
 
 ## Project Configuration
