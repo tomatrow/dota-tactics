@@ -28,7 +28,7 @@ Status: ⬜ todo · 🟨 in progress · ✅ done · ➖ nothing to port. 🛑 = 
 | 11  | [Items and Equipment](https://theliquidfire.com/2015/08/03/tactics-rpg-items-and-equipment/)       | ✅     | Rules only (no items in the final game). Demo → tests.                                         |
 | 12  | [Jobs](https://theliquidfire.com/2015/08/10/tactics-rpg-jobs/)                                     | ✅     | Jobs generated from `Settings/*.csv`. Test heroes: walking Rogue, Warrior, Wizard at level 10. |
 | 13  | [Stat Panel](https://theliquidfire.com/2015/08/17/tactics-rpg-stat-panel/)                         | ✅ 🛑  | Primary panel follows the actor and the cursor; random background until part 22.               |
-| 14  | [Ability Range](https://theliquidfire.com/2015/08/24/tactics-rpg-ability-range/)                   | ⬜     |                                                                                                |
+| 14  | [Ability Range](https://theliquidfire.com/2015/08/24/tactics-rpg-ability-range/)                   | ✅     | The test heroes' Attack demos a 3-tile constant range; confirming ends the action.             |
 | 15  | [Ability Area of Effect](https://theliquidfire.com/2015/08/31/tactics-rpg-ability-area-of-effect/) | ⬜     |                                                                                                |
 | 16  | [Turn Order](https://theliquidfire.com/2015/09/07/tactics-rpg-turn-order/)                         | ⬜ 🛑  |                                                                                                |
 | 17  | [Status Effects](https://theliquidfire.com/2015/09/14/tactics-rpg-status-effects/)                 | ⬜     |                                                                                                |
@@ -124,6 +124,9 @@ land.
 | `Scripts/View Model Component/StatPanel.cs`                                                               | `src/lib/view-model-component/StatPanel.svelte.ts`, `src/lib/components/StatPanelView.svelte`                         | 13   |
 | `Scripts/Controller/StatPanelController.cs`, `Prefabs/Stat Panel Controller.prefab`                       | `src/lib/controller/StatPanelController.svelte.ts`, `src/lib/components/StatPanelControllerView.svelte`               | 13   |
 | uGUI `Shadow`                                                                                             | `<UIText shadow>`                                                                                                     | 13   |
+| `Scripts/View Model Component/Ability/Range/*.cs`                                                         | `src/lib/view-model-component/ability/range/*.ts`                                                                     | 14   |
+| An ability's GameObject (`Turn.ability`)                                                                  | `src/lib/view-model-component/ability/Ability.ts`                                                                     | 14   |
+| `Scripts/Controller/Battle States/AbilityTargetState.cs`                                                  | `src/lib/controller/battle-states/AbilityTargetState.ts`                                                              | 14   |
 
 ## Divergences
 
@@ -153,6 +156,8 @@ Every `// PORT-FIX:` and every intentional behavioural difference from Unity.
 | Features, items                         | An item is not a GameObject: `Equippable`/`Consumable` hold the item's `features`. Features target a unit (`FeatureTarget`, which has the components they use) instead of looking them up from a GameObject's parents, so `Equippable.onEquip(owner)` takes the wearer. | No scene hierarchy.                                            |
 | `Random`                                | A seeded mulberry32 per battle (`?seed=` replays one; the seed is logged). `value` is in [0, 1) (Unity's includes 1); the sequence isn't Unity's.                                                                                                                       | Replayable battles and deterministic tests.                    |
 | `Unit`                                  | `stats` and `rank` are created with the unit; Unity's spawners add them as components.                                                                                                                                                                                  | Every unit has them.                                           |
+| `AbilityRange`                          | The range is created for its unit (`new ConstantAbilityRange(unit, { horizontal })`) instead of finding it with `GetComponentInParent<Unit>()`.                                                                                                                         | No scene hierarchy.                                            |
+| `Ability`                               | An ability's GameObject and its `Ability` component (part 20) are one class whose fields are its components. A unit's `GetComponentInChildren<Ability>()` (its attack) → `unit.attack`.                                                                                 | No scene hierarchy.                                            |
 
 ## Backlog (after parity)
 

@@ -3,6 +3,7 @@ import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { UnitModelName } from "#lib/components/prefabs/UnitModel.svelte"
 import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import type { Ability } from "./ability/Ability.ts"
 import type { Job } from "./actor/Job.ts"
 import { Rank } from "./actor/Rank.ts"
 import { Stats } from "./actor/Stats.ts"
@@ -27,6 +28,8 @@ export class Unit {
 	readonly rank: Rank
 	job: Job | null = null
 	movement: Movement | null = null
+	/** Unity's `GetComponentInChildren<Ability>()`: the unit's attack, its first child ability. */
+	attack: Ability | null = null
 
 	#tile: Tile | null = null
 

@@ -2,27 +2,14 @@ import { describe, expect, test } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
-import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
-import { Board } from "../Board.svelte.ts"
+import { board, positions } from "#lib/testing/board.ts"
+import type { Board } from "../Board.svelte.ts"
 import { Unit } from "../Unit.svelte.ts"
 import { FlyMovement } from "./FlyMovement.ts"
 import type { Movement } from "./Movement.ts"
 import { TeleportMovement } from "./TeleportMovement.ts"
 import { WalkMovement } from "./WalkMovement.ts"
-
-/** A board from rows of heights (row 0 is y = 0); `.` is a hole. */
-function board(...rows: string[]): Board {
-	const tiles: LevelData["tiles"] = []
-	rows.forEach((row, y) => {
-		;[...row].forEach((h, x) => {
-			if (h !== ".") tiles.push([x, Number(h), y])
-		})
-	})
-	const b = new Board()
-	b.load({ tiles })
-	return b
-}
 
 type MovementClass = new (unit: Unit) => Movement
 
@@ -36,8 +23,6 @@ function unitAt(b: Board, x: number, y: number, Kind: MovementClass, range = 5, 
 	unit.movement = movement
 	return { unit, movement }
 }
-
-const positions = (tiles: { pos: Point }[]) => tiles.map((t) => `${t.pos}`).sort()
 
 describe("getTilesInRange", () => {
 	test("is limited by range and leaves out the unit's own tile", () => {

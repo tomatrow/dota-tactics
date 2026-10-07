@@ -13,6 +13,7 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
  */
 
 export type BattleStateName =
+	| "AbilityTargetState"
 	| "ActionSelectionState"
 	| "CategorySelectionState"
 	| "CommandSelectionState"

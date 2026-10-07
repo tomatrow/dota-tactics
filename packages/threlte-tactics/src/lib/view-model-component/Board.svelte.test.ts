@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
+import { board } from "#lib/testing/board.ts"
 import { Board } from "./Board.svelte.ts"
 import { Tile } from "./Tile.svelte.ts"
 
@@ -26,19 +27,6 @@ describe("Tile", () => {
 		expect(tile.height).toBe(2)
 	})
 })
-
-/** A board from rows of heights (row 0 is y = 0); `.` is a hole. */
-function board(...rows: string[]): Board {
-	const tiles: LevelData["tiles"] = []
-	rows.forEach((row, y) => {
-		;[...row].forEach((h, x) => {
-			if (h !== ".") tiles.push([x, Number(h), y])
-		})
-	})
-	const b = new Board()
-	b.load({ tiles })
-	return b
-}
 
 describe("Board", () => {
 	test("loads every tile of a level", () => {

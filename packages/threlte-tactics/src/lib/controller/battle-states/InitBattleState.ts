@@ -3,6 +3,8 @@ import { nextFrame } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
+import { Ability } from "#lib/view-model-component/ability/Ability.ts"
+import { ConstantAbilityRange } from "#lib/view-model-component/ability/range/ConstantAbilityRange.ts"
 import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
 import { WalkMovement } from "#lib/view-model-component/movement/WalkMovement.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
@@ -46,6 +48,12 @@ export function initBattleState(owner: BattleController) {
 			unit.match()
 
 			unit.movement = new WalkMovement(unit)
+
+			// The blog's Hero prefab gained an "Attack" child to demo ability ranges.
+			unit.attack = new Ability({
+				name: "Attack",
+				range: new ConstantAbilityRange(unit, { horizontal: 3 })
+			})
 
 			owner.units.push(unit)
 

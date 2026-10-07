@@ -6,16 +6,15 @@ import type { BattleStateHandlers, BattleStateName } from "./BattleState.ts"
  * Port of `Controller/Battle States/CategorySelectionState.cs` as of the ability menu part: Attack,
  * or a category of abilities.
  */
-// TODO(part 19): the actor's ability catalog's categories; Attack picks a target.
+// TODO(part 20): the actor's ability catalog's categories.
 export function categorySelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner
 	let menuTitle = ""
 	let menuOptions: string[] | null = null
 
 	function attack(): BattleStateName {
-		turn.hasUnitActed = true
-		if (turn.hasUnitMoved) turn.lockMove = true
-		return "CommandSelectionState"
+		turn.ability = turn.actor!.attack
+		return "AbilityTargetState"
 	}
 
 	function setCategory(index: number): BattleStateName {

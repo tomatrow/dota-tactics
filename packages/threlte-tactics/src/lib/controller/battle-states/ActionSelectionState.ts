@@ -6,7 +6,7 @@ import type { BattleStateHandlers } from "./BattleState.ts"
  * Port of `Controller/Battle States/ActionSelectionState.cs` as of the ability menu part: the
  * abilities in the category picked in `CategorySelectionState`.
  */
-// TODO(part 19): the actor's ability catalog, with magic costs and locks; confirming picks a
+// TODO(part 20): the actor's ability catalog, with magic costs and locks; confirming picks a
 // target.
 export function actionSelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner

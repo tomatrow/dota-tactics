@@ -12,6 +12,7 @@ import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
 import { StatPanelController } from "./StatPanelController.svelte.ts"
+import { abilityTargetState } from "./battle-states/AbilityTargetState.ts"
 import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
 import { defaultBattleActions } from "./battle-states/BattleState.ts"
 import { categorySelectionState } from "./battle-states/CategorySelectionState.ts"
@@ -28,6 +29,7 @@ function createStateMachine(owner: BattleController) {
 		"*": defaultBattleActions,
 		// Unity's state machine starts with no current state.
 		None: { start: () => "InitBattleState" },
+		AbilityTargetState: abilityTargetState(owner),
 		ActionSelectionState: actionSelectionState(owner),
 		CategorySelectionState: categorySelectionState(owner),
 		CommandSelectionState: commandSelectionState(owner),

@@ -3,8 +3,13 @@ import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
+import { Ability } from "#lib/view-model-component/ability/Ability.ts"
+import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Rank } from "#lib/view-model-component/actor/Rank.ts"
+import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
+import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
+import { Directions } from "#lib/enums/Directions.ts"
 import { BattleController } from "./BattleController.svelte.ts"
 
 /**
@@ -35,6 +40,16 @@ async function started(levelData = plus) {
 	return battle
 }
 
+const highlighted = (battle: BattleController) =>
+	[...battle.board.tiles.values()].filter((t) => t.color !== "#ffffff").map((t) => `${t.pos}`)
+
+/** The HP label of a stat panel that is showing, or `null`. */
+const shownHp = (panel: StatPanel) =>
+	panel.panel.currentPosition?.name === "Show" ? panel.hpLabel : null
+
+/** What a stat panel shows for `unit`'s HP. */
+const hp = (unit: Unit) => `HP ${unit.stats.get(StatTypes.HP)} / ${unit.stats.get(StatTypes.MHP)}`
+
 const menu = (battle: BattleController) => {
 	const { title, menuEntries, selection } = battle.abilityMenuPanelController
 	return {
@@ -49,6 +64,7 @@ describe("BattleController", () => {
 		const battle = new BattleController(plus)
 		expectTypeOf(battle.machine.current).toEqualTypeOf<
 			| "None"
+			| "AbilityTargetState"
 			| "ActionSelectionState"
 			| "CategorySelectionState"
 			| "CommandSelectionState"
@@ -188,9 +204,6 @@ describe("CommandSelectionState", () => {
 })
 
 describe("MoveTargetState and MoveSequenceState", () => {
-	const highlighted = (battle: BattleController) =>
-		[...battle.board.tiles.values()].filter((t) => t.color !== "#ffffff").map((t) => `${t.pos}`)
-
 	test("highlights the reachable tiles, moves the unit there, then locks Move", async () => {
 		const battle = await started()
 		const walker = battle.units[0]!
@@ -266,6 +279,8 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 			entries: ["Attack", "White Magic", "Black Magic"],
 			selected: "Attack"
 		})
+		battle.fire(0)
+		expect(battle.machine.current).toBe("AbilityTargetState")
 		battle.fire(0)
 
 		expect(battle.machine.current).toBe("CommandSelectionState")
@@ -356,5 +371,71 @@ describe("stat panel", () => {
 		expect(shown(battle)).toBe("Hero(Clone)")
 		battle.move(Point.of(0, 1))
 		expect(shown(battle)).toBeNull()
+	})
+})
+
+describe("AbilityTargetState", () => {
+	/** From the commands to the attack's target selection. */
+	function attack(battle: BattleController) {
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("AbilityTargetState")
+	}
+
+	test("shows the attack's range; the cursor shows who it is over; confirming acts", async () => {
+		const battle = await started()
+		const [rogue, warrior] = battle.units as [Unit, Unit]
+		attack(battle)
+		expect(battle.turn.ability).toBe(rogue.attack)
+		// The test heroes' attack reaches 3 tiles.
+		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,0)", "(1,1)", "(1,2)", "(2,1)"])
+		const { primaryPanel, secondaryPanel } = battle.statPanelController
+		expect(shownHp(primaryPanel)).toBe(hp(rogue))
+		expect(shownHp(secondaryPanel)).toBeNull()
+
+		battle.move(Point.of(-1, 0))
+		expect(battle.pos).toBe(Point.of(0, 1))
+		expect(shownHp(secondaryPanel)).toBe(hp(warrior))
+		battle.move(Point.of(0, 1))
+		expect(battle.pos).toBe(Point.of(0, 1))
+
+		battle.fire(0)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(highlighted(battle)).toEqual([])
+		expect(shownHp(secondaryPanel)).toBeNull()
+		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
+	})
+
+	test("cancelling goes back to the categories", async () => {
+		const battle = await started()
+		attack(battle)
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CategorySelectionState")
+		expect(highlighted(battle)).toEqual([])
+		expect(battle.turn.hasUnitActed).toBe(false)
+	})
+
+	test("a direction oriented range turns the actor instead of moving the cursor", async () => {
+		const battle = await started()
+		const [rogue, warrior] = battle.units as [Unit, Unit]
+		rogue.attack = new Ability({
+			name: "Line",
+			range: new LineAbilityRange(rogue, { horizontal: 9 })
+		})
+		attack(battle)
+		// Facing north. The secondary panel shows whoever is under the cursor: the actor.
+		expect(highlighted(battle)).toEqual(["(1,2)"])
+		expect(shownHp(battle.statPanelController.secondaryPanel)).toBe(hp(rogue))
+
+		battle.move(Point.of(-1, 0))
+		expect(battle.pos).toBe(Point.of(1, 1))
+		expect(rogue.dir).toBe(Directions.West)
+		expect(rogue.transform.localEulerAngles).toEqual([0, 270, 0])
+		expect(highlighted(battle)).toEqual(["(0,1)"])
+		expect(warrior.tile?.pos).toBe(Point.of(0, 1))
+
+		battle.move(Point.of(0, -1))
+		expect(highlighted(battle)).toEqual(["(1,0)"])
 	})
 })
