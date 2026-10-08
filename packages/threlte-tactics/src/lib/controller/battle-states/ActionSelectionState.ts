@@ -6,7 +6,7 @@ import type { BattleStateHandlers } from "./BattleState.ts"
 /**
  * Port of `Controller/Battle States/ActionSelectionState.cs`: the abilities in the category picked
  * in `CategorySelectionState` (Unity's static `category` is `owner.actionSelectionCategory`), with
- * their MP costs. Those the actor can't perform are locked.
+ * their MP costs. Those the actor can't perform are locked, and can't be picked.
  */
 export function actionSelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner
@@ -37,6 +37,9 @@ export function actionSelectionState(owner: BattleController) {
 			for (let i = 0; i < count; ++i) menu.setLocked(i, locks[i]!)
 		},
 		confirm() {
+			// PORT-FIX: when every entry is locked, the selection stays on a locked one; Unity picks it
+			// anyway, and the actor uses up its action failing to perform it.
+			if (menu.menuEntries[menu.selection]?.isLocked ?? true) return
 			turn.ability = catalog!.getAbility(owner.actionSelectionCategory, menu.selection)
 			return "AbilityTargetState"
 		},

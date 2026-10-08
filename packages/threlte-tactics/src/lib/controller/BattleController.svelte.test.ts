@@ -362,6 +362,12 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		battle.move(Point.of(0, -1))
 		battle.fire(0)
 		expect(menu(battle).entries).toEqual(["(Cure: 6)", "(Raise: 22)", "(Holy: 32)"])
+
+		// PORT-FIX: Unity would go on to aim Cure.
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ActionSelectionState")
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CategorySelectionState")
 	})
 
 	test("an ability aims; performing it spends its MP and ends the action", async () => {

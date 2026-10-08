@@ -55,14 +55,14 @@ describe("Health", () => {
 })
 
 describe("Mana", () => {
-	test("keeps MP from going below 0, and, like Unity, only above the max *HP*", () => {
+	test("keeps MP between 0 and the max (PORT-FIX: Unity's max is the max HP)", () => {
 		const { mana } = unit()
 		mana.mp -= 30
 		expect(mana.mp).toBe(0)
+		mana.mp = 20
+		expect(mana.mp).toBe(20)
 		mana.mp = 60
-		expect(mana.mp).toBe(60)
-		mana.mp = 160
-		expect(mana.mp).toBe(100)
+		expect(mana.mp).toBe(25)
 	})
 
 	test("a higher max raises MP as much; a lower one clamps it", () => {
@@ -81,10 +81,10 @@ describe("Mana", () => {
 		expect(mana.mp).toBe(2)
 		mana.mp = 24
 		turnBegins()
-		// Over the max: Unity only clamps MP to the max HP.
-		expect(mana.mp).toBe(26)
+		// PORT-FIX: Unity clamps MP to the max HP, so it would be 26.
+		expect(mana.mp).toBe(25)
 		turnBegins()
-		expect(mana.mp).toBe(26)
+		expect(mana.mp).toBe(25)
 
 		mana.mmp = 5
 		mana.mp = 0

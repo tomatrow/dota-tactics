@@ -11,7 +11,7 @@ const mpWillChange = Stats.willChangeNotification(StatTypes.MP)
 const mmpDidChange = Stats.didChangeNotification(StatTypes.MMP)
 
 /**
- * Port of `View Model Component/Actor/Mana.cs`: keeps a unit's MP from going below 0, raises it
+ * Port of `View Model Component/Actor/Mana.cs`: keeps a unit's MP between 0 and its max, raises it
  * with its max, and regenerates a tenth of the max (at least 1) as each of its turns begins.
  */
 export class Mana {
@@ -54,8 +54,8 @@ export class Mana {
 	}
 
 	readonly #onMPWillChange = (_sender: Stats, vce: ValueChangeException): void => {
-		// Unity clamps MP to the max *HP* (sic), so regenerating can take MP a little over its max.
-		vce.addModifier(new ClampValueModifier(intMaxValue, 0, this.#stats.get(StatTypes.MHP)))
+		// PORT-FIX: Unity clamps MP to the max *HP*, so regenerating could take MP over its max.
+		vce.addModifier(new ClampValueModifier(intMaxValue, 0, this.#stats.get(StatTypes.MMP)))
 	}
 
 	readonly #onMMPDidChange = (_sender: Stats, oldMMP: number): void => {
