@@ -14,6 +14,7 @@
 		fontSize = 14,
 		bestFit,
 		alignment = TextAnchor.UpperLeft,
+		fontStyle = "Normal",
 		color = "#323232",
 		shadow
 	}: {
@@ -21,6 +22,7 @@
 		fontSize?: number
 		bestFit?: [min: number, max: number]
 		alignment?: TextAnchor
+		fontStyle?: "Normal" | "Bold" | "Italic" | "BoldAndItalic"
 		color?: string
 		shadow?: [color: string, distance: Vector2]
 	} = $props()
@@ -44,6 +46,8 @@
 
 <div
 	style:font-size={bestFit ? undefined : `${fontSize}px`}
+	style:font-weight={fontStyle.startsWith("Bold") ? "bold" : undefined}
+	style:font-style={fontStyle.endsWith("Italic") ? "italic" : undefined}
 	style:color
 	style:text-shadow={shadow && `${shadow[1][0]}px ${-shadow[1][1]}px 0 ${shadow[0]}`}
 	style:align-items={flexAlign[Math.floor(alignment / 3)]}

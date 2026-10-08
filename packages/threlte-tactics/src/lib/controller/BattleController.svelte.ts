@@ -7,6 +7,7 @@ import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Turn } from "#lib/model/Turn.ts"
 import { Board } from "#lib/view-model-component/Board.svelte.ts"
+import { HitSuccessIndicator } from "#lib/view-model-component/HitSuccessIndicator.svelte.ts"
 import { ConversationController } from "./ConversationController.svelte.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
@@ -65,6 +66,7 @@ export class BattleController {
 	pos = Point.zero
 	readonly abilityMenuPanelController = new AbilityMenuPanelController()
 	readonly statPanelController: StatPanelController
+	readonly hitSuccessIndicator = new HitSuccessIndicator()
 	readonly turn = new Turn()
 	units: Unit[] = $state([])
 	/** `TurnOrderController.round()`, which `SelectUnitState` steps through. */

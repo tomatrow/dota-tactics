@@ -11,6 +11,7 @@
 	import { BattleController, setBattleController } from "#lib/controller/BattleController.svelte.ts"
 	import type { LevelData } from "#lib/model/LevelData.ts"
 	import AbilityMenuPanelControllerView from "./AbilityMenuPanelControllerView.svelte"
+	import HitSuccessIndicatorView from "./HitSuccessIndicatorView.svelte"
 	import BattleScene from "./BattleScene.svelte"
 	import ConversationControllerView from "./ConversationControllerView.svelte"
 	import Input from "./Input.svelte"
@@ -49,6 +50,7 @@
 	<ConversationControllerView controller={battle.conversationController} />
 	<AbilityMenuPanelControllerView controller={battle.abilityMenuPanelController} />
 	<StatPanelControllerView controller={battle.statPanelController} />
+	<HitSuccessIndicatorView indicator={battle.hitSuccessIndicator} />
 </div>
 
 <style>

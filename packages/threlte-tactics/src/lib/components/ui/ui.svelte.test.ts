@@ -75,3 +75,29 @@ test("UIText draws a uGUI Shadow below and to the right", async () => {
 		"rgba(0, 0, 0, 0.5) 1px 1px 0px"
 	)
 })
+
+test("UIText's font styles", async () => {
+	const screen = await render(
+		UIText,
+		{ props: { text: "88% 12pt(s)", fontStyle: "BoldAndItalic" } },
+		{ baseElement: box(192, 36) }
+	)
+	const { style } = screen.container.querySelector("div")!
+	expect([style.fontWeight, style.fontStyle]).toEqual(["bold", "italic"])
+
+	await screen.rerender({ fontStyle: "Normal" })
+	expect([style.fontWeight, style.fontStyle]).toEqual(["", ""])
+})
+
+test("a filled UIImage shows the left part of its sprite", async () => {
+	const screen = await render(
+		UIImage,
+		{ props: { sprite: "AttackArrowFill", type: "Filled", fillAmount: 0.75 } },
+		{ baseElement: box(160, 49) }
+	)
+	const image = screen.container.querySelector("img")!
+	expect(image.style.clipPath).toBe("inset(0px 25% 0px 0px)")
+
+	await screen.rerender({ fillAmount: 1 })
+	expect(image.style.clipPath).toBe("inset(0px 0% 0px 0px)")
+})

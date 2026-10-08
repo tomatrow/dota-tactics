@@ -2,14 +2,19 @@
 	A uGUI `Image`: draws a sprite over its whole rect. `Sliced` uses the sprite's 9-slice border
 	(at 1 sprite pixel per reference pixel, as every sprite here is imported), drawn on a canvas at
 	the screen's resolution: CSS `border-image` leaves hairline seams between slices at fractional
-	scales.
+	scales. `Filled` shows the left `fillAmount` (0–1) of the sprite (fill method Horizontal, fill
+	origin Left).
 -->
 <script lang="ts">
 	import type { Attachment } from "svelte/attachments"
 	import { on } from "svelte/events"
 	import { sprites, type Sprite, type SpriteName } from "#lib/assets/textures/ui/sprites.ts"
 
-	let { sprite, type = "Simple" }: { sprite: SpriteName; type?: "Simple" | "Sliced" } = $props()
+	let {
+		sprite,
+		type = "Simple",
+		fillAmount = 1
+	}: { sprite: SpriteName; type?: "Simple" | "Sliced" | "Filled"; fillAmount?: number } = $props()
 
 	const s: Sprite = $derived(sprites[sprite])
 
@@ -64,7 +69,11 @@
 {#if type === "Sliced"}
 	<canvas {@attach sliced(s)}></canvas>
 {:else}
-	<img alt="" src={s.src} />
+	<img
+		style:clip-path={type === "Filled" ? `inset(0 ${(1 - fillAmount) * 100}% 0 0)` : undefined}
+		alt=""
+		src={s.src}
+	/>
 {/if}
 
 <style>

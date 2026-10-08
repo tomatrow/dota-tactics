@@ -1,13 +1,18 @@
 import type { AbilityArea } from "./area-of-effect/AbilityArea.ts"
 import type { AbilityEffectTarget } from "./effect-target/AbilityEffectTarget.ts"
+import type { HitRate } from "./hit-rate/HitRate.ts"
 import type { AbilityRange } from "./range/AbilityRange.ts"
 
-/** One of an ability's child GameObjects: an effect of the ability, and whom it applies to. */
-// TODO(part 18): its hit rate. TODO(part 19): the effect.
+/**
+ * One of an ability's child GameObjects: an effect of the ability, whom it applies to, and its
+ * chance to.
+ */
+// TODO(part 19): the effect.
 export interface AbilityEffect {
 	/** The GameObject's name. */
 	readonly name: string
 	readonly target: AbilityEffectTarget
+	readonly hitRate: HitRate
 }
 
 /**

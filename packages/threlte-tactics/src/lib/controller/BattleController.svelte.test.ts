@@ -6,6 +6,7 @@ import { Point } from "#lib/model/Point.ts"
 import { Ability } from "#lib/view-model-component/ability/Ability.ts"
 import { FullAbilityArea } from "#lib/view-model-component/ability/area-of-effect/FullAbilityArea.ts"
 import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
+import { ATypeHitRate } from "#lib/view-model-component/ability/hit-rate/ATypeHitRate.ts"
 import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Rank } from "#lib/view-model-component/actor/Rank.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
@@ -446,7 +447,13 @@ describe("AbilityTargetState", () => {
 			name: "Line",
 			range,
 			area: new FullAbilityArea(range),
-			effects: [{ name: "Damage", target: new DefaultAbilityEffectTarget() }]
+			effects: [
+				{
+					name: "Damage",
+					target: new DefaultAbilityEffectTarget(),
+					hitRate: new ATypeHitRate(rogue, battle)
+				}
+			]
 		})
 		attack(battle)
 		// Facing north. The secondary panel shows whoever is under the cursor: the actor.
@@ -499,6 +506,38 @@ describe("ConfirmAbilityTargetState", () => {
 		expect(battle.pos).toBe(Point.of(1, 1))
 	})
 
+	test("the hit success indicator shows the chance to hit the target", async () => {
+		const battle = await started()
+		const [, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		// Everyone has 50 evade. The Rogue faces north: an attack on itself counts as from the side.
+		// The Wizard, east of it, faces it; the Warrior, west of it, turns its back.
+		wizard.dir = Directions.West
+		warrior.dir = Directions.West
+		const indicator = battle.hitSuccessIndicator
+		const shown = () => ({
+			active: indicator.canvasActive,
+			at: indicator.panel.currentPosition?.name,
+			label: indicator.label,
+			fill: indicator.fillAmount,
+			color: indicator.labelColor
+		})
+		expect(shown()).toMatchObject({ active: false, at: "Hide" })
+
+		attack(battle)
+		battle.fire(0)
+		const label = "75% 50pt(s)"
+		expect(shown()).toEqual({ active: true, at: "Show", label, fill: 0.75, color: "#ff0000" })
+		battle.move(Point.of(1, 0))
+		expect(shown()).toMatchObject({ label: "50% 50pt(s)", fill: 0.5 })
+		battle.move(Point.of(1, 0))
+		expect(shown()).toMatchObject({ label: "88% 50pt(s)", fill: 0.88 })
+
+		battle.fire(1)
+		expect(shown()).toMatchObject({ active: true, at: "Hide" })
+		await advance(0.6)
+		expect(shown()).toMatchObject({ active: false, at: "Hide" })
+	})
+
 	test("only targets units with hit points left", async () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
@@ -521,6 +560,7 @@ describe("ConfirmAbilityTargetState", () => {
 		expect(highlighted(battle).sort()).toEqual(["(3,1)", "(4,1)", "(5,1)"])
 		expect(battle.turn.targets).toEqual([])
 		expect(shownHp(battle.statPanelController.secondaryPanel)).toBeNull()
+		expect(battle.hitSuccessIndicator.canvasActive).toBe(false)
 
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
