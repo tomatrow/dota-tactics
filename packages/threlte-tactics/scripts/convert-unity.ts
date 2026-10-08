@@ -327,8 +327,26 @@ async function convertAbilities(out: Output): Promise<void> {
 
 // --- Attack patterns (`View Model Component/AI/`) ----------------------------------------------
 
+/**
+ * PORT-FIX: corrections to random ability pickers' `pickers`, by prefab and GameObject. Each
+ * checks that Unity's data is still what it corrects.
+ */
+const pickerFixes: Record<
+	string,
+	Record<string, { unity: string[]; fixed: string[]; why: string }>
+> = {
+	"Rogue Attack Pattern.prefab": {
+		"Blind Or Drain": {
+			unity: ["Blind", "Blind Or Drain"],
+			fixed: ["Blind", "Drain"],
+			why: "Unity's lists itself instead of Drain, so it always ends up picking Blind."
+		}
+	}
+}
+
 /** An attack pattern prefab as `AttackPatternPrefab` source (with `Targets` members). */
 async function convertAttackPattern(scripts: Scripts, file: string): Promise<string> {
+	const fixes = pickerFixes[path.basename(file)] ?? {}
 	const { root, ref, behavioursOf, childrenOf } = await readPrefab(file)
 	const classOf = (behaviour: UnityObject) => {
 		const cls = scripts.byGuid.get((behaviour.fields.m_Script as UnityRef).guid ?? "")
@@ -342,7 +360,15 @@ async function convertAttackPattern(scripts: Scripts, file: string): Promise<str
 	}
 	// Pickers refer to each other by their GameObject's name, so those must be unique.
 	const names = (refs: unknown) =>
-		(refs as UnityRef[]).map((r) => json(String(ref(ref(r).fields.m_GameObject).fields.m_Name)))
+		(refs as UnityRef[]).map((r) => String(ref(ref(r).fields.m_GameObject).fields.m_Name))
+	const list = (strings: string[]) => `[${strings.map(json).join(", ")}]`
+	const fixed = (name: string, pickers: string[]) => {
+		const fix = fixes[name]
+		if (!fix) return { pickers, comment: "" }
+		if (json(pickers) !== json(fix.unity))
+			throw new Error(`The fix for ${name} in ${file} no longer applies: ${json(pickers)}`)
+		return { pickers: fix.fixed, comment: `// PORT-FIX: ${fix.why}\n` }
+	}
 
 	const pattern = only(root)
 	if (classOf(pattern) !== "AttackPattern") throw new Error(`Not an attack pattern: ${file}`)
@@ -350,20 +376,31 @@ async function convertAttackPattern(scripts: Scripts, file: string): Promise<str
 		const behaviour = only(child)
 		const type = classOf(behaviour)
 		const { fields } = behaviour
-		const picker =
-			type === "FixedAbilityPicker" ?
-				`{ type: "FixedAbilityPicker", target: ${enumMember("Targets", Targets, fields.target)}, ability: ${json(String(fields.ability ?? ""))} }`
-			: type === "RandomAbilityPicker" ?
-				`{ type: "RandomAbilityPicker", pickers: [${names(fields.pickers).join(", ")}] }`
-			:	null
-		if (picker === null) throw new Error(`Not an ability picker: ${type}`)
-		return { name: String(child.fields.m_Name), picker }
+		const name = String(child.fields.m_Name)
+		if (type === "FixedAbilityPicker") {
+			const target = enumMember("Targets", Targets, fields.target)
+			const ability = json(String(fields.ability ?? ""))
+			return {
+				name,
+				picker: `{ type: "FixedAbilityPicker", target: ${target}, ability: ${ability} }`
+			}
+		}
+		if (type === "RandomAbilityPicker") {
+			const { pickers, comment } = fixed(name, names(fields.pickers))
+			return {
+				name,
+				picker: `${comment}{ type: "RandomAbilityPicker", pickers: ${list(pickers)} }`
+			}
+		}
+		throw new Error(`Not an ability picker: ${type}`)
 	})
 	if (new Set(children.map((c) => c.name)).size !== children.length)
 		throw new Error(`Ability pickers with the same name in ${file}`)
+	const unused = Object.keys(fixes).filter((name) => !children.some((c) => c.name === name))
+	if (unused.length > 0) throw new Error(`No ${unused.join(", ")} to fix in ${file}`)
 
 	const entries = children.map((c) => `{ name: ${json(c.name)}, picker: ${c.picker} }`)
-	return `{ name: ${json(String(root.fields.m_Name))}, pickers: [${names(pattern.fields.pickers).join(", ")}], children: [${entries.join(", ")}] }`
+	return `{ name: ${json(String(root.fields.m_Name))}, pickers: ${list(names(pattern.fields.pickers))}, children: [${entries.join(", ")}] }`
 }
 
 async function convertAttackPatterns(out: Output): Promise<void> {

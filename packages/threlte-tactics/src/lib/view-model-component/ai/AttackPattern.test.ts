@@ -73,19 +73,17 @@ describe("AttackPattern", () => {
 		])
 	})
 
-	test("the enemy rogue's Blind Or Drain lists itself, not Drain: it's always Blind (as in Unity)", () => {
+	test("the enemy rogue's: Attack, Blind or Drain (PORT-FIX: Unity's lists itself, not Drain), Air Blast", () => {
 		const { unit, random } = create("Enemy Rogue")
-		const rangeInt = vi
-			.spyOn(random, "rangeInt")
-			.mockReturnValueOnce(1)
-			.mockReturnValueOnce(1)
-			.mockReturnValueOnce(0)
-		expect(picks(unit, 3)).toEqual([
+		vi.spyOn(random, "rangeInt").mockReturnValueOnce(1).mockReturnValueOnce(0)
+		expect(picks(unit, 6)).toEqual([
+			["Attack", Foe],
+			["Drain", Foe],
+			["Air Blast", Foe],
 			["Attack", Foe],
 			["Blind", Foe],
 			["Air Blast", Foe]
 		])
-		expect(rangeInt).toHaveBeenCalledTimes(3)
 	})
 
 	test("a picker that isn't in the prefab", () => {
