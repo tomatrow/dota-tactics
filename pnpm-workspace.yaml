@@ -21,7 +21,7 @@ catalog:
   playwright: ^1.63.0
   prettier: ^3.8.3
   prettier-plugin-svelte: ^4.1.0
-  runic-svelte-fsm: ^2.0.0
+  runic-svelte-fsm: ^3.0.0
   svelte: ^5.57.1
   svelte-check: ^4.6.0
   three: ^0.186.1
@@ -40,3 +40,7 @@ catalogPrune: true
 strictPeerDependencies: true
 allowBuilds:
   esbuild: true
+
+# Our own package — skip the release-age delay for fresh publishes.
+minimumReleaseAgeExclude:
+  - runic-svelte-fsm@3.0.0

@@ -17,7 +17,6 @@ import { AutoStatusController } from "./AutoStatusController.ts"
 import { StatPanelController } from "./StatPanelController.svelte.ts"
 import { abilityTargetState } from "./battle-states/AbilityTargetState.ts"
 import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
-import { defaultBattleActions } from "./battle-states/BattleState.ts"
 import { categorySelectionState } from "./battle-states/CategorySelectionState.ts"
 import { commandSelectionState } from "./battle-states/CommandSelectionState.ts"
 import { confirmAbilityTargetState } from "./battle-states/ConfirmAbilityTargetState.ts"
@@ -34,7 +33,6 @@ import type { BaseVictoryCondition } from "./victory-conditions/BaseVictoryCondi
 
 function createStateMachine(owner: BattleController) {
 	return fsm("None", {
-		"*": defaultBattleActions,
 		// Unity's state machine starts with no current state.
 		None: { start: () => "InitBattleState" },
 		AbilityTargetState: abilityTargetState(owner),

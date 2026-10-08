@@ -29,8 +29,12 @@ export type BattleStateName =
 	| "PerformAbilityState"
 	| "SelectUnitState"
 
-// A type, not an interface: `fsm` needs handler maps to be assignable to an index signature.
-export type BattleActions = {
+/**
+ * Unity's `BattleState` virtuals. The machine's action types come from the states that handle
+ * them; this only keeps every state's handlers consistent (and their returns literal, which the
+ * machine checks against its states).
+ */
+export interface BattleActions {
 	/** `BattleController.Start`: leave the initial `None` state. */
 	start(): BattleStateName | void
 	/** Unity's `OnMove`: a direction from the `InputController`. */
@@ -44,20 +48,12 @@ export type BattleActions = {
 	done(): BattleStateName | void
 }
 
-/** What a battle state module's factory returns. Unhandled actions fall back to no-ops. */
+/** What a battle state module's factory returns. Unhandled actions are no-ops. */
 export type BattleStateHandlers = Partial<BattleActions> & {
 	/** Unity's `Enter`. */
 	_enter?(event: TransitionEvent): void
 	/** Unity's `Exit`. */
 	_exit?(event: TransitionEvent): void
-}
-
-/** Unity's empty `BattleState` virtuals: the machine's `*` handlers. */
-export const defaultBattleActions: BattleActions = {
-	start() {},
-	move() {},
-	fire() {},
-	done() {}
 }
 
 /** Moves the selection (`pos` and the tile selection indicator) to `p`, if it is on the board. */

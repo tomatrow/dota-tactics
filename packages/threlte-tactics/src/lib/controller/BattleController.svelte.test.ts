@@ -18,6 +18,7 @@ import { KnockOutStatusEffect } from "#lib/view-model-component/status/effects/K
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { BattleController, type BattleOptions } from "./BattleController.svelte.ts"
 import { TurnOrderController } from "./TurnOrderController.ts"
+import type { BattleStateName } from "./battle-states/BattleState.ts"
 import { DefeatTargetVictoryCondition } from "./victory-conditions/DefeatTargetVictoryCondition.ts"
 
 /** A plus-shaped board around (1, 1), at height 2 (y 0.5). */
@@ -77,23 +78,9 @@ const menu = (battle: BattleController) => {
 describe("BattleController", () => {
 	test("has a typed state machine", () => {
 		const battle = new BattleController(plus)
-		expectTypeOf(battle.machine.current).toEqualTypeOf<
-			| "None"
-			| "AbilityTargetState"
-			| "ActionSelectionState"
-			| "CategorySelectionState"
-			| "CommandSelectionState"
-			| "ConfirmAbilityTargetState"
-			| "CutSceneState"
-			| "EndBattleState"
-			| "EndFacingState"
-			| "ExploreState"
-			| "InitBattleState"
-			| "MoveSequenceState"
-			| "MoveTargetState"
-			| "PerformAbilityState"
-			| "SelectUnitState"
-		>()
+		// The states' handlers return `BattleStateName`s; the machine checks those against its own.
+		expectTypeOf(battle.machine.current).toEqualTypeOf<"None" | BattleStateName>()
+		expectTypeOf(battle.machine.start).parameters.toEqualTypeOf<[]>()
 		expectTypeOf(battle.machine.move).parameters.toEqualTypeOf<[Point]>()
 		// @ts-expect-error Not an action.
 		expect(() => battle.machine.jump()).not.toThrow()
