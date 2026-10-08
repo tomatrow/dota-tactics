@@ -109,8 +109,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   with `Resources.load<T>("Levels/Level_0")` (`#lib/common/unity/Resources.ts`).
   `scripts/convert-unity.ts` (`pnpm convert`) turns Unity YAML/CSV into committed `.ts` modules
   (`satisfies` our types) in the folders it owns (`generatedFolders`); never edit those by hand.
-  A test fails when they are stale. The 12 abilities and 3 attack patterns are hand-written TS
-  in the same tree. `scripts/` runs on Node's native TypeScript: erasable syntax, `.ts` imports.
+  A test fails when they are stale. Prefabs that are data (abilities) are generated too, each
+  component as `{ type: "<C# class>", ...inspectorFields }`. `scripts/` runs on Node's native TypeScript: erasable syntax, `.ts` imports.
 - **Assets**: imported from `src/lib/assets/` (hashed, type-checked).
 - **Rendering**: Unity's Gamma color space is reproduced with color management off and linear
   output (see `Battle.svelte`), so material/light colors are the raw Unity values. three lights
@@ -146,6 +146,9 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - Animated rules (tweens, `nextFrame`, `waitForSeconds`) are tested on fake clocks:
   `useFakeTime()` + `await advance(seconds)` (`#lib/testing/time.ts`). Read its caveat about
   mixing real and fake time in one file.
+- Battles in tests: `new BattleController(level, { seed, spawnTestUnits: spawn(...) })`
+  (`#lib/testing/spawn.ts`) puts particular units in particular places instead of
+  `InitBattleState`'s random ones.
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#. Components get light smoke tests.
 - Playwright e2e is added once a battle is playable.

@@ -49,6 +49,17 @@ function createStateMachine(owner: BattleController) {
 	})
 }
 
+export interface BattleOptions {
+	/** For the battle's `random` (default: a random one). */
+	seed?: number
+	/**
+	 * Spawns the battle's units instead of `InitBattleState` (whose `SpawnTestUnits`, three heroes
+	 * and three enemies on random tiles, is temporary code in Unity too). For tests that need
+	 * particular units in particular places.
+	 */
+	spawnTestUnits?: ((battle: BattleController) => void) | null
+}
+
 /**
  * Port of `Controller/BattleController.cs`: the battle's state machine (Unity's `StateMachine`
  * base class is `runic-svelte-fsm`) and everything its states share.
@@ -73,12 +84,18 @@ export class BattleController {
 	round: Iterator<Unit> | null = null
 	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
 	actionSelectionCategory = 0
+
+	/** Replaces `InitBattleState`'s own (`BattleOptions.spawnTestUnits`). */
+	readonly spawnTestUnits: ((battle: BattleController) => void) | null
 	readonly machine: ReturnType<typeof createStateMachine>
 
-	/** `seed`: for the battle's `random` (default: a random one). */
-	constructor(levelData: LevelData, { seed = Random.randomSeed() }: { seed?: number } = {}) {
+	constructor(
+		levelData: LevelData,
+		{ seed = Random.randomSeed(), spawnTestUnits = null }: BattleOptions = {}
+	) {
 		this.levelData = levelData
 		this.random = new Random(seed)
+		this.spawnTestUnits = spawnTestUnits
 		this.statPanelController = new StatPanelController(this.random)
 		this.machine = createStateMachine(this)
 	}

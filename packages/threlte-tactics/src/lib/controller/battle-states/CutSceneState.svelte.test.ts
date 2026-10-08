@@ -24,9 +24,9 @@ describe("CutSceneState", () => {
 		}
 		expect(battle.machine.current).toBe("CutSceneState")
 		await advance(0.6)
-		// `SelectUnitState` gave the first unit its turn.
+		// `SelectUnitState` gave a unit its turn.
 		expect(battle.machine.current).toBe("CommandSelectionState")
-		expect(battle.turn.actor).toBe(battle.units[0])
+		expect(battle.units).toContain(battle.turn.actor)
 		expect(conversation.canvasActive).toBe(false)
 	})
 })

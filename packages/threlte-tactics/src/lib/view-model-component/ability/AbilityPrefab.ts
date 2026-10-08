@@ -10,10 +10,12 @@ import { UnitAbilityArea } from "./area-of-effect/UnitAbilityArea.ts"
 import { AbsorbDamageAbilityEffectTarget } from "./effect-target/AbsorbDamageAbilityEffectTarget.ts"
 import type { AbilityEffectTarget } from "./effect-target/AbilityEffectTarget.ts"
 import { DefaultAbilityEffectTarget } from "./effect-target/DefaultAbilityEffectTarget.ts"
+import { EnemyAbilityEffectTarget } from "./effect-target/EnemyAbilityEffectTarget.ts"
 import { KOdAbilityEffectTarget } from "./effect-target/KOdAbilityEffectTarget.ts"
 import { UndeadAbilityEffectTarget } from "./effect-target/UndeadAbilityEffectTarget.ts"
 import type { BaseAbilityEffect } from "./effects/BaseAbilityEffect.ts"
 import { DamageAbilityEffect } from "./effects/DamageAbilityEffect.ts"
+import { EsunaAbilityEffect } from "./effects/EsunaAbilityEffect.ts"
 import { HealAbilityEffect } from "./effects/HealAbilityEffect.ts"
 import { InflictAbilityEffect } from "./effects/InflictAbilityEffect.ts"
 import { ReviveAbilityEffect } from "./effects/ReviveAbilityEffect.ts"
@@ -42,10 +44,12 @@ export interface AbilityEffectPrefab {
 	readonly name: string
 	readonly hitRate: Component<"ATypeHitRate" | "STypeHitRate" | "FullTypeHitRate">
 	readonly target:
-		| Component<"DefaultAbilityEffectTarget" | "KOdAbilityEffectTarget">
+		| Component<
+				"DefaultAbilityEffectTarget" | "EnemyAbilityEffectTarget" | "KOdAbilityEffectTarget"
+		  >
 		| Component<"UndeadAbilityEffectTarget", { toggle: boolean }>
 	readonly effect:
-		| Component<"DamageAbilityEffect" | "HealAbilityEffect">
+		| Component<"DamageAbilityEffect" | "EsunaAbilityEffect" | "HealAbilityEffect">
 		| Component<"InflictAbilityEffect", { statusName: string; duration: number }>
 		| Component<"ReviveAbilityEffect", { percent: number }>
 		| Component<"AbsorbDamageAbilityEffectTarget", { trackedSiblingIndex: number }>
@@ -147,7 +151,7 @@ function createChild(
 	return {
 		name: child.name,
 		hitRate: createHitRate(child.hitRate, unit, context),
-		target: createTarget(child.target),
+		target: createTarget(child.target, unit),
 		effect: createEffect(child.effect, unit, context)
 	}
 }
@@ -161,10 +165,12 @@ function createHitRate(
 	return new types[hitRate.type](unit, context)
 }
 
-function createTarget(target: AbilityEffectPrefab["target"]): AbilityEffectTarget {
+function createTarget(target: AbilityEffectPrefab["target"], unit: Unit): AbilityEffectTarget {
 	switch (target.type) {
 		case "DefaultAbilityEffectTarget":
 			return new DefaultAbilityEffectTarget()
+		case "EnemyAbilityEffectTarget":
+			return new EnemyAbilityEffectTarget(unit)
 		case "KOdAbilityEffectTarget":
 			return new KOdAbilityEffectTarget()
 		case "UndeadAbilityEffectTarget":
@@ -180,6 +186,8 @@ function createEffect(
 	switch (effect.type) {
 		case "DamageAbilityEffect":
 			return new DamageAbilityEffect(unit, context)
+		case "EsunaAbilityEffect":
+			return new EsunaAbilityEffect(unit, context)
 		case "HealAbilityEffect":
 			return new HealAbilityEffect(unit, context)
 		case "InflictAbilityEffect":

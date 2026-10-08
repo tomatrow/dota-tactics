@@ -1,28 +1,24 @@
 import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest"
-import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
-import { Ability } from "#lib/view-model-component/ability/Ability.ts"
-import { FullAbilityArea } from "#lib/view-model-component/ability/area-of-effect/FullAbilityArea.ts"
-import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
-import { DamageAbilityEffect } from "#lib/view-model-component/ability/effects/DamageAbilityEffect.ts"
-import { ATypeHitRate } from "#lib/view-model-component/ability/hit-rate/ATypeHitRate.ts"
-import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
-import { Rank } from "#lib/view-model-component/actor/Rank.ts"
-import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
-import { Health } from "#lib/view-model-component/actor/Health.ts"
-import { Mana } from "#lib/view-model-component/actor/Mana.ts"
-import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
-import { advance, useFakeTime } from "#lib/testing/time.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
 import { Directions } from "#lib/enums/Directions.ts"
+import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import Attack from "#lib/resources/Abilities/Common/Attack.ts"
+import Level_0 from "#lib/resources/Levels/Level_0.ts"
+import { spawn } from "#lib/testing/spawn.ts"
+import { advance, useFakeTime } from "#lib/testing/time.ts"
+import {
+	instantiateAbility,
+	type AbilityPrefab
+} from "#lib/view-model-component/ability/AbilityPrefab.ts"
+import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
+import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { BattleController } from "./BattleController.svelte.ts"
 import { TurnOrderController } from "./TurnOrderController.ts"
 
-/**
- * A plus-shaped board around (1, 1), at height 2 (y 0.5). The test heroes start on the first three
- * tiles: a Rogue (1, 1), a Warrior (0, 1) and a Wizard (2, 1).
- */
+/** A plus-shaped board around (1, 1), at height 2 (y 0.5). */
 const plus: LevelData = {
 	tiles: [
 		[1, 2, 1],
@@ -35,9 +31,19 @@ const plus: LevelData = {
 
 beforeEach(useFakeTime)
 
+/**
+ * The heroes, at level 10: Kamau (a rogue) at (1, 1), Alaois (a warrior) at (0, 1) and Hania (a
+ * wizard) at (2, 1). Kamau is the fastest, so goes first.
+ */
+const heroes = spawn(
+	{ recipe: "Kamau", at: Point.of(1, 1) },
+	{ recipe: "Alaois", at: Point.of(0, 1) },
+	{ recipe: "Hania", at: Point.of(2, 1) }
+)
+
 /** A battle past its intro conversation, at the first unit's command menu. */
-async function started(levelData = plus) {
-	const battle = new BattleController(levelData, { seed: 1 })
+async function started(levelData = plus, spawnTestUnits = heroes) {
+	const battle = new BattleController(levelData, { seed: 1, spawnTestUnits })
 	battle.start()
 	await advance(0.1)
 	expect(battle.machine.current).toBe("CutSceneState")
@@ -96,78 +102,60 @@ describe("BattleController", () => {
 })
 
 describe("InitBattleState", () => {
-	test("loads the level, selects its first tile, then hands over a frame later", async () => {
-		const levelData = Resources.load<LevelData>("Levels/Level_0")!
-		const battle = new BattleController(levelData)
+	test("loads the level and spawns the units, selects the first one, then hands over a frame later", async () => {
+		const battle = new BattleController(Level_0)
 		battle.start()
 
 		expect(battle.machine.current).toBe("InitBattleState")
 		expect(battle.board.tiles.size).toBe(140)
-		expect(battle.pos).toBe(Point.of(1, 5))
-		expect(battle.tileSelectionIndicator.localPosition).toEqual([1, 0.75, 5])
+		const { tile } = battle.units[0]!
+		expect(battle.pos).toBe(tile!.pos)
+		expect(battle.tileSelectionIndicator.localPosition).toEqual(tile!.center)
 
 		await advance(0.1)
 		expect(battle.machine.current).toBe("CutSceneState")
 	})
 
-	test("spawns a level 10 walking Rogue, Warrior and Wizard on the first three tiles", () => {
-		const battle = new BattleController(plus)
+	test("spawns three heroes and three enemies at random levels, on random tiles, facing random ways", () => {
+		const battle = new BattleController(Level_0)
 		battle.start()
 
-		expect(
-			battle.units.map((u) => [u.name, u.tile?.pos, u.job?.name, u.movement?.constructor.name])
-		).toEqual([
-			["Rogue", Point.of(1, 1), "Rogue", "WalkMovement"],
-			["Warrior", Point.of(0, 1), "Warrior", "WalkMovement"],
-			["Wizard", Point.of(2, 1), "Wizard", "WalkMovement"]
+		const { Hero, Enemy } = Alliances
+		expect(battle.units.map((u) => [u.name, u.model, u.alliance?.type])).toEqual([
+			["Alaois", "Hero", Hero],
+			["Hania", "Hero", Hero],
+			["Kamau", "Hero", Hero],
+			["Enemy Rogue", "Monster", Enemy],
+			["Enemy Warrior", "Monster", Enemy],
+			["Enemy Wizard", "Monster", Enemy]
 		])
-		expect(battle.units[1]!.transform.localPosition).toEqual([0, 0.5, 1])
-
-		const { LVL, EXP, HP, MHP, MOV, JMP } = StatTypes
-		expect(battle.units.map((u) => [MOV, JMP, LVL, EXP].map((t) => u.stats.get(t)))).toEqual([
-			[5, 3, 10, Rank.experienceForLevel(10)],
-			[4, 1, 10, Rank.experienceForLevel(10)],
-			[3, 2, 10, Rank.experienceForLevel(10)]
-		])
-		// Nine level ups: the Warrior's MHP grows 8 or 9 points each, and HP is refilled.
-		const warrior = battle.units[1]!.stats
-		expect(warrior.get(MHP)).toBeGreaterThanOrEqual(43 + 9 * 8)
-		expect(warrior.get(MHP)).toBeLessThanOrEqual(43 + 9 * 9)
-		expect(warrior.get(HP)).toBe(warrior.get(MHP))
-		expect(warrior.get(StatTypes.MP)).toBe(warrior.get(StatTypes.MMP))
-
-		// The blog's Hero prefab: an Attack, and an ability catalog.
-		const [rogue] = battle.units as [Unit]
-		expect([rogue.health, rogue.mana, rogue.undead]).toEqual([
-			expect.any(Health),
-			expect.any(Mana),
-			null
-		])
-		expect(rogue.attack?.name).toBe("Attack")
-		expect(
-			rogue.abilityCatalog?.categories.map((c) => [c.name, c.abilities.map((a) => a.name)])
-		).toEqual([
-			["White Magic", ["Cure", "Raise", "Holy"]],
-			["Sagacity Skill", ["Water", "Blind", "Drain"]]
-		])
+		for (const unit of battle.units) {
+			expect([9, 10, 11]).toContain(unit.stats.get(StatTypes.LVL))
+			expect(unit.tile?.content).toBe(unit)
+			expect(unit.transform.localPosition).toEqual(unit.tile!.center)
+			expect(unit.transform.localEulerAngles).toEqual(toEuler(unit.dir))
+		}
+		expect(new Set(battle.units.map((u) => u.tile)).size).toBe(6)
 	})
 
-	test("a seed replays the stats' growth", () => {
-		const stats = (seed: number) => {
-			const battle = new BattleController(plus, { seed })
+	test("a seed replays the spawn", () => {
+		const spawned = (seed: number) => {
+			const battle = new BattleController(Level_0, { seed })
 			battle.start()
-			return battle.units.map((u) =>
-				Object.values(StatTypes)
+			return battle.units.map((u) => [
+				u.tile!.pos,
+				u.dir,
+				...Object.values(StatTypes)
 					.slice(0, -1)
 					.map((t) => u.stats.get(t as StatTypes))
-			)
+			])
 		}
-		expect(stats(5)).toEqual(stats(5))
-		expect(stats(5)).not.toEqual(stats(6))
+		expect(spawned(5)).toEqual(spawned(5))
+		expect(spawned(5)).not.toEqual(spawned(6))
 	})
 
 	test("ignores input while it initializes", () => {
-		const battle = new BattleController(plus)
+		const battle = new BattleController(plus, { spawnTestUnits: heroes })
 		battle.start()
 		battle.move(Point.of(0, 1))
 		expect(battle.pos).toBe(Point.of(1, 1))
@@ -179,7 +167,7 @@ describe("SelectUnitState", () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
 		const ctr = (u: Unit) => u.stats.get(StatTypes.CTR)
-		// The Rogue is the fastest: first over 1000.
+		// Kamau is the fastest: first over 1000.
 		expect(battle.turn.actor).toBe(rogue)
 		expect(ctr(rogue)).toBeGreaterThanOrEqual(1000)
 		expect(battle.units.map(ctr).filter((c) => c >= 1000)).toEqual([ctr(rogue)])
@@ -353,7 +341,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		battle.fire(0)
 		expect(menu(battle)).toEqual({
 			title: "White Magic",
-			entries: ["Cure: 6", "Raise: 22", "(Holy: 32)"],
+			entries: ["Cure: 6", "Raise: 22", "(Holy: 32)", "Esuna: 18"],
 			selected: "Cure: 6"
 		})
 
@@ -361,7 +349,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		rogue.stats.set(StatTypes.MP, 5)
 		battle.move(Point.of(0, -1))
 		battle.fire(0)
-		expect(menu(battle).entries).toEqual(["(Cure: 6)", "(Raise: 22)", "(Holy: 32)"])
+		expect(menu(battle).entries).toEqual(["(Cure: 6)", "(Raise: 22)", "(Holy: 32)", "(Esuna: 18)"])
 
 		// PORT-FIX: Unity would go on to aim Cure.
 		battle.fire(0)
@@ -385,7 +373,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		const cure = rogue.abilityCatalog!.getAbility(0, 0)!
 		expect(battle.turn.ability).toBe(cure)
 
-		// Cure the Rogue and the units next to it: they heal by Cure's power, up to their max HP.
+		// Cure Kamau and the units next to it: they heal by Cure's power, up to their max HP.
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
 		const healing = cure.effects[0]!.effect.predict(rogue.tile!)
@@ -418,7 +406,7 @@ describe("stat panel", () => {
 		battle.fire(1)
 		battle.fire(0)
 		expect(battle.machine.current).toBe("CommandSelectionState")
-		expect(shown(battle)).toBe("Rogue")
+		expect(shown(battle)).toBe("Kamau")
 		expect(battle.statPanelController.primaryPanel.hpLabel).toMatch(/^HP 12 \//)
 
 		battle.fire(0)
@@ -432,24 +420,36 @@ describe("stat panel", () => {
 		const battle = await started()
 		battle.fire(1)
 		expect(battle.machine.current).toBe("ExploreState")
-		expect(shown(battle)).toBe("Rogue")
+		expect(shown(battle)).toBe("Kamau")
 		battle.move(Point.of(0, 1))
 		expect(shown(battle)).toBeNull()
 		battle.move(Point.of(1, -1))
-		expect(shown(battle)).toBe("Wizard")
+		expect(shown(battle)).toBe("Hania")
 		expect(battle.statPanelController.primaryPanel.lvLabel).toBe("LV. 10")
 
 		battle.fire(0)
 		battle.fire(0)
 		expect(battle.machine.current).toBe("MoveTargetState")
-		expect(shown(battle)).toBe("Rogue")
+		expect(shown(battle)).toBe("Kamau")
 		battle.move(Point.of(0, 1))
 		expect(shown(battle)).toBeNull()
 	})
 })
 
-/** From the commands to the attack's target selection. */
-function attack(battle: BattleController) {
+/**
+ * The blog's demo attack, which its heroes had until the unit factory: 3 tiles' range, and hits
+ * 1 tile around where it's aimed (the real one only reaches the tile in front).
+ */
+const demoAttack: AbilityPrefab = {
+	...Attack,
+	range: { type: "ConstantAbilityRange", horizontal: 3, vertical: 2_147_483_647 },
+	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 1 }
+}
+
+/** From the commands to aiming the actor's attack, which becomes `prefab` (by default the demo's). */
+function attack(battle: BattleController, prefab: AbilityPrefab = demoAttack) {
+	const actor = battle.turn.actor!
+	actor.attack = instantiateAbility(prefab, actor, battle)
 	battle.move(Point.of(0, -1))
 	battle.fire(0)
 	battle.fire(0)
@@ -457,8 +457,8 @@ function attack(battle: BattleController) {
 }
 
 /**
- * A row of tiles from (0, 1) to (6, 1). The heroes start at (1, 1), (0, 1) and (2, 1): the
- * Rogue's attack reaches (4, 1), and its area there holds no one.
+ * A row of tiles from (0, 1) to (6, 1). The heroes start at (1, 1), (0, 1) and (2, 1): Kamau's
+ * demo attack reaches (4, 1), and its area there holds no one.
  */
 const row: LevelData = {
 	tiles: [1, 0, 2, 3, 4, 5, 6].map((x) => [x, 2, 1])
@@ -469,7 +469,7 @@ describe("AbilityTargetState", () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
 		attack(battle)
-		// The test heroes' attack reaches 3 tiles.
+		// The demo attack reaches 3 tiles.
 		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,0)", "(1,1)", "(1,2)", "(2,1)"])
 		const { primaryPanel, secondaryPanel } = battle.statPanelController
 		expect(shownHp(primaryPanel)).toBe(hp(rogue))
@@ -507,27 +507,10 @@ describe("AbilityTargetState", () => {
 		expect(battle.turn.hasUnitActed).toBe(false)
 	})
 
-	test("a direction oriented range turns the actor instead of moving the cursor", async () => {
+	test("a direction oriented range (the real Attack's) turns the actor instead of moving the cursor", async () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
-		const range = new LineAbilityRange(rogue, { horizontal: 9 })
-		rogue.attack = new Ability(
-			{
-				name: "Line",
-				range,
-				area: new FullAbilityArea(range),
-				effects: [
-					{
-						name: "Damage",
-						target: new DefaultAbilityEffectTarget(),
-						hitRate: new ATypeHitRate(rogue, battle),
-						effect: new DamageAbilityEffect(rogue, battle)
-					}
-				]
-			},
-			battle
-		)
-		attack(battle)
+		attack(battle, Attack)
 		// Facing north. The secondary panel shows whoever is under the cursor: the actor.
 		expect(highlighted(battle)).toEqual(["(1,2)"])
 		expect(shownHp(battle.statPanelController.secondaryPanel)).toBe(hp(rogue))
@@ -558,7 +541,7 @@ describe("ConfirmAbilityTargetState", () => {
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
 
-		// Aimed at the Rogue's own tile; the area reaches 1 tile further.
+		// Aimed at Kamau's own tile; the area reaches 1 tile further.
 		expect(highlighted(battle).sort()).toEqual(["(0,1)", "(1,0)", "(1,1)", "(1,2)", "(2,1)"])
 		expect(battle.turn.targets).toEqual([rogue.tile, wizard.tile, warrior.tile])
 		const { primaryPanel, secondaryPanel } = battle.statPanelController
@@ -582,8 +565,8 @@ describe("ConfirmAbilityTargetState", () => {
 		const battle = await started()
 		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
 		const damage = (unit: Unit) => -rogue.attack!.effects[0]!.effect.predict(unit.tile!)
-		// Everyone has 50 evade. The Rogue faces north: an attack on itself counts as from the side.
-		// The Wizard, east of it, faces it; the Warrior, west of it, turns its back.
+		// Everyone has 50 evade. Kamau faces north: an attack on itself counts as from the side.
+		// Hania, east of it, faces it; Alaois, west of it, turns its back.
 		wizard.dir = Directions.West
 		warrior.dir = Directions.West
 		const indicator = battle.hitSuccessIndicator
@@ -685,6 +668,7 @@ describe("PerformAbilityState and EndFacingState", () => {
 		await advance(1)
 		expect(battle.pos).toBe(Point.of(1, 2))
 		// Action, Attack; aimed at itself.
+		rogue.attack = instantiateAbility(demoAttack, rogue, battle)
 		battle.fire(0)
 		battle.fire(0)
 		battle.fire(0)

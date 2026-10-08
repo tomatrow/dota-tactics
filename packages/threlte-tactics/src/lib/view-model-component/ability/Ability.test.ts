@@ -4,12 +4,25 @@ import { Random } from "#lib/common/unity/Random.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { board } from "#lib/testing/board.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
+import { Alliance } from "#lib/view-model-component/actor/Alliance.ts"
 import { Health } from "#lib/view-model-component/actor/Health.ts"
+import { DurationStatusCondition } from "#lib/view-model-component/status/conditions/DurationStatusCondition.ts"
+import { StatusCondition } from "#lib/view-model-component/status/conditions/StatusCondition.ts"
+import { BlindStatusEffect } from "#lib/view-model-component/status/effects/BlindStatusEffect.ts"
+import { HasteStatusEffect } from "#lib/view-model-component/status/effects/HasteStatusEffect.ts"
+import { PoisonStatusEffect } from "#lib/view-model-component/status/effects/PoisonStatusEffect.ts"
+import type { StatusEffectType } from "#lib/view-model-component/status/effects/StatusEffect.ts"
 import { Undead } from "#lib/view-model-component/actor/Undead.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
+import drain from "#lib/resources/Abilities/Sagacity Skill/Drain.ts"
+import prominence from "#lib/resources/Abilities/Phantasm Skill/Prominence.ts"
+import cure from "#lib/resources/Abilities/White Magic/Cure.ts"
+import esuna from "#lib/resources/Abilities/White Magic/Esuna.ts"
+import raise from "#lib/resources/Abilities/White Magic/Raise.ts"
 import { Ability } from "./Ability.ts"
 import { AbilityCatalog } from "./AbilityCatalog.ts"
-import { instantiateAbility, type AbilityPrefab } from "./AbilityPrefab.ts"
+import { instantiateAbility } from "./AbilityPrefab.ts"
 import { AbsorbDamageAbilityEffectTarget } from "./effect-target/AbsorbDamageAbilityEffectTarget.ts"
 import { UndeadAbilityEffectTarget } from "./effect-target/UndeadAbilityEffectTarget.ts"
 import { BaseAbilityEffect } from "./effects/BaseAbilityEffect.ts"
@@ -21,73 +34,9 @@ import { ConstantAbilityRange } from "./range/ConstantAbilityRange.ts"
 import { SpecifyAbilityArea } from "./area-of-effect/SpecifyAbilityArea.ts"
 
 const { HP, MHP, MP, MAT, MDF, EVD } = StatTypes
-const vertical = 2_147_483_647
-
-/** The final game's Cure, Raise and Drain prefabs. */
-const cure: AbilityPrefab = {
-	name: "Cure",
-	power: { type: "MagicalAbilityPower", level: 40 },
-	range: { type: "ConstantAbilityRange", horizontal: 4, vertical },
-	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 1 },
-	magicCost: 6,
-	children: [
-		{
-			name: "Heal",
-			hitRate: { type: "FullTypeHitRate" },
-			target: { type: "UndeadAbilityEffectTarget", toggle: false },
-			effect: { type: "HealAbilityEffect" }
-		},
-		{
-			name: "Damage",
-			hitRate: { type: "ATypeHitRate" },
-			target: { type: "UndeadAbilityEffectTarget", toggle: true },
-			effect: { type: "DamageAbilityEffect" }
-		}
-	]
-}
-
-const raise: AbilityPrefab = {
-	...cure,
-	name: "Raise",
-	power: { type: "PhysicalAbilityPower", level: 45 },
-	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 2 },
-	magicCost: 22,
-	children: [
-		...cure.children,
-		{
-			name: "Revive",
-			hitRate: { type: "FullTypeHitRate" },
-			target: { type: "KOdAbilityEffectTarget" },
-			effect: { type: "ReviveAbilityEffect", percent: 0.25 }
-		}
-	]
-}
-
-const drain: AbilityPrefab = {
-	name: "Drain",
-	power: { type: "MagicalAbilityPower", level: 30 },
-	range: { type: "ConstantAbilityRange", horizontal: 4, vertical },
-	area: { type: "UnitAbilityArea" },
-	magicCost: 12,
-	children: [
-		{
-			name: "Damage",
-			hitRate: { type: "ATypeHitRate" },
-			target: { type: "DefaultAbilityEffectTarget" },
-			effect: { type: "DamageAbilityEffect" }
-		},
-		{
-			name: "Absorb",
-			hitRate: { type: "FullTypeHitRate" },
-			target: { type: "DefaultAbilityEffectTarget" },
-			effect: { type: "AbsorbDamageAbilityEffectTarget", trackedSiblingIndex: 0 }
-		}
-	]
-}
-
 /**
- * A caster at (0, 0) with 100 magic attack and 20 MP, and units at (1, 0) and (2, 0); everyone
- * has 100 max HP (and `Health`), no evade, and no variance in their abilities' effects.
+ * A hero caster at (0, 0) with 100 magic attack and 20 MP, a hero ally at (1, 0) and an enemy at
+ * (2, 0); everyone has 100 max HP (and `Health`), and no variance in their abilities' effects.
  */
 function setup() {
 	const notifications = new NotificationCenter()
@@ -95,8 +44,9 @@ function setup() {
 	vi.spyOn(random, "rangeFloat").mockReturnValue(1)
 	const context = { notifications, random }
 	const b = board("000")
-	const unit = (name: string, x: number, hp: number) => {
+	const unit = (name: string, x: number, hp: number, alliance: Alliances = Alliances.Hero) => {
 		const u = new Unit({ name, model: "Hero", notifications })
+		u.alliance = new Alliance(alliance)
 		u.place(b.getTile(Point.of(x, 0)))
 		u.stats.set(MHP, 100)
 		u.stats.set(HP, hp)
@@ -106,7 +56,7 @@ function setup() {
 	const caster = unit("Caster", 0, 50)
 	caster.stats.set(MAT, 100)
 	caster.stats.set(MP, 20)
-	const [ally, foe] = [unit("Ally", 1, 50), unit("Foe", 2, 100)]
+	const [ally, foe] = [unit("Ally", 1, 50), unit("Foe", 2, 100, Alliances.Enemy)]
 	const tiles = [caster, ally, foe].map((u) => u.tile!)
 	return { notifications, random, context, caster, ally, foe, tiles }
 }
@@ -263,6 +213,46 @@ describe("HealAbilityEffect", () => {
 		heal.apply(ally.tile!)
 		// 15 * 0.9, floored.
 		expect(ally.stats.get(HP)).toBe(63)
+	})
+})
+
+describe("Esuna", () => {
+	test("cures poison and blindness that wear off", () => {
+		const { context, caster, ally } = setup()
+		const effects: StatusEffectType[] = [PoisonStatusEffect, BlindStatusEffect, HasteStatusEffect]
+		for (const effect of effects) ally.status.add(effect, DurationStatusCondition)
+		const ability = instantiateAbility(esuna, caster, context)
+		expect(ability.effects[0]!.effect.predict(ally.tile!)).toBe(0)
+
+		ability.perform([ally.tile!])
+		expect(caster.stats.get(MP)).toBe(2)
+		expect(effects.map((e) => ally.status.getEffect(e) !== null)).toEqual([false, false, true])
+	})
+
+	test("not a poison that lasts until something removes it", () => {
+		const { context, caster, ally } = setup()
+		ally.status.add(PoisonStatusEffect, DurationStatusCondition)
+		ally.status.add(PoisonStatusEffect, StatusCondition)
+		instantiateAbility(esuna, caster, context).perform([ally.tile!])
+		expect(ally.status.getConditions(StatusCondition)).toHaveLength(1)
+		expect(ally.status.getEffect(PoisonStatusEffect)).not.toBeNull()
+	})
+})
+
+describe("Prominence (EnemyAbilityEffectTarget)", () => {
+	test("hits only the caster's foes", () => {
+		const { context, caster, tiles } = setup()
+		caster.stats.set(MP, 32)
+		const ability = instantiateAbility(prominence, caster, context)
+		expect(tiles.map((t) => ability.isTarget(t))).toEqual([false, false, true])
+		expect(ability.effects[0]!.target.isTarget(null)).toBe(false)
+	})
+
+	test("a confused caster hits its allies instead", () => {
+		const { context, caster, tiles } = setup()
+		caster.alliance!.confused = true
+		const ability = instantiateAbility(prominence, caster, context)
+		expect(tiles.map((t) => ability.isTarget(t))).toEqual([true, true, false])
 	})
 })
 

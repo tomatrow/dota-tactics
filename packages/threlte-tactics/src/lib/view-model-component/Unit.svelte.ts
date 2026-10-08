@@ -5,6 +5,7 @@ import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Ability } from "./ability/Ability.ts"
 import type { AbilityCatalog } from "./ability/AbilityCatalog.ts"
+import type { Alliance } from "./actor/Alliance.ts"
 import { Equipment } from "./actor/Equipment.ts"
 import type { Health } from "./actor/Health.ts"
 import type { Job } from "./actor/Job.ts"
@@ -36,7 +37,7 @@ export class Unit {
 	readonly equipment: Equipment
 	job: Job | null = null
 	movement: Movement | null = null
-	// Added once the job and rank are set up, as Unity's spawners do.
+	// Added once the job and rank are set up, as `UnitFactory` does.
 	health: Health | null = null
 	mana: Mana | null = null
 	undead: Undead | null = null
@@ -44,6 +45,7 @@ export class Unit {
 	attack: Ability | null = null
 	/** Unity's `GetComponentInChildren<AbilityCatalog>()`. */
 	abilityCatalog: AbilityCatalog | null = null
+	alliance: Alliance | null = null
 
 	#tile: Tile | null = null
 

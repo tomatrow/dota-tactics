@@ -10,14 +10,29 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { format, resolveConfig } from "prettier"
 import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-import { readGuid, readScriptableObject, type UnityRef } from "./unity-yaml.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
+import { Locomotions } from "#lib/enums/Locomotions.ts"
+import {
+	readGuid,
+	readScriptableObject,
+	readUnityYaml,
+	type UnityObject,
+	type UnityRef
+} from "./unity-yaml.ts"
 
 const root = path.resolve(import.meta.dirname, "..")
 export const unityAssets = path.resolve(root, "../tactics-rpg/Assets")
 export const resourcesDir = path.resolve(root, "src/lib/resources")
 
 /** Folders under `src/lib/resources/` that are generated. */
-export const generatedFolders = ["Conversations", "Jobs", "Levels"] as const
+export const generatedFolders = [
+	"Abilities",
+	"Ability Catalog Recipes",
+	"Conversations",
+	"Jobs",
+	"Levels",
+	"Unit Recipes"
+] as const
 
 /** Generated file contents, keyed by path relative to `src/lib/resources/`. */
 type Output = Map<string, string>
@@ -165,14 +180,208 @@ async function convertJobs(out: Output): Promise<void> {
 	}
 }
 
+// --- Abilities (`Resources/Abilities/<category>/<name>.prefab`) -------------------------------
+
+/** A MonoBehaviour script's class: its base class, and its public fields' C# types. */
+interface ScriptClass {
+	name: string
+	base: string
+	fields: Map<string, string>
+}
+
+/** The classes of `Scripts/**.cs`, by script GUID and by name. */
+async function scriptClasses() {
+	const byGuid = new Map<string, ScriptClass>()
+	const byName = new Map<string, ScriptClass>()
+	const folder = path.join(unityAssets, "Scripts")
+	for (const file of await readdir(folder, { recursive: true })) {
+		if (!file.endsWith(".cs")) continue
+		const source = await readFile(path.join(folder, file), "utf8")
+		const declaration = /class\s+(\w+)\s*:\s*(\w+)/.exec(source)
+		if (!declaration) continue
+		const fields = new Map(
+			[...source.matchAll(/public\s+(\w+)\s+(\w+)\s*(?:=[^;]*)?;/g)].map((m) => [m[2]!, m[1]!])
+		)
+		const cls = { name: declaration[1]!, base: declaration[2]!, fields }
+		byGuid.set(await readGuid(path.join(folder, file)), cls)
+		byName.set(cls.name, cls)
+	}
+
+	const ancestry = (cls: ScriptClass): ScriptClass[] => {
+		const base = byName.get(cls.base)
+		return [cls, ...(base ? ancestry(base) : [])]
+	}
+	return { byGuid, ancestry }
+}
+
+type Scripts = Awaited<ReturnType<typeof scriptClasses>>
+
+/** What an ability prefab's component is to `AbilityPrefab`, by the class it derives from. */
+const abilityParts = {
+	BaseAbilityPower: "power",
+	AbilityRange: "range",
+	AbilityArea: "area",
+	AbilityMagicCost: "magicCost",
+	HitRate: "hitRate",
+	AbilityEffectTarget: "target",
+	BaseAbilityEffect: "effect"
+} as const
+
+type AbilityPart = (typeof abilityParts)[keyof typeof abilityParts]
+
+/** A prefab's MonoBehaviours as `AbilityPrefab` components (`{ type, ...inspectorFields }`). */
+function abilityComponents(scripts: Scripts, behaviours: UnityObject[]) {
+	const parts = new Map<AbilityPart, Record<string, unknown>>()
+	for (const behaviour of behaviours) {
+		const cls = scripts.byGuid.get((behaviour.fields.m_Script as UnityRef).guid ?? "")
+		if (!cls) throw new Error(`Unknown script in ${json(behaviour.fields)}`)
+		const ancestry = scripts.ancestry(cls)
+		if (cls.name === "Ability") continue
+		const part = ancestry
+			.map((c) => abilityParts[c.name as keyof typeof abilityParts])
+			.find(Boolean)
+		if (!part) throw new Error(`Not an ability component: ${cls.name}`)
+		if (parts.has(part)) throw new Error(`Two ${part} components (${cls.name})`)
+
+		const component: Record<string, unknown> = { type: cls.name }
+		for (const [field, value] of Object.entries(behaviour.fields)) {
+			if (field.startsWith("m_")) continue
+			const type = ancestry.map((c) => c.fields.get(field)).find(Boolean)
+			if (type === "bool") component[field] = value === 1
+			else if (type === "int" || type === "float") component[field] = Number(value)
+			else if (type === "string") component[field] = String(value ?? "")
+			else throw new Error(`Unknown field ${cls.name}.${field}`)
+		}
+		parts.set(part, component)
+	}
+	return parts
+}
+
+async function convertAbility(scripts: Scripts, file: string): Promise<unknown> {
+	const objects = await readUnityYaml(file)
+	const byId = new Map(objects.map((o) => [o.fileId, o]))
+	const ref = (r: unknown) => byId.get(String((r as UnityRef).fileID))!
+	const transforms = objects.filter((o) => o.type === "Transform")
+	const transformOf = (go: UnityObject) =>
+		transforms.find((t) => (t.fields.m_GameObject as UnityRef).fileID === Number(go.fileId))!
+	const behavioursOf = (go: UnityObject) =>
+		(go.fields.m_Component as Record<string, UnityRef>[])
+			.map((c) => ref(Object.values(c)[0]))
+			.filter((o) => o.type === "MonoBehaviour")
+	const childrenOf = (go: UnityObject) =>
+		(transformOf(go).fields.m_Children as UnityRef[]).map((t) => ref(ref(t).fields.m_GameObject))
+
+	const root = transforms.find((t) => (t.fields.m_Father as UnityRef).fileID === 0)!
+	const ability = ref(root.fields.m_GameObject)
+	const parts = abilityComponents(scripts, behavioursOf(ability))
+	const children = childrenOf(ability).map((child) => {
+		const childParts = abilityComponents(scripts, behavioursOf(child))
+		const [hitRate, target, effect] = (["hitRate", "target", "effect"] as const).map((part) => {
+			const component = childParts.get(part)
+			if (!component) throw new Error(`No ${part} on ${String(child.fields.m_Name)} in ${file}`)
+			return component
+		})
+		return { name: child.fields.m_Name, hitRate, target, effect }
+	})
+	const magicCost = parts.get("magicCost")?.amount
+	return {
+		name: ability.fields.m_Name,
+		power: parts.get("power"),
+		range: parts.get("range"),
+		area: parts.get("area"),
+		magicCost,
+		children
+	}
+}
+
+async function convertAbilities(out: Output): Promise<void> {
+	const scripts = await scriptClasses()
+	const folder = "Resources/Abilities"
+	const categories = await readdir(path.join(unityAssets, folder), { withFileTypes: true })
+	for (const category of categories.filter((entry) => entry.isDirectory())) {
+		const files = await readdir(path.join(unityAssets, folder, category.name))
+		for (const file of files.filter((name) => name.endsWith(".prefab")).sort()) {
+			const source = `${folder}/${category.name}/${file}`
+			const prefab = await convertAbility(scripts, path.join(unityAssets, source))
+			out.set(
+				`Abilities/${category.name}/${file.replace(/\.prefab$/, "")}.ts`,
+				module(
+					source,
+					[
+						`import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPrefab.ts"`
+					],
+					`export default ${json(prefab)} satisfies AbilityPrefab`
+				)
+			)
+		}
+	}
+}
+
+// --- Recipes (`Factory/UnitRecipe.cs`, `Factory/AbilityCatalogRecipe.cs`) -----------------------
+
+/** An enum value as `Enum.Name`, e.g. `Locomotions.Walk`. */
+function enumMember(enumName: string, values: Record<string, number>, value: unknown): string {
+	const name = Object.entries(values).find(([, v]) => v === value)?.[0]
+	if (name === undefined) throw new Error(`No ${enumName} ${String(value)}`)
+	return `${enumName}.${name}`
+}
+
+async function convertUnitRecipes(out: Output): Promise<void> {
+	const folder = "Resources/Unit Recipes"
+	for (const file of await assetsIn(folder)) {
+		const data = await readScriptableObject(path.join(unityAssets, folder, file))
+		const string = (field: string) => json(String(data[field] ?? ""))
+		const fields = [
+			`name: ${string("m_Name")}`,
+			...["model", "job", "attack", "abilityCatalog", "strategy"].map((f) => `${f}: ${string(f)}`),
+			`locomotion: ${enumMember("Locomotions", Locomotions, data.locomotion)}`,
+			`alliance: ${enumMember("Alliances", Alliances, data.alliance)}`
+		]
+		out.set(
+			`Unit Recipes/${basename(file)}.ts`,
+			module(
+				`${folder}/${file}`,
+				[
+					`import { Alliances } from "#lib/enums/Alliances.ts"`,
+					`import { Locomotions } from "#lib/enums/Locomotions.ts"`,
+					`import type { UnitRecipe } from "#lib/factory/UnitRecipe.ts"`
+				],
+				`export default { ${fields.join(", ")} } satisfies UnitRecipe`
+			)
+		)
+	}
+}
+
+async function convertAbilityCatalogRecipes(out: Output): Promise<void> {
+	const folder = "Resources/Ability Catalog Recipes"
+	for (const file of await assetsIn(folder)) {
+		const data = await readScriptableObject(path.join(unityAssets, folder, file))
+		const categories = (data.categories as { name: unknown; entries: unknown[] }[]).map((c) => ({
+			name: String(c.name),
+			entries: c.entries.map(String)
+		}))
+		out.set(
+			`Ability Catalog Recipes/${basename(file)}.ts`,
+			module(
+				`${folder}/${file}`,
+				[`import type { AbilityCatalogRecipe } from "#lib/factory/AbilityCatalogRecipe.ts"`],
+				`export default { categories: ${json(categories)} } satisfies AbilityCatalogRecipe`
+			)
+		)
+	}
+}
+
 // ---------------------------------------------------------------------------------------------
 
 /** Runs every converter and returns the formatted output. */
 export async function convert(): Promise<Output> {
 	const out: Output = new Map()
+	await convertAbilities(out)
+	await convertAbilityCatalogRecipes(out)
 	await convertConversations(out)
 	await convertJobs(out)
 	await convertLevels(out)
+	await convertUnitRecipes(out)
 
 	const formatted: Output = new Map()
 	for (const [file, source] of out) {
