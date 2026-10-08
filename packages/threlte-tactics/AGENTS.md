@@ -61,7 +61,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   whatever adds it. Unity's `Destroy` → `destroy(component)` (`#lib/common/unity/Object.ts`):
   like Unity's, it disables the component only once the code running now has finished.
 - **Prefabs** that game code instantiates are data plus a function or constructor that builds
-  the components (`JobPrefab` → `new Job`, `AbilityPrefab` → `instantiateAbility`). A component
+  the components (`JobPrefab` → `new Job`, `AbilityPrefab` → `instantiateAbility`,
+  `AttackPatternPrefab` → `instantiateAttackPattern`). A component
   gets what Unity's would find through `GetComponentInParent` in its constructor (e.g. its
   unit); one that needs its GameObject's parent or siblings is handed them by the parent's
   constructor (`attach`), which then enables it, like Unity's `Instantiate`.
@@ -78,8 +79,10 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
     name (Unity's `owner.ChangeState<T>()`). Unity's base-class helpers (`SelectTile`…) are
     functions in `BattleState.ts` taking `owner`.
   - The machine starts in `None` (Unity: no current state); `battle.start()` is Unity's `Start`.
-  - Input arrives as `move(p)` / `fire(i)` actions; the Human-driver guard lives there
-    (replaces `AddListeners`/`RemoveListeners`). `*` holds no-op defaults.
+  - Input arrives as `move(p)` / `fire(i)` actions, through `BattleController.move`/`fire`,
+    which drop it while the computer drives the actor (Unity's `AddListeners`/`RemoveListeners`).
+    A state's computer-driven path is an `async` function started from `_enter` that ends
+    with `owner.machine.done()`; the state's `done` handler picks the next state.
   - `BaseAbilityMenuState` → `baseAbilityMenuState(owner, { loadMenu, confirm, cancel })` (its
     abstract methods), spread into the three menu states. A state's own fields are variables in
     its factory; Unity statics shared between states are `BattleController` fields.

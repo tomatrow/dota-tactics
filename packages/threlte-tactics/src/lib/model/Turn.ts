@@ -1,5 +1,6 @@
 import type { Directions } from "#lib/enums/Directions.ts"
 import type { Ability } from "#lib/view-model-component/ability/Ability.ts"
+import type { PlanOfAttack } from "#lib/view-model-component/ai/PlanOfAttack.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
@@ -7,7 +8,6 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
  * Port of `Model/Turn.cs`: the current unit's turn. A move can be undone until the unit acts
  * after it.
  */
-// TODO(part 24): the A.I.'s plan.
 export class Turn {
 	actor: Unit | null = null
 	hasUnitMoved = false
@@ -17,6 +17,8 @@ export class Turn {
 	ability: Ability | null = null
 	/** The tiles in the ability's area that it targets. */
 	targets: Tile[] = []
+	/** A computer-driven actor's plan for the turn, made when its turn starts. */
+	plan: PlanOfAttack | null = null
 	#startTile: Tile | null = null
 	#startDir: Directions = 0
 
@@ -27,6 +29,7 @@ export class Turn {
 		this.lockMove = false
 		this.#startTile = current.tile
 		this.#startDir = current.dir
+		this.plan = null
 	}
 
 	undoMove(): void {

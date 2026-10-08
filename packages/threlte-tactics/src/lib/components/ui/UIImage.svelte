@@ -13,8 +13,15 @@
 	let {
 		sprite,
 		type = "Simple",
-		fillAmount = 1
-	}: { sprite: SpriteName; type?: "Simple" | "Sliced" | "Filled"; fillAmount?: number } = $props()
+		fillAmount = 1,
+		alpha = 1
+	}: {
+		sprite: SpriteName
+		type?: "Simple" | "Sliced" | "Filled"
+		fillAmount?: number
+		/** The image's color's alpha (its color is otherwise white: no tint). */
+		alpha?: number
+	} = $props()
 
 	const s: Sprite = $derived(sprites[sprite])
 
@@ -67,10 +74,11 @@
 </script>
 
 {#if type === "Sliced"}
-	<canvas {@attach sliced(s)}></canvas>
+	<canvas style:opacity={alpha === 1 ? undefined : alpha} {@attach sliced(s)}></canvas>
 {:else}
 	<img
 		style:clip-path={type === "Filled" ? `inset(0 ${(1 - fillAmount) * 100}% 0 0)` : undefined}
+		style:opacity={alpha === 1 ? undefined : alpha}
 		alt=""
 		src={s.src}
 	/>

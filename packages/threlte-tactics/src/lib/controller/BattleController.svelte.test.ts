@@ -4,6 +4,7 @@ import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import { Directions } from "#lib/enums/Directions.ts"
+import { Targets } from "#lib/enums/Targets.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
 import Attack from "#lib/resources/Abilities/Common/Attack.ts"
 import Level_0 from "#lib/resources/Levels/Level_0.ts"
@@ -13,6 +14,7 @@ import {
 	instantiateAbility,
 	type AbilityPrefab
 } from "#lib/view-model-component/ability/AbilityPrefab.ts"
+import { PlanOfAttack } from "#lib/view-model-component/ai/PlanOfAttack.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
 import { KnockOutStatusEffect } from "#lib/view-model-component/status/effects/KnockOutStatusEffect.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
@@ -706,28 +708,28 @@ describe("PerformAbilityState and EndFacingState", () => {
 	})
 })
 
-describe("knock outs and victory conditions", () => {
-	/** Every roll hits, with no variance. */
-	const sure = (battle: BattleController) => {
-		vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
-		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
-	}
+/** Every roll hits, with no variance. */
+const sure = (battle: BattleController) => {
+	vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
+	vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+}
 
+/** Plays the conversation through (`count` messages), to its end. */
+async function converse(battle: BattleController, count: number) {
+	for (let i = 0; i < count; ++i) {
+		await advance(1.2)
+		battle.fire(0)
+	}
+	await advance(0.6)
+}
+
+describe("knock outs and victory conditions", () => {
 	/** Kamau at (1, 1) and Alaois at (0, 1) as usual, with an Enemy Wizard at (2, 1). */
 	const withEnemy = spawn(
 		{ recipe: "Kamau", at: Point.of(1, 1) },
 		{ recipe: "Alaois", at: Point.of(0, 1) },
 		{ recipe: "Enemy Wizard", at: Point.of(2, 1) }
 	)
-
-	/** Plays the conversation through (`count` messages), to its end. */
-	async function converse(battle: BattleController, count: number) {
-		for (let i = 0; i < count; ++i) {
-			await advance(1.2)
-			battle.fire(0)
-		}
-		await advance(0.6)
-	}
 
 	test("the heroes must defeat the last unit, who can't drop below 10 HP", async () => {
 		const battle = await started(plus, withEnemy)
@@ -794,6 +796,138 @@ describe("knock outs and victory conditions", () => {
 
 		expect(battle.victoryCondition?.victor).toBe(Alliances.Enemy)
 		expect(battle.machine.current).toBe("CutSceneState")
+		expect(battle.conversationController.rightPanel.message).toBe("I told you to be afraid.")
+		await converse(battle, 5)
+		expect(battle.machine.current).toBe("EndBattleState")
+		expect(loadLevel).toHaveBeenCalledOnce()
+	})
+})
+
+describe("the computer's turn", () => {
+	/**
+	 * On `row`: an Enemy Warrior at (0, 1), made the fastest so that it goes first; Kamau at (3, 1);
+	 * an Enemy Wizard at (6, 1). The computer's plan for the warrior is `plan`.
+	 */
+	const computerFirst =
+		(plan: (warrior: Unit) => Partial<PlanOfAttack>) => (battle: BattleController) => {
+			spawn(
+				{ recipe: "Enemy Warrior", at: Point.of(0, 1) },
+				{ recipe: "Kamau", at: Point.of(3, 1) },
+				{ recipe: "Enemy Wizard", at: Point.of(6, 1) }
+			)(battle)
+			const warrior = battle.units[0]!
+			warrior.stats.set(StatTypes.SPD, 200)
+			vi.spyOn(battle.cpu, "evaluate").mockImplementation(() =>
+				Object.assign(new PlanOfAttack(), plan(warrior))
+			)
+		}
+
+	/** To (2, 1), then attack east: Kamau. */
+	const attackKamau = computerFirst((warrior) => ({
+		ability: warrior.attack,
+		target: Targets.Foe,
+		moveLocation: Point.of(2, 1),
+		attackDirection: Directions.East
+	}))
+
+	/** Runs the clocks until the battle is in `state`, and returns how long that took (seconds). */
+	async function until(battle: BattleController, state: BattleStateName): Promise<number> {
+		let seconds = 0
+		while (battle.machine.current !== state) {
+			if (seconds > 10) throw new Error(`Still in ${battle.machine.current} after 10 s`)
+			await advance(0.01)
+			seconds += 0.01
+		}
+		return seconds
+	}
+
+	test("plans the turn, shows no menu, and ignores the player", async () => {
+		const battle = await started(row, attackKamau)
+		const [warrior] = battle.units as [Unit]
+		expect(battle.turn.actor).toBe(warrior)
+		expect(battle.cpu.evaluate).toHaveBeenCalledOnce()
+		expect(battle.turn.plan?.moveLocation).toBe(Point.of(2, 1))
+		expect(battle.turn.ability).toBe(warrior.attack)
+		expect(battle.abilityMenuPanelController.canvasActive).toBe(false)
+		expect(shownHp(battle.statPanelController.primaryPanel)).toBe(hp(warrior))
+
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		battle.fire(1)
+		expect(battle.machine.current).toBe("CommandSelectionState")
+	})
+
+	test("moves the cursor a step at a time to where it moves, attacks, then faces a way", async () => {
+		const battle = await started(row, attackKamau)
+		const [warrior, kamau] = battle.units as [Unit, Unit]
+		sure(battle)
+		vi.spyOn(battle.cpu, "determineEndFacingDirection").mockReturnValue(Directions.South)
+		const kamauHp = kamau.stats.get(StatTypes.HP)
+
+		// A second after its turn starts (just under, as the turn started a frame into `started`).
+		expect(await until(battle, "MoveTargetState")).toBeCloseTo(0.9, 1)
+		expect(highlighted(battle).sort()).toEqual(["(1,1)", "(2,1)"])
+		expect(battle.pos).toBe(Point.of(1, 1))
+		await advance(0.2)
+		expect(battle.pos).toBe(Point.of(1, 1))
+		await advance(0.1)
+		expect(battle.pos).toBe(Point.of(2, 1))
+		expect(await until(battle, "MoveSequenceState")).toBeCloseTo(0.7, 1)
+
+		await until(battle, "CommandSelectionState")
+		expect(warrior.tile?.pos).toBe(Point.of(2, 1))
+		expect(battle.cpu.evaluate).toHaveBeenCalledOnce()
+		expect(await until(battle, "AbilityTargetState")).toBeCloseTo(1, 1)
+		expect(warrior.dir).toBe(Directions.East)
+		expect(highlighted(battle)).toEqual(["(3,1)"])
+
+		expect(await until(battle, "ConfirmAbilityTargetState")).toBeCloseTo(0.75, 1)
+		expect(battle.turn.targets).toEqual([kamau.tile])
+		expect(battle.hitSuccessIndicator.canvasActive).toBe(false)
+		expect(battle.battleMessageController).toMatchObject({ canvasActive: true, label: "Attack" })
+
+		expect(await until(battle, "PerformAbilityState")).toBeCloseTo(2, 1)
+		await until(battle, "EndFacingState")
+		expect(kamau.stats.get(StatTypes.HP)).toBeLessThan(kamauHp)
+		expect(battle.facingIndicator).toMatchObject({ active: true, direction: Directions.East })
+		await advance(0.55)
+		expect(warrior.dir).toBe(Directions.South)
+		expect(battle.facingIndicator.direction).toBe(Directions.South)
+
+		await until(battle, "CommandSelectionState")
+		expect(battle.turn).toMatchObject({ actor: kamau, plan: null })
+		expect(menu(battle).title).toBe("Commands")
+	})
+
+	test("with no ability to use, it only moves, then ends its turn", async () => {
+		const battle = await started(
+			row,
+			computerFirst(() => ({ ability: null, moveLocation: Point.of(1, 1) }))
+		)
+		await until(battle, "MoveSequenceState")
+		await until(battle, "CommandSelectionState")
+		expect(await until(battle, "EndFacingState")).toBeCloseTo(1, 1)
+		expect(battle.turn.hasUnitActed).toBe(false)
+		await until(battle, "SelectUnitState")
+	})
+
+	test("staying put, it goes straight to aiming", async () => {
+		const battle = await started(
+			row,
+			computerFirst((warrior) => ({ ability: warrior.attack, moveLocation: Point.of(0, 1) }))
+		)
+		expect(await until(battle, "AbilityTargetState")).toBeCloseTo(0.9, 1)
+	})
+
+	test("the player can read the outro when the computer wins the battle", async () => {
+		const loadLevel = vi.fn()
+		const battle = await started(row, attackKamau, { loadLevel })
+		const [, kamau] = battle.units as [Unit, Unit]
+		sure(battle)
+		kamau.stats.set(StatTypes.HP, 1)
+
+		await until(battle, "CutSceneState")
+		expect(battle.victoryCondition?.victor).toBe(Alliances.Enemy)
 		expect(battle.conversationController.rightPanel.message).toBe("I told you to be afraid.")
 		await converse(battle, 5)
 		expect(battle.machine.current).toBe("EndBattleState")

@@ -6,6 +6,8 @@ import { Transform } from "#lib/common/unity/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Turn } from "#lib/model/Turn.ts"
+import { Drivers } from "#lib/enums/Drivers.ts"
+import { ComputerPlayer } from "#lib/view-model-component/ai/ComputerPlayer.ts"
 import { Board } from "#lib/view-model-component/Board.svelte.ts"
 import { FacingIndicator } from "#lib/view-model-component/FacingIndicator.svelte.ts"
 import { HitSuccessIndicator } from "#lib/view-model-component/HitSuccessIndicator.svelte.ts"
@@ -14,6 +16,7 @@ import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
 import { AutoStatusController } from "./AutoStatusController.ts"
+import { BattleMessageController } from "./BattleMessageController.svelte.ts"
 import { StatPanelController } from "./StatPanelController.svelte.ts"
 import { abilityTargetState } from "./battle-states/AbilityTargetState.ts"
 import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
@@ -86,12 +89,15 @@ export class BattleController {
 	readonly abilityMenuPanelController = new AbilityMenuPanelController()
 	readonly statPanelController = new StatPanelController()
 	readonly hitSuccessIndicator = new HitSuccessIndicator()
+	readonly battleMessageController = new BattleMessageController()
 	/** The tile selection indicator's child, which `EndFacingState` shows. */
 	readonly facingIndicator = new FacingIndicator()
 	readonly turn = new Turn()
 	units: Unit[] = $state([])
 	/** `TurnOrderController.round()`, which `SelectUnitState` steps through. */
 	round: Iterator<Unit> | null = null
+	/** Plans the turns of computer-driven units (a component of Unity's Battle Controller). */
+	readonly cpu: ComputerPlayer
 	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
 	actionSelectionCategory = 0
 	/** Knocks out units with no HP left (a component of Unity's Battle Controller). */
@@ -118,6 +124,7 @@ export class BattleController {
 		this.spawnTestUnits = spawnTestUnits
 		this.loadLevel = loadLevel
 		this.autoStatusController = new AutoStatusController(this.notifications)
+		this.cpu = new ComputerPlayer(this)
 		this.machine = createStateMachine(this)
 	}
 
@@ -132,12 +139,25 @@ export class BattleController {
 
 	/** Unity's `InputController.moveEvent`, which the current state listens to. */
 	move(direction: Point): void {
-		this.machine.move(direction)
+		if (this.#listening()) this.machine.move(direction)
 	}
 
 	/** Unity's `InputController.fireEvent`, which the current state listens to. */
 	fire(button: number): void {
-		this.machine.fire(button)
+		if (this.#listening()) this.machine.fire(button)
+	}
+
+	/**
+	 * Unity's `BattleState.AddListeners`: a state listens to the input unless the computer drives
+	 * the turn's actor. (Unity decides when the state is entered; no driver changes mid-state.)
+	 */
+	#listening(): boolean {
+		// PORT-FIX: Unity's cut scene doesn't listen either when a computer-driven unit's action
+		// ended the battle, so its outro could never be read past.
+		if (this.machine.current === "CutSceneState") return true
+
+		const driver = this.turn.actor?.driver ?? null
+		return driver === null || driver.current === Drivers.Human
 	}
 }
 

@@ -1,4 +1,5 @@
 import { Resources } from "#lib/common/unity/Resources.ts"
+import { Drivers } from "#lib/enums/Drivers.ts"
 import { Locomotions } from "#lib/enums/Locomotions.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import type { Alliances } from "#lib/enums/Alliances.ts"
@@ -9,7 +10,12 @@ import {
 	type AbilityPrefab,
 	type AbilityPrefabContext
 } from "#lib/view-model-component/ability/AbilityPrefab.ts"
+import {
+	instantiateAttackPattern,
+	type AttackPatternPrefab
+} from "#lib/view-model-component/ai/AttackPatternPrefab.ts"
 import { Alliance } from "#lib/view-model-component/actor/Alliance.ts"
+import { Driver } from "#lib/view-model-component/actor/Driver.ts"
 import { Health } from "#lib/view-model-component/actor/Health.ts"
 import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
 import { Mana } from "#lib/view-model-component/actor/Mana.ts"
@@ -60,7 +66,7 @@ export const UnitFactory = {
 		addAttack(obj, recipe.attack, context)
 		addAbilityCatalog(obj, recipe.abilityCatalog, context)
 		addAlliance(obj, recipe.alliance)
-		// TODO(part 24): a `Driver` (computer-driven with `recipe.strategy`'s attack pattern).
+		addAttackPattern(obj, recipe.strategy, context)
 		return obj
 	}
 }
@@ -133,4 +139,17 @@ function addAbilityCatalog(obj: Unit, name: string, context: UnitFactoryContext)
 			})
 		}))
 	)
+}
+
+/** A `Driver`: a person drives a unit with no `strategy`, the computer one with an attack pattern. */
+function addAttackPattern(obj: Unit, name: string, context: UnitFactoryContext): void {
+	const driver = new Driver()
+	obj.driver = driver
+	if (name === "") {
+		driver.normal = Drivers.Human
+	} else {
+		driver.normal = Drivers.Computer
+		const prefab = instantiatePrefab<AttackPatternPrefab>(`Attack Pattern/${name}`)
+		obj.attackPattern = instantiateAttackPattern(prefab, obj, context)
+	}
 }

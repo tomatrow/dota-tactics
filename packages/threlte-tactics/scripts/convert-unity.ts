@@ -12,6 +12,7 @@ import { format, resolveConfig } from "prettier"
 import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import { Locomotions } from "#lib/enums/Locomotions.ts"
+import { Targets } from "#lib/enums/Targets.ts"
 import {
 	readGuid,
 	readScriptableObject,
@@ -28,6 +29,7 @@ export const resourcesDir = path.resolve(root, "src/lib/resources")
 export const generatedFolders = [
 	"Abilities",
 	"Ability Catalog Recipes",
+	"Attack Pattern",
 	"Conversations",
 	"Jobs",
 	"Levels",
@@ -257,7 +259,8 @@ function abilityComponents(scripts: Scripts, behaviours: UnityObject[]) {
 	return parts
 }
 
-async function convertAbility(scripts: Scripts, file: string): Promise<unknown> {
+/** A prefab's hierarchy: its root GameObject, and how to walk from one object to others. */
+async function readPrefab(file: string) {
 	const objects = await readUnityYaml(file)
 	const byId = new Map(objects.map((o) => [o.fileId, o]))
 	const ref = (r: unknown) => byId.get(String((r as UnityRef).fileID))!
@@ -271,8 +274,13 @@ async function convertAbility(scripts: Scripts, file: string): Promise<unknown> 
 	const childrenOf = (go: UnityObject) =>
 		(transformOf(go).fields.m_Children as UnityRef[]).map((t) => ref(ref(t).fields.m_GameObject))
 
-	const root = transforms.find((t) => (t.fields.m_Father as UnityRef).fileID === 0)!
-	const ability = ref(root.fields.m_GameObject)
+	const rootTransform = transforms.find((t) => (t.fields.m_Father as UnityRef).fileID === 0)!
+	const root = ref(rootTransform.fields.m_GameObject)
+	return { root, ref, behavioursOf, childrenOf }
+}
+
+async function convertAbility(scripts: Scripts, file: string): Promise<unknown> {
+	const { root: ability, behavioursOf, childrenOf } = await readPrefab(file)
 	const parts = abilityComponents(scripts, behavioursOf(ability))
 	const children = childrenOf(ability).map((child) => {
 		const childParts = abilityComponents(scripts, behavioursOf(child))
@@ -314,6 +322,68 @@ async function convertAbilities(out: Output): Promise<void> {
 				)
 			)
 		}
+	}
+}
+
+// --- Attack patterns (`View Model Component/AI/`) ----------------------------------------------
+
+/** An attack pattern prefab as `AttackPatternPrefab` source (with `Targets` members). */
+async function convertAttackPattern(scripts: Scripts, file: string): Promise<string> {
+	const { root, ref, behavioursOf, childrenOf } = await readPrefab(file)
+	const classOf = (behaviour: UnityObject) => {
+		const cls = scripts.byGuid.get((behaviour.fields.m_Script as UnityRef).guid ?? "")
+		if (!cls) throw new Error(`Unknown script in ${json(behaviour.fields)}`)
+		return cls.name
+	}
+	const only = (go: UnityObject) => {
+		const behaviours = behavioursOf(go)
+		if (behaviours.length !== 1) throw new Error(`${String(go.fields.m_Name)}: not one script`)
+		return behaviours[0]!
+	}
+	// Pickers refer to each other by their GameObject's name, so those must be unique.
+	const names = (refs: unknown) =>
+		(refs as UnityRef[]).map((r) => json(String(ref(ref(r).fields.m_GameObject).fields.m_Name)))
+
+	const pattern = only(root)
+	if (classOf(pattern) !== "AttackPattern") throw new Error(`Not an attack pattern: ${file}`)
+	const children = childrenOf(root).map((child) => {
+		const behaviour = only(child)
+		const type = classOf(behaviour)
+		const { fields } = behaviour
+		const picker =
+			type === "FixedAbilityPicker" ?
+				`{ type: "FixedAbilityPicker", target: ${enumMember("Targets", Targets, fields.target)}, ability: ${json(String(fields.ability ?? ""))} }`
+			: type === "RandomAbilityPicker" ?
+				`{ type: "RandomAbilityPicker", pickers: [${names(fields.pickers).join(", ")}] }`
+			:	null
+		if (picker === null) throw new Error(`Not an ability picker: ${type}`)
+		return { name: String(child.fields.m_Name), picker }
+	})
+	if (new Set(children.map((c) => c.name)).size !== children.length)
+		throw new Error(`Ability pickers with the same name in ${file}`)
+
+	const entries = children.map((c) => `{ name: ${json(c.name)}, picker: ${c.picker} }`)
+	return `{ name: ${json(String(root.fields.m_Name))}, pickers: [${names(pattern.fields.pickers).join(", ")}], children: [${entries.join(", ")}] }`
+}
+
+async function convertAttackPatterns(out: Output): Promise<void> {
+	const scripts = await scriptClasses()
+	const folder = "Resources/Attack Pattern"
+	const files = await readdir(path.join(unityAssets, folder))
+	for (const file of files.filter((name) => name.endsWith(".prefab")).sort()) {
+		const source = `${folder}/${file}`
+		const prefab = await convertAttackPattern(scripts, path.join(unityAssets, source))
+		out.set(
+			`Attack Pattern/${file.replace(/\.prefab$/, "")}.ts`,
+			module(
+				source,
+				[
+					`import { Targets } from "#lib/enums/Targets.ts"`,
+					`import type { AttackPatternPrefab } from "#lib/view-model-component/ai/AttackPatternPrefab.ts"`
+				],
+				`export default ${prefab} satisfies AttackPatternPrefab`
+			)
+		)
 	}
 }
 
@@ -378,6 +448,7 @@ export async function convert(): Promise<Output> {
 	const out: Output = new Map()
 	await convertAbilities(out)
 	await convertAbilityCatalogRecipes(out)
+	await convertAttackPatterns(out)
 	await convertConversations(out)
 	await convertJobs(out)
 	await convertLevels(out)

@@ -1,7 +1,10 @@
+import { waitForSeconds } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
+import { Drivers } from "#lib/enums/Drivers.ts"
 import type { Point } from "#lib/model/Point.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import {
+	driver,
 	refreshPrimaryStatPanel,
 	refreshSecondaryStatPanel,
 	type BattleStateHandlers
@@ -10,9 +13,8 @@ import {
 /**
  * Port of `Controller/Battle States/ConfirmAbilityTargetState.cs`: shows the area the aimed
  * ability affects and the targets in it; moving cycles the secondary stat panel and the hit
- * success indicator through them.
+ * success indicator through them. The computer shows the ability's name instead, then uses it.
  */
-// TODO(part 24): the computer confirms.
 export function confirmAbilityTargetState(owner: BattleController) {
 	const { board, statPanelController, hitSuccessIndicator, turn } = owner
 	let tiles: Tile[] = []
@@ -50,6 +52,12 @@ export function confirmAbilityTargetState(owner: BattleController) {
 		hitSuccessIndicator.setStats(chance, amount)
 	}
 
+	async function computerDisplayAbilitySelection(): Promise<void> {
+		owner.battleMessageController.display(turn.ability!.name)
+		await waitForSeconds(2)
+		owner.machine.done()
+	}
+
 	return {
 		_enter() {
 			tiles = turn.ability!.area.getTilesInArea(board, owner.pos)
@@ -57,9 +65,13 @@ export function confirmAbilityTargetState(owner: BattleController) {
 			findTargets()
 			refreshPrimaryStatPanel(owner, turn.actor!.tile!.pos)
 			if (turn.targets.length > 0) {
-				hitSuccessIndicator.show()
+				// Only show this UI for Human controlled units
+				if (driver(owner)!.current === Drivers.Human) hitSuccessIndicator.show()
 				setTarget(0)
 			}
+
+			// Only show this UI for AI controlled units
+			if (driver(owner)!.current === Drivers.Computer) void computerDisplayAbilitySelection()
 		},
 		_exit() {
 			board.deSelectTiles(tiles)
@@ -77,6 +89,7 @@ export function confirmAbilityTargetState(owner: BattleController) {
 			} else {
 				return "AbilityTargetState"
 			}
-		}
+		},
+		done: () => "PerformAbilityState"
 	} satisfies BattleStateHandlers
 }

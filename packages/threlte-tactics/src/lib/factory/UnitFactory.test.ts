@@ -3,6 +3,7 @@ import { NotificationCenter } from "#lib/common/notification-center/Notification
 import { Random } from "#lib/common/unity/Random.ts"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
+import { Drivers } from "#lib/enums/Drivers.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Health } from "#lib/view-model-component/actor/Health.ts"
@@ -69,6 +70,17 @@ describe("UnitFactory", () => {
 				["White Magic", ["Cure"]]
 			]
 		])
+	})
+
+	test("people drive the heroes; the computer drives the enemies, with their attack patterns", () => {
+		const units = ["Kamau", "Enemy Rogue", "Enemy Warrior", "Enemy Wizard"].map((n) => create(n))
+		expect(units.map((u) => [u.driver?.normal, u.driver?.current])).toEqual([
+			[Drivers.Human, Drivers.Human],
+			[Drivers.Computer, Drivers.Computer],
+			[Drivers.Computer, Drivers.Computer],
+			[Drivers.Computer, Drivers.Computer]
+		])
+		expect(units.map((u) => u.attackPattern?.pickers.length ?? null)).toEqual([null, 3, 3, 3])
 	})
 
 	test("levels the unit up from 1, its job's stats growing, then fills its HP and MP", () => {

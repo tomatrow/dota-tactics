@@ -5,7 +5,9 @@ import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Ability } from "./ability/Ability.ts"
 import type { AbilityCatalog } from "./ability/AbilityCatalog.ts"
+import type { AttackPattern } from "./ai/AttackPattern.ts"
 import type { Alliance } from "./actor/Alliance.ts"
+import type { Driver } from "./actor/Driver.ts"
 import { Equipment } from "./actor/Equipment.ts"
 import type { Health } from "./actor/Health.ts"
 import type { Job } from "./actor/Job.ts"
@@ -46,6 +48,9 @@ export class Unit {
 	/** Unity's `GetComponentInChildren<AbilityCatalog>()`. */
 	abilityCatalog: AbilityCatalog | null = null
 	alliance: Alliance | null = null
+	driver: Driver | null = null
+	/** Unity's `GetComponentInChildren<AttackPattern>()`: a computer-driven unit's. */
+	attackPattern: AttackPattern | null = null
 
 	#tile: Tile | null = null
 

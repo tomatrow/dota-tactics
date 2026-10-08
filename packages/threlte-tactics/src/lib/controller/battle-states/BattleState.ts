@@ -2,6 +2,7 @@ import type { TransitionEvent } from "runic-svelte-fsm"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import type { Point } from "#lib/model/Point.ts"
+import type { Driver } from "#lib/view-model-component/actor/Driver.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
 /**
@@ -54,6 +55,14 @@ export type BattleStateHandlers = Partial<BattleActions> & {
 	_enter?(event: TransitionEvent): void
 	/** Unity's `Exit`. */
 	_exit?(event: TransitionEvent): void
+}
+
+/**
+ * Unity's `driver`: who drives the turn's actor (`null` before the first turn). `BattleState.Enter`
+ * gets it; it doesn't change while a state is current.
+ */
+export function driver(owner: BattleController): Driver | null {
+	return owner.turn.actor?.driver ?? null
 }
 
 /** Moves the selection (`pos` and the tile selection indicator) to `p`, if it is on the board. */

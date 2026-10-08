@@ -9,7 +9,14 @@
 
 	const referenceHeight = 480
 
-	let { children }: { children: Snippet } = $props()
+	let {
+		alpha = 1,
+		children
+	}: {
+		/** A `CanvasGroup`'s alpha. */
+		alpha?: number
+		children: Snippet
+	} = $props()
 
 	let screenWidth = $state(0)
 	let screenHeight = $state(0)
@@ -18,7 +25,12 @@
 
 <div class="screen" bind:clientWidth={screenWidth} bind:clientHeight={screenHeight}>
 	{#if scale > 0}
-		<div style:width="{screenWidth / scale}px" style:zoom={scale} class="canvas">
+		<div
+			style:width="{screenWidth / scale}px"
+			style:zoom={scale}
+			style:opacity={alpha === 1 ? undefined : alpha}
+			class="canvas"
+		>
 			{@render children()}
 		</div>
 	{/if}

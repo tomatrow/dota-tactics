@@ -1,12 +1,14 @@
+import { waitForSeconds } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
+import { Drivers } from "#lib/enums/Drivers.ts"
 import { baseAbilityMenuState } from "./BaseAbilityMenuState.ts"
-import { selectTile, type BattleStateHandlers } from "./BattleState.ts"
+import { driver, selectTile, type BattleStateHandlers } from "./BattleState.ts"
 
 /**
  * Port of `Controller/Battle States/CommandSelectionState.cs`: the turn's top menu (Move, Action,
- * Wait). Cancelling undoes a move, or explores the board.
+ * Wait). Cancelling undoes a move, or explores the board. On the computer's turn there's no menu:
+ * the computer plans the turn, then carries out the next step of the plan.
  */
-// TODO(part 24): the computer's turn.
 export function commandSelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner
 	let menuTitle = ""
@@ -44,15 +46,33 @@ export function commandSelectionState(owner: BattleController) {
 		}
 	})
 
+	async function computerTurn(): Promise<void> {
+		if (turn.plan === null) {
+			turn.plan = owner.cpu.evaluate()
+			turn.ability = turn.plan.ability
+		}
+
+		await waitForSeconds(1)
+		owner.machine.done()
+	}
+
 	return {
 		...base,
 		_enter() {
 			base._enter()
 			owner.statPanelController.showPrimary(turn.actor!)
+			if (driver(owner)!.current === Drivers.Computer) void computerTurn()
 		},
 		_exit() {
 			base._exit()
 			owner.statPanelController.hidePrimary()
+		},
+		done() {
+			const plan = turn.plan!
+			if (!turn.hasUnitMoved && plan.moveLocation !== turn.actor!.tile!.pos)
+				return "MoveTargetState"
+			else if (!turn.hasUnitActed && plan.ability !== null) return "AbilityTargetState"
+			else return "EndFacingState"
 		}
 	} satisfies BattleStateHandlers
 }
