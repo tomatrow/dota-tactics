@@ -3,6 +3,7 @@ import { AddValueModifier } from "./modifiers/AddValueModifier.ts"
 import { ClampValueModifier } from "./modifiers/ClampValueModifier.ts"
 import { MaxValueModifier } from "./modifiers/MaxValueModifier.ts"
 import { MinValueModifier } from "./modifiers/MinValueModifier.ts"
+import { MultDeltaModifier } from "./modifiers/MultDeltaModifier.ts"
 import { MultValueModifier } from "./modifiers/MultValueModifier.ts"
 import { BaseException } from "./BaseException.ts"
 import { ValueChangeException } from "./ValueChangeException.ts"
@@ -57,5 +58,20 @@ describe("ValueChangeException", () => {
 		expect(modify(new MinValueModifier(0, 5), 8)).toBe(5)
 		expect(modify(new MultValueModifier(0, 1.5), 8)).toBe(12)
 		expect(modify(new AddValueModifier(0, -2), 8)).toBe(6)
+	})
+
+	test("MultDeltaModifier scales the change: haste doubles a counter's gain, not the counter", () => {
+		const haste = new ValueChangeException(500, 600)
+		haste.addModifier(new MultDeltaModifier(0, 2))
+		expect(haste.getModifiedValue()).toBe(700)
+
+		const slow = new ValueChangeException(500, 600)
+		slow.addModifier(new MultDeltaModifier(0, 0.5))
+		expect(slow.getModifiedValue()).toBe(550)
+
+		// Compare MultValueModifier, which scales the whole value.
+		const mult = new ValueChangeException(500, 600)
+		mult.addModifier(new MultValueModifier(0, 2))
+		expect(mult.getModifiedValue()).toBe(1200)
 	})
 })

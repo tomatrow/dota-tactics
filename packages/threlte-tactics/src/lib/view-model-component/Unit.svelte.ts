@@ -4,10 +4,12 @@ import type { UnitModelName } from "#lib/components/prefabs/UnitModel.svelte"
 import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Ability } from "./ability/Ability.ts"
+import { Equipment } from "./actor/Equipment.ts"
 import type { Job } from "./actor/Job.ts"
 import { Rank } from "./actor/Rank.ts"
 import { Stats } from "./actor/Stats.ts"
 import type { Movement } from "./movement/Movement.ts"
+import { Status } from "./status/Status.ts"
 import type { Tile } from "./Tile.svelte.ts"
 
 /**
@@ -26,6 +28,8 @@ export class Unit {
 	dir: Directions = Directions.North
 	readonly stats: Stats
 	readonly rank: Rank
+	readonly status: Status
+	readonly equipment: Equipment
 	job: Job | null = null
 	movement: Movement | null = null
 	/** Unity's `GetComponentInChildren<Ability>()`: the unit's attack, its first child ability. */
@@ -47,6 +51,8 @@ export class Unit {
 		// Every unit has these (see `UnitFactory`); call `rank.init` to set its level.
 		this.stats = new Stats(notifications)
 		this.rank = new Rank(this.stats, notifications)
+		this.status = new Status(this, notifications)
+		this.equipment = new Equipment(this, notifications)
 	}
 
 	get tile(): Tile | null {

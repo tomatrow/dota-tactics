@@ -3,9 +3,9 @@ import { NotificationCenter } from "#lib/common/notification-center/Notification
 import { Random } from "#lib/common/unity/Random.ts"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
+import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { Job, type JobPrefab } from "./Job.ts"
-import { Rank } from "./Rank.ts"
-import { Stats } from "./Stats.ts"
+import type { Stats } from "./Stats.ts"
 
 /** A `Random` whose `value` is always `value`. */
 class FixedRandom extends Random {
@@ -21,13 +21,12 @@ class FixedRandom extends Random {
 
 function hire(name: string, random: Random = new Random(1)) {
 	const notifications = new NotificationCenter()
-	const unit = { stats: new Stats(notifications) }
+	const unit = new Unit({ name: "Hero", model: "Hero", notifications })
 	unit.stats.set(StatTypes.LVL, 1)
 	const job = new Job(Resources.load<JobPrefab>(`Jobs/${name}`)!, { notifications, random })
 	job.employ(unit)
 	job.loadDefaultStats()
-	const rank = new Rank(unit.stats, notifications)
-	return { ...unit, job, rank }
+	return { stats: unit.stats, job, rank: unit.rank }
 }
 
 const stat = (stats: Stats, ...types: StatTypes[]) => types.map((t) => stats.get(t))

@@ -52,9 +52,14 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - **Components render; they don't own rules.** Threlte and DOM views live in
   `src/lib/components/` (PascalCase `.svelte`).
 - **GetComponent/AddComponent → typed fields.** E.g. `unit.stats`, `unit.health`, `unit.job`,
-  `unit.status.effects`, `ability.range`, `ability.effects: { hitRate, effect, target }[]`.
+  `unit.status`, `ability.range`, `ability.effects: { hitRate, effect, target }[]`.
   Unity class hierarchies (ranges, areas, effects, status effects, movement) stay TS classes.
-  Dynamic Unity children (status effects, features, equipment) become lists queried by class.
+  Dynamic Unity children (status effects, features, equipment) become lists queried by class
+  (`unit.status.getEffect(KnockOutStatusEffect)` for `GetComponentInChildren<…>()`).
+- **Component lifetimes**: a component added and removed at runtime has `onEnable()` /
+  `onDisable()` (Unity's `OnEnable`/`OnDisable`, e.g. to observe notifications), called by
+  whatever adds it. Unity's `Destroy` → `destroy(component)` (`#lib/common/unity/Object.ts`):
+  like Unity's, it disables the component only once the code running now has finished.
 - **NotificationCenter** is kept: one instance per battle (`battle.notifications`), passed to
   the constructors of the objects that post or observe; synchronous; listeners may mutate
   payloads (`BaseException`, `ValueChangeException`…); sender filtering and

@@ -1,4 +1,5 @@
 import type { Stats } from "#lib/view-model-component/actor/Stats.ts"
+import type { Status } from "#lib/view-model-component/status/Status.ts"
 
 /**
  * What a feature modifies: a unit. Unity passes a GameObject and features look up the components
@@ -6,6 +7,7 @@ import type { Stats } from "#lib/view-model-component/actor/Stats.ts"
  */
 export interface FeatureTarget {
 	readonly stats: Stats
+	readonly status: Status
 }
 
 /**

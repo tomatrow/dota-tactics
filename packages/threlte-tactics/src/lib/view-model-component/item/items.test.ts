@@ -3,21 +3,21 @@ import { NotificationCenter } from "#lib/common/notification-center/Notification
 import { EquipSlots } from "#lib/enums/EquipSlots.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Equipment } from "#lib/view-model-component/actor/Equipment.ts"
-import { Stats } from "#lib/view-model-component/actor/Stats.ts"
 import { StatModifierFeature } from "#lib/view-model-component/features/StatModifierFeature.ts"
+import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { Consumable } from "./Consumable.ts"
 import { Equippable } from "./Equippable.ts"
 
 /** The blog's TestItems demo, as tests. */
 function hero() {
 	const notifications = new NotificationCenter()
-	const actor = { stats: new Stats(notifications) }
-	actor.stats.set(StatTypes.HP, 500)
-	actor.stats.set(StatTypes.MHP, 500)
-	actor.stats.set(StatTypes.ATK, 30)
-	actor.stats.set(StatTypes.DEF, 40)
-	const equipment = new Equipment(actor, notifications)
-	return { notifications, ...actor, equipment }
+	const unit = new Unit({ name: "Hero", model: "Hero", notifications })
+	const { stats, equipment } = unit
+	stats.set(StatTypes.HP, 500)
+	stats.set(StatTypes.MHP, 500)
+	stats.set(StatTypes.ATK, 30)
+	stats.set(StatTypes.DEF, 40)
+	return { notifications, unit, stats, equipment }
 }
 
 const equippable = (type: StatTypes, amount: number, defaultSlots: EquipSlots) =>
@@ -29,10 +29,10 @@ const shield = () => equippable(StatTypes.DEF, 10, EquipSlots.Secondary)
 
 describe("StatModifierFeature", () => {
 	test("activates once and deactivates once", () => {
-		const { stats } = hero()
+		const { unit, stats } = hero()
 		const feature = new StatModifierFeature(StatTypes.ATK, 5)
-		feature.activate({ stats })
-		feature.activate({ stats })
+		feature.activate(unit)
+		feature.activate(unit)
 		expect(stats.get(StatTypes.ATK)).toBe(35)
 		feature.deactivate()
 		feature.deactivate()
@@ -40,19 +40,19 @@ describe("StatModifierFeature", () => {
 	})
 
 	test("applies permanently", () => {
-		const { stats } = hero()
+		const { unit, stats } = hero()
 		const feature = new StatModifierFeature(StatTypes.ATK, 5)
-		feature.apply({ stats })
+		feature.apply(unit)
 		feature.deactivate()
-		feature.apply({ stats })
+		feature.apply(unit)
 		expect(stats.get(StatTypes.ATK)).toBe(40)
 	})
 })
 
 describe("Consumable", () => {
 	test("applies its features to the target", () => {
-		const { stats } = hero()
-		new Consumable([new StatModifierFeature(StatTypes.HP, -150)]).consume({ stats })
+		const { unit, stats } = hero()
+		new Consumable([new StatModifierFeature(StatTypes.HP, -150)]).consume(unit)
 		expect(stats.get(StatTypes.HP)).toBe(350)
 	})
 })
