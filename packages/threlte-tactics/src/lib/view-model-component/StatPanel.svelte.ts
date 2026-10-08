@@ -1,6 +1,6 @@
 import type { SpriteName } from "#lib/assets/textures/ui/sprites.ts"
 import { Panel, type PanelPosition } from "#lib/common/ui/Panel.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import type { Unit } from "./Unit.svelte.ts"
 
@@ -21,17 +21,14 @@ export class StatPanel {
 	hpLabel = $state("HP 90 / 90")
 	mpLabel = $state("MP 20 / 22")
 	lvLabel = $state("LV. 5")
-	readonly #random: Random
 
-	constructor(positionList: readonly PanelPosition[], random: Random) {
+	constructor(positionList: readonly PanelPosition[]) {
 		this.panel = new Panel(positionList)
-		this.#random = random
 	}
 
 	display(obj: Unit): void {
-		// TODO(part 22): the background follows the unit's alliance.
-		// Temp until I add a component to determine unit alliances
-		this.background = this.#random.value > 0.5 ? this.enemyBackground : this.allyBackground
+		const alliance = obj.alliance!
+		this.background = alliance.type === Alliances.Enemy ? this.enemyBackground : this.allyBackground
 		// avatar.sprite = null; Need a component which provides this data
 		this.nameLabel = obj.name
 		const stats = obj.stats

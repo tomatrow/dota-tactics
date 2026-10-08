@@ -1,6 +1,7 @@
 import { render } from "@threlte/test"
 import { BoxGeometry, type Mesh, MeshStandardMaterial, SphereGeometry, Vector3 } from "three"
 import { describe, expect, test } from "vitest"
+import { Directions } from "#lib/enums/Directions.ts"
 import { Materials } from "#lib/materials/materials.ts"
 import TileSelectionIndicator from "./TileSelectionIndicator.svelte"
 import Tile from "./Tile.svelte"
@@ -50,7 +51,7 @@ describe("TileSelectionIndicator", () => {
 	test("brackets the four corners of a tile", () => {
 		const { scene } = render(TileSelectionIndicator)
 
-		const cubes = meshes(scene)
+		const cubes = meshes(scene).filter((m) => m.geometry instanceof BoxGeometry)
 		expect(cubes).toHaveLength(8)
 		// Each corner gets two bars, one along each edge.
 		const corners = new Map<string, number>()
@@ -60,5 +61,34 @@ describe("TileSelectionIndicator", () => {
 			corners.set(key, (corners.get(key) ?? 0) + 1)
 		}
 		expect([...corners.values()]).toEqual([2, 2, 2, 2])
+	})
+
+	test("has a facing indicator, hidden as in the prefab", () => {
+		const { scene } = render(TileSelectionIndicator)
+		const indicator = scene.getObjectByName("Facing Indicator")!
+		expect(indicator.visible).toBe(false)
+		expect(meshes(indicator)).toHaveLength(4)
+	})
+
+	test("the facing indicator highlights the sphere on the selected side", () => {
+		const { scene } = render(TileSelectionIndicator, {
+			props: { facingIndicator: { selected: Directions.East } }
+		})
+		const indicator = scene.getObjectByName("Facing Indicator")!
+		expect(indicator.visible).toBe(true)
+		const colors = meshes(indicator).map((m) => [
+			m.position.x,
+			m.position.z,
+			(m.material as MeshStandardMaterial).color.getHexString()
+		])
+		const [normal, selected] = [Materials.Default.color, Materials.Selection.color].map((c) =>
+			c.slice(1)
+		)
+		expect(colors).toEqual([
+			[0, 0.3, normal],
+			[0.3, 0, selected],
+			[0, -0.3, normal],
+			[-0.3, 0, normal]
+		])
 	})
 })

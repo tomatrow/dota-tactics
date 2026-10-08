@@ -1,17 +1,24 @@
 import { Resources } from "#lib/common/unity/Resources.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import type { ConversationData } from "#lib/model/ConversationData.ts"
-import type { BattleStateHandlers } from "./BattleState.ts"
+import { didPlayerWin, isBattleOver, type BattleStateHandlers } from "./BattleState.ts"
 
-/** Port of `Controller/Battle States/CutSceneState.cs`: plays a conversation. */
+/**
+ * Port of `Controller/Battle States/CutSceneState.cs`: plays the intro conversation, or once the
+ * battle is over the outro for whoever won, then carries on.
+ */
 export function cutSceneState(owner: BattleController) {
 	let data: ConversationData | null = null
 
 	return {
 		_enter() {
-			// TODO(part 22): the outro conversations once the battle can end.
-			data = Resources.load<ConversationData>("Conversations/IntroScene")
-			if (!data) throw new Error("Missing Resources/Conversations/IntroScene")
+			const name =
+				isBattleOver(owner) ?
+					didPlayerWin(owner) ? "OutroSceneWin"
+					:	"OutroSceneLose"
+				:	"IntroScene"
+			data = Resources.load<ConversationData>(`Conversations/${name}`)
+			if (!data) throw new Error(`Missing Resources/Conversations/${name}`)
 			// Unity's `completeEvent`, which this state listens to while it is current.
 			void owner.conversationController.show(data).then(() => owner.machine.done())
 		},
@@ -22,7 +29,6 @@ export function cutSceneState(owner: BattleController) {
 		fire() {
 			owner.conversationController.next()
 		},
-		// TODO(part 22): `EndBattleState` once the battle is over.
-		done: () => "SelectUnitState"
+		done: () => (isBattleOver(owner) ? "EndBattleState" : "SelectUnitState")
 	} satisfies BattleStateHandlers
 }

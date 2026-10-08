@@ -1,6 +1,5 @@
 import { quadOut } from "svelte/easing"
 import type { PanelPosition } from "#lib/common/ui/Panel.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
 import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
 import { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
@@ -29,9 +28,9 @@ export class StatPanelController {
 	readonly secondaryPanel: StatPanel
 
 	/** Unity's `Start`. */
-	constructor(random: Random) {
-		this.primaryPanel = new StatPanel(primaryPositions, random)
-		this.secondaryPanel = new StatPanel(secondaryPositions, random)
+	constructor() {
+		this.primaryPanel = new StatPanel(primaryPositions)
+		this.secondaryPanel = new StatPanel(secondaryPositions)
 		if (this.primaryPanel.panel.currentPosition === null)
 			this.primaryPanel.panel.setPosition(HideKey, false)
 		if (this.secondaryPanel.panel.currentPosition === null)

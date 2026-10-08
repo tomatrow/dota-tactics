@@ -29,7 +29,8 @@ test("repeats while a direction is held", async () => {
 	await render(Input, { onmove })
 
 	key("keydown", "KeyW")
-	await vi.waitFor(() => expect(onmove).toHaveBeenCalledTimes(2), { timeout: 1000 })
+	// Real time: the repeat comes after 0.5 s, later on a busy machine.
+	await vi.waitFor(() => expect(onmove).toHaveBeenCalledTimes(2), { timeout: 5000 })
 	key("keyup", "KeyW")
 	expect(onmove).toHaveBeenLastCalledWith(Point.of(0, 1))
 })

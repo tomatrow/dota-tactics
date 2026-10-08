@@ -61,7 +61,7 @@ export class Unit {
 		this.name = name
 		this.model = model
 		// Every unit has these (see `UnitFactory`); call `rank.init` to set its level.
-		this.stats = new Stats(notifications)
+		this.stats = new Stats(notifications, this)
 		this.rank = new Rank(this.stats, notifications)
 		this.status = new Status(this, notifications)
 		this.equipment = new Equipment(this, notifications)

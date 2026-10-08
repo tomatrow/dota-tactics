@@ -5,10 +5,11 @@ import type { Point } from "#lib/model/Point.ts"
 import { selectTile, type BattleStateHandlers } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/EndFacingState.cs`: the actor picks the direction to face,
- * then the turn ends. Cancelling turns it back and returns to the commands.
+ * Port of `Controller/Battle States/EndFacingState.cs`: the actor picks the direction to face (the
+ * facing indicator shows it), then the turn ends. Cancelling turns it back and returns to the
+ * commands.
  */
-// TODO(part 22): the facing indicator. TODO(part 24): the computer picks a direction.
+// TODO(part 24): the computer picks a direction.
 export function endFacingState(owner: BattleController) {
 	const { turn } = owner
 	let startDir: Directions = Directions.North
@@ -18,11 +19,17 @@ export function endFacingState(owner: BattleController) {
 			const actor = turn.actor!
 			startDir = actor.dir
 			selectTile(owner, actor.tile!.pos)
+			owner.facingIndicator.active = true
+			owner.facingIndicator.setDirection(actor.dir)
+		},
+		_exit() {
+			owner.facingIndicator.active = false
 		},
 		move(direction: Point) {
 			const actor = turn.actor!
 			actor.dir = getDirection(direction)
 			actor.match()
+			owner.facingIndicator.setDirection(actor.dir)
 		},
 		fire(button: number) {
 			const actor = turn.actor!

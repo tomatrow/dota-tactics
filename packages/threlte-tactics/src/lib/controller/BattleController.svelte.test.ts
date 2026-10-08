@@ -14,9 +14,11 @@ import {
 	type AbilityPrefab
 } from "#lib/view-model-component/ability/AbilityPrefab.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
+import { KnockOutStatusEffect } from "#lib/view-model-component/status/effects/KnockOutStatusEffect.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
-import { BattleController } from "./BattleController.svelte.ts"
+import { BattleController, type BattleOptions } from "./BattleController.svelte.ts"
 import { TurnOrderController } from "./TurnOrderController.ts"
+import { DefeatTargetVictoryCondition } from "./victory-conditions/DefeatTargetVictoryCondition.ts"
 
 /** A plus-shaped board around (1, 1), at height 2 (y 0.5). */
 const plus: LevelData = {
@@ -42,8 +44,8 @@ const heroes = spawn(
 )
 
 /** A battle past its intro conversation, at the first unit's command menu. */
-async function started(levelData = plus, spawnTestUnits = heroes) {
-	const battle = new BattleController(levelData, { seed: 1, spawnTestUnits })
+async function started(levelData = plus, spawnTestUnits = heroes, options: BattleOptions = {}) {
+	const battle = new BattleController(levelData, { seed: 1, spawnTestUnits, ...options })
 	battle.start()
 	await advance(0.1)
 	expect(battle.machine.current).toBe("CutSceneState")
@@ -83,6 +85,7 @@ describe("BattleController", () => {
 			| "CommandSelectionState"
 			| "ConfirmAbilityTargetState"
 			| "CutSceneState"
+			| "EndBattleState"
 			| "EndFacingState"
 			| "ExploreState"
 			| "InitBattleState"
@@ -699,15 +702,114 @@ describe("PerformAbilityState and EndFacingState", () => {
 	test("Wait picks the facing too; confirming ends the turn", async () => {
 		const battle = await started()
 		const rogue = battle.units[0]!
+		expect(battle.facingIndicator.active).toBe(false)
 		battle.move(Point.of(0, 1))
 		battle.fire(0)
 		expect(battle.machine.current).toBe("EndFacingState")
+		expect(battle.facingIndicator).toMatchObject({ active: true, direction: Directions.North })
 
 		battle.move(Point.of(0, -1))
 		expect(rogue.dir).toBe(Directions.South)
+		expect(battle.facingIndicator.direction).toBe(Directions.South)
 		battle.fire(0)
 		expect(battle.machine.current).toBe("SelectUnitState")
+		expect(battle.facingIndicator.active).toBe(false)
 		expect(rogue.dir).toBe(Directions.South)
 		expect(rogue.transform.localEulerAngles).toEqual([0, 180, 0])
+	})
+})
+
+describe("knock outs and victory conditions", () => {
+	/** Every roll hits, with no variance. */
+	const sure = (battle: BattleController) => {
+		vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
+		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+	}
+
+	/** Kamau at (1, 1) and Alaois at (0, 1) as usual, with an Enemy Wizard at (2, 1). */
+	const withEnemy = spawn(
+		{ recipe: "Kamau", at: Point.of(1, 1) },
+		{ recipe: "Alaois", at: Point.of(0, 1) },
+		{ recipe: "Enemy Wizard", at: Point.of(2, 1) }
+	)
+
+	/** Plays the conversation through (`count` messages), to its end. */
+	async function converse(battle: BattleController, count: number) {
+		for (let i = 0; i < count; ++i) {
+			await advance(1.2)
+			battle.fire(0)
+		}
+		await advance(0.6)
+	}
+
+	test("the heroes must defeat the last unit, who can't drop below 10 HP", async () => {
+		const battle = await started(plus, withEnemy)
+		const enemy = battle.units[2]!
+		expect(battle.victoryCondition).toBeInstanceOf(DefeatTargetVictoryCondition)
+		expect((battle.victoryCondition as DefeatTargetVictoryCondition).target).toBe(enemy)
+		expect(enemy.health?.minHP).toBe(10)
+	})
+
+	test("an actor that knocks itself out loses the rest of its turn", async () => {
+		const battle = await started()
+		const [rogue] = battle.units as [Unit]
+		sure(battle)
+		rogue.stats.set(StatTypes.HP, 1)
+		attack(battle)
+		battle.move(Point.of(-1, 0))
+		battle.fire(0)
+		battle.fire(0)
+		await advance(0.1)
+
+		expect(rogue.stats.get(StatTypes.HP)).toBe(0)
+		expect(rogue.status.getEffect(KnockOutStatusEffect)).not.toBeNull()
+		expect(rogue.transform.localScale).toEqual([0.75, 0.1, 0.75])
+		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(battle.turn.actor).not.toBe(rogue)
+	})
+
+	test("defeating the target plays the winning outro, then starts over", async () => {
+		const loadLevel = vi.fn()
+		const battle = await started(plus, withEnemy, { loadLevel })
+		const enemy = battle.units[2]!
+		sure(battle)
+		enemy.stats.set(StatTypes.HP, 11)
+		attack(battle)
+		battle.move(Point.of(1, 0))
+		battle.fire(0)
+		expect(battle.turn.targets).toContain(enemy.tile)
+		battle.fire(0)
+		await advance(0.1)
+
+		expect(enemy.stats.get(StatTypes.HP)).toBe(10)
+		expect(battle.victoryCondition?.victor).toBe(Alliances.Hero)
+		expect(battle.machine.current).toBe("CutSceneState")
+		expect(battle.conversationController.rightPanel.message).toBe("I lost?  How could this happen?")
+
+		await converse(battle, 5)
+		expect(battle.machine.current).toBe("EndBattleState")
+		expect(loadLevel).toHaveBeenCalledOnce()
+	})
+
+	test("the heroes all defeated: the losing outro", async () => {
+		const loadLevel = vi.fn()
+		const battle = await started(plus, withEnemy, { loadLevel })
+		const [rogue, warrior] = battle.units as [Unit, Unit]
+		sure(battle)
+		warrior.stats.set(StatTypes.HP, 0)
+		rogue.stats.set(StatTypes.HP, 1)
+		attack(battle)
+		battle.move(Point.of(0, 1))
+		battle.fire(0)
+		expect(battle.turn.targets).toEqual([rogue.tile])
+		battle.fire(0)
+		await advance(0.1)
+
+		expect(battle.victoryCondition?.victor).toBe(Alliances.Enemy)
+		expect(battle.machine.current).toBe("CutSceneState")
+		expect(battle.conversationController.rightPanel.message).toBe("I told you to be afraid.")
+		await converse(battle, 5)
+		expect(battle.machine.current).toBe("EndBattleState")
+		expect(loadLevel).toHaveBeenCalledOnce()
 	})
 })

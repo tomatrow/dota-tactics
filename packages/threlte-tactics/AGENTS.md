@@ -96,7 +96,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `TransformAnimationExtensions`) tween and return a promise that resolves on completion. Don't
   overlap tweens on the same property: an interrupted `Tween`'s promise never resolves.
 - **Unused parameters** kept for Unity's signatures (base virtuals) get a `_` prefix.
-- **Randomness**: one injectable seeded PRNG; `?seed=` overrides.
+- **Randomness**: one injectable seeded PRNG for the whole game (it outlives a battle, like
+  Unity's); `?seed=` overrides.
 - **Coordinates**: Unity is left-handed. Everything from Unity renders inside `<UnityWorld>` (a
   Z-mirroring group), so Unity positions/rotations/meshes are used verbatim. Unity Euler degrees
   → `unityEuler()`. Cameras inside it need their own `scale={[1, 1, -1]}`.

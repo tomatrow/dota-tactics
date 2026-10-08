@@ -1,5 +1,6 @@
 import type { TransitionEvent } from "runic-svelte-fsm"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
 import type { Point } from "#lib/model/Point.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
@@ -19,6 +20,7 @@ export type BattleStateName =
 	| "CommandSelectionState"
 	| "ConfirmAbilityTargetState"
 	| "CutSceneState"
+	| "EndBattleState"
 	| "EndFacingState"
 	| "ExploreState"
 	| "InitBattleState"
@@ -85,4 +87,14 @@ export function refreshSecondaryStatPanel(owner: BattleController, p: Point): vo
 	const target = getUnit(owner, p)
 	if (target !== null) owner.statPanelController.showSecondary(target)
 	else owner.statPanelController.hideSecondary()
+}
+
+/** Whether the heroes won the battle. */
+export function didPlayerWin(owner: BattleController): boolean {
+	return owner.victoryCondition!.victor === Alliances.Hero
+}
+
+/** Whether the battle has been decided. */
+export function isBattleOver(owner: BattleController): boolean {
+	return owner.victoryCondition!.victor !== Alliances.None
 }

@@ -7,11 +7,13 @@ import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"
 import { Turn } from "#lib/model/Turn.ts"
 import { Board } from "#lib/view-model-component/Board.svelte.ts"
+import { FacingIndicator } from "#lib/view-model-component/FacingIndicator.svelte.ts"
 import { HitSuccessIndicator } from "#lib/view-model-component/HitSuccessIndicator.svelte.ts"
 import { ConversationController } from "./ConversationController.svelte.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
+import { AutoStatusController } from "./AutoStatusController.ts"
 import { StatPanelController } from "./StatPanelController.svelte.ts"
 import { abilityTargetState } from "./battle-states/AbilityTargetState.ts"
 import { actionSelectionState } from "./battle-states/ActionSelectionState.ts"
@@ -20,6 +22,7 @@ import { categorySelectionState } from "./battle-states/CategorySelectionState.t
 import { commandSelectionState } from "./battle-states/CommandSelectionState.ts"
 import { confirmAbilityTargetState } from "./battle-states/ConfirmAbilityTargetState.ts"
 import { cutSceneState } from "./battle-states/CutSceneState.ts"
+import { endBattleState } from "./battle-states/EndBattleState.ts"
 import { endFacingState } from "./battle-states/EndFacingState.ts"
 import { exploreState } from "./battle-states/ExploreState.ts"
 import { initBattleState } from "./battle-states/InitBattleState.ts"
@@ -27,6 +30,7 @@ import { moveSequenceState } from "./battle-states/MoveSequenceState.ts"
 import { moveTargetState } from "./battle-states/MoveTargetState.ts"
 import { performAbilityState } from "./battle-states/PerformAbilityState.ts"
 import { selectUnitState } from "./battle-states/SelectUnitState.ts"
+import type { BaseVictoryCondition } from "./victory-conditions/BaseVictoryCondition.ts"
 
 function createStateMachine(owner: BattleController) {
 	return fsm("None", {
@@ -39,6 +43,7 @@ function createStateMachine(owner: BattleController) {
 		CommandSelectionState: commandSelectionState(owner),
 		ConfirmAbilityTargetState: confirmAbilityTargetState(owner),
 		CutSceneState: cutSceneState(owner),
+		EndBattleState: endBattleState(owner),
 		EndFacingState: endFacingState(owner),
 		ExploreState: exploreState(owner),
 		InitBattleState: initBattleState(owner),
@@ -50,24 +55,29 @@ function createStateMachine(owner: BattleController) {
 }
 
 export interface BattleOptions {
-	/** For the battle's `random` (default: a random one). */
+	/** For a new `random` (default: a random one). */
 	seed?: number
+	/** Unity's `UnityEngine.Random`, which lasts from one battle to the next (default: a new one). */
+	random?: Random
 	/**
 	 * Spawns the battle's units instead of `InitBattleState` (whose `SpawnTestUnits`, three heroes
 	 * and three enemies on random tiles, is temporary code in Unity too). For tests that need
 	 * particular units in particular places.
 	 */
 	spawnTestUnits?: ((battle: BattleController) => void) | null
+	/** Unity's `Application.LoadLevel(0)`: starts the battle over, which `EndBattleState` does. */
+	loadLevel?: (() => void) | null
 }
 
 /**
  * Port of `Controller/BattleController.cs`: the battle's state machine (Unity's `StateMachine`
- * base class is `runic-svelte-fsm`) and everything its states share.
+ * base class is `runic-svelte-fsm`) and everything its states share, including the other
+ * components on its GameObject.
  */
 export class BattleController {
 	/** Unity's `NotificationCenter.instance`, one per battle. */
 	readonly notifications = new NotificationCenter()
-	/** Unity's `UnityEngine.Random`, one per battle. */
+	/** Unity's `UnityEngine.Random`. */
 	readonly random: Random
 	readonly board = new Board()
 	readonly levelData: LevelData
@@ -76,27 +86,40 @@ export class BattleController {
 	/** The selected board position. */
 	pos = Point.zero
 	readonly abilityMenuPanelController = new AbilityMenuPanelController()
-	readonly statPanelController: StatPanelController
+	readonly statPanelController = new StatPanelController()
 	readonly hitSuccessIndicator = new HitSuccessIndicator()
+	/** The tile selection indicator's child, which `EndFacingState` shows. */
+	readonly facingIndicator = new FacingIndicator()
 	readonly turn = new Turn()
 	units: Unit[] = $state([])
 	/** `TurnOrderController.round()`, which `SelectUnitState` steps through. */
 	round: Iterator<Unit> | null = null
 	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
 	actionSelectionCategory = 0
+	/** Knocks out units with no HP left (a component of Unity's Battle Controller). */
+	readonly autoStatusController: AutoStatusController
+	/** Unity's `GetComponent<BaseVictoryCondition>()`, which `InitBattleState` adds. */
+	victoryCondition: BaseVictoryCondition | null = null
 
 	/** Replaces `InitBattleState`'s own (`BattleOptions.spawnTestUnits`). */
 	readonly spawnTestUnits: ((battle: BattleController) => void) | null
+	readonly loadLevel: (() => void) | null
 	readonly machine: ReturnType<typeof createStateMachine>
 
 	constructor(
 		levelData: LevelData,
-		{ seed = Random.randomSeed(), spawnTestUnits = null }: BattleOptions = {}
+		{
+			seed = Random.randomSeed(),
+			random = new Random(seed),
+			spawnTestUnits = null,
+			loadLevel = null
+		}: BattleOptions = {}
 	) {
 		this.levelData = levelData
-		this.random = new Random(seed)
+		this.random = random
 		this.spawnTestUnits = spawnTestUnits
-		this.statPanelController = new StatPanelController(this.random)
+		this.loadLevel = loadLevel
+		this.autoStatusController = new AutoStatusController(this.notifications)
 		this.machine = createStateMachine(this)
 	}
 

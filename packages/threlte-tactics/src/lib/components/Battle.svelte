@@ -3,10 +3,10 @@
 	(DOM overlay) layered on top.
 -->
 <script lang="ts">
-	import { page } from "$app/state"
 	import { Canvas } from "@threlte/core"
 	import { onMount } from "svelte"
 	import { LinearSRGBColorSpace, NoToneMapping, PCFShadowMap } from "three"
+	import type { Random } from "#lib/common/unity/Random.ts"
 	import { Resources } from "#lib/common/unity/Resources.ts"
 	import { BattleController, setBattleController } from "#lib/controller/BattleController.svelte.ts"
 	import type { LevelData } from "#lib/model/LevelData.ts"
@@ -17,15 +17,23 @@
 	import Input from "./Input.svelte"
 	import StatPanelControllerView from "./StatPanelControllerView.svelte"
 
+	let {
+		random,
+		onloadlevel
+	}: {
+		/** Unity's `UnityEngine.Random` (default: a new one). */
+		random?: Random
+		/** Unity's `Application.LoadLevel(0)`: start the battle over, from scratch. */
+		onloadlevel?: () => void
+	} = $props()
+
 	const levelData = Resources.load<LevelData>("Levels/Level_0")
 	if (!levelData) throw new Error("Missing Resources/Levels/Level_0")
 
-	// `?seed=` replays a battle's randomness.
-	const seed = page.url.searchParams.get("seed")
-	const battle = setBattleController(
-		new BattleController(levelData, seed === null ? {} : { seed: Number(seed) })
-	)
-	console.info(`Battle seed: ${battle.random.seed} (replay with ?seed=${battle.random.seed})`)
+	// A scene is set up once, with the props it starts with; `{#key}` it to start over.
+	// svelte-ignore state_referenced_locally
+	const options = { random, loadLevel: () => onloadlevel?.() }
+	const battle = setBattleController(new BattleController(levelData, options))
 	onMount(() => battle.start())
 </script>
 

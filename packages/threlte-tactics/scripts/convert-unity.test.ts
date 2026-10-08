@@ -38,6 +38,7 @@ describe("parseUnityYaml", () => {
 	})
 })
 
-test("generated resources are up to date (run `pnpm convert`)", async () => {
+// Reads the whole Unity project and formats every file: slow on a busy machine.
+test("generated resources are up to date (run `pnpm convert`)", { timeout: 30_000 }, async () => {
 	expect(await stale(await convert())).toEqual([])
 })

@@ -1,5 +1,6 @@
 import { BlindStatusEffect } from "./BlindStatusEffect.ts"
 import { HasteStatusEffect } from "./HasteStatusEffect.ts"
+import { KnockOutStatusEffect } from "./KnockOutStatusEffect.ts"
 import { PoisonStatusEffect } from "./PoisonStatusEffect.ts"
 import { SlowStatusEffect } from "./SlowStatusEffect.ts"
 import type { StatusEffectType } from "./StatusEffect.ts"
@@ -9,6 +10,7 @@ import { StopStatusEffect } from "./StopStatusEffect.ts"
 export const statusEffectTypes = {
 	BlindStatusEffect,
 	HasteStatusEffect,
+	KnockOutStatusEffect,
 	PoisonStatusEffect,
 	SlowStatusEffect,
 	StopStatusEffect

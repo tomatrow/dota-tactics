@@ -1,12 +1,13 @@
 import { nextFrame } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
-import type { BattleStateHandlers } from "./BattleState.ts"
+import { KnockOutStatusEffect } from "#lib/view-model-component/status/effects/KnockOutStatusEffect.ts"
+import { isBattleOver, type BattleStateHandlers } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/PerformAbilityState.cs` as of the magic part: uses the action,
- * performs the ability on the targets a frame later, then carries on with the turn.
+ * Port of `Controller/Battle States/PerformAbilityState.cs`: uses the action, performs the ability
+ * on the targets a frame later, then carries on: to the outro if that decided the battle, to the
+ * next turn if it knocked the actor out, or back to the actor's turn.
  */
-// TODO(part 22): end the battle once it's over, and skip a knocked out actor's facing.
 export function performAbilityState(owner: BattleController) {
 	const { turn } = owner
 
@@ -21,12 +22,21 @@ export function performAbilityState(owner: BattleController) {
 		turn.ability!.perform(turn.targets)
 	}
 
+	function unitHasControl(): boolean {
+		return turn.actor!.status.getEffect(KnockOutStatusEffect) === null
+	}
+
 	return {
 		_enter() {
 			turn.hasUnitActed = true
 			if (turn.hasUnitMoved) turn.lockMove = true
 			void animate()
 		},
-		done: () => (turn.hasUnitMoved ? "EndFacingState" : "CommandSelectionState")
+		done() {
+			if (isBattleOver(owner)) return "CutSceneState"
+			else if (!unitHasControl()) return "SelectUnitState"
+			else if (turn.hasUnitMoved) return "EndFacingState"
+			else return "CommandSelectionState"
+		}
 	} satisfies BattleStateHandlers
 }

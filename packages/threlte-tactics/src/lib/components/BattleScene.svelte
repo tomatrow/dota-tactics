@@ -20,7 +20,13 @@
 	<T.Group name="Battle Controller">
 		<CameraRig follow={battle.tileSelectionIndicator.localPosition} />
 		<BoardView board={battle.board} />
-		<TileSelectionIndicator position={battle.tileSelectionIndicator.localPosition} />
+		<TileSelectionIndicator
+			facingIndicator={{
+				visible: battle.facingIndicator.active,
+				selected: battle.facingIndicator.direction
+			}}
+			position={battle.tileSelectionIndicator.localPosition}
+		/>
 		<T.Group name="Units">
 			{#each battle.units as unit (unit)}
 				<UnitView {unit} />

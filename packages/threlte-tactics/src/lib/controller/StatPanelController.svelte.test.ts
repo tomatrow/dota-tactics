@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, test } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Alliances } from "#lib/enums/Alliances.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
+import { Alliance } from "#lib/view-model-component/actor/Alliance.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { StatPanelController } from "./StatPanelController.svelte.ts"
 
 beforeEach(useFakeTime)
 
-function unit() {
+function unit(alliance: Alliances = Alliances.Hero) {
 	const u = new Unit({ name: "Arthur", model: "Hero", notifications: new NotificationCenter() })
+	u.alliance = new Alliance(alliance)
 	const { stats } = u
 	stats.set(StatTypes.LVL, 7)
 	stats.set(StatTypes.MHP, 90)
@@ -21,7 +23,7 @@ function unit() {
 
 describe("StatPanelController", () => {
 	test("both panels start hidden", () => {
-		const controller = new StatPanelController(new Random(1))
+		const controller = new StatPanelController()
 		expect(controller.primaryPanel.panel.currentPosition?.name).toBe("Hide")
 		expect(controller.secondaryPanel.panel.currentPosition?.name).toBe("Hide")
 		// Off screen: the primary panel's right edge on the left edge, and vice versa.
@@ -30,7 +32,7 @@ describe("StatPanelController", () => {
 	})
 
 	test("showing displays the unit's stats as they are, and slides the panel in", async () => {
-		const controller = new StatPanelController(new Random(1))
+		const controller = new StatPanelController()
 		const u = unit()
 		controller.showPrimary(u)
 		const { primaryPanel: panel } = controller
@@ -53,7 +55,7 @@ describe("StatPanelController", () => {
 	})
 
 	test("the secondary panel slides in from the right, and both slide out", async () => {
-		const controller = new StatPanelController(new Random(1))
+		const controller = new StatPanelController()
 		controller.showSecondary(unit())
 		await advance(0.6)
 		expect(controller.secondaryPanel.panel.anchor.placement).toEqual([1, 0, 1, 0, 0, 20])
@@ -65,7 +67,7 @@ describe("StatPanelController", () => {
 	})
 
 	test("hiding then showing at once keeps a shown panel in place", async () => {
-		const controller = new StatPanelController(new Random(1))
+		const controller = new StatPanelController()
 		controller.showPrimary(unit())
 		await advance(0.6)
 		controller.hidePrimary()
@@ -74,13 +76,13 @@ describe("StatPanelController", () => {
 		expect(controller.primaryPanel.panel.anchor.placement).toEqual([0, 0, 0, 0, 0, 20])
 	})
 
-	test("the background is randomly blue or red until units have alliances", () => {
-		const controller = new StatPanelController(new Random(3))
-		const backgrounds = new Set<string>()
-		for (let i = 0; i < 20; ++i) {
-			controller.showPrimary(unit())
-			backgrounds.add(controller.primaryPanel.background)
-		}
-		expect([...backgrounds].sort()).toEqual(["BlueAttackPanel", "RedAttackPanel"])
+	test("the background is red for an enemy, blue for anyone else", () => {
+		const controller = new StatPanelController()
+		const { Hero, Enemy, Neutral } = Alliances
+		const backgrounds = [Hero, Enemy, Neutral].map((alliance) => {
+			controller.showPrimary(unit(alliance))
+			return controller.primaryPanel.background
+		})
+		expect(backgrounds).toEqual(["BlueAttackPanel", "RedAttackPanel", "BlueAttackPanel"])
 	})
 })

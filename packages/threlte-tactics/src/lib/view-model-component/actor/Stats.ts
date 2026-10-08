@@ -1,6 +1,7 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { StatTypes, statTypeName, type StatTypeName } from "#lib/enums/StatTypes.ts"
 import { ValueChangeException } from "#lib/exceptions/ValueChangeException.ts"
+import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
 type StatsNotifications = {
 	/** Posted before a stat changes through `set`; listeners may block or modify the change. */
@@ -30,9 +31,12 @@ export class Stats {
 
 	readonly #data: number[] = new Array<number>(StatTypes.Count).fill(0)
 	readonly #notifications: NotificationCenter
+	/** The unit whose stats these are (Unity: the GameObject they're on), if any. */
+	readonly unit: Unit | null
 
-	constructor(notifications: NotificationCenter) {
+	constructor(notifications: NotificationCenter, unit: Unit | null = null) {
 		this.#notifications = notifications
+		this.unit = unit
 	}
 
 	/** Unity's indexer getter, `stats[type]`. */

@@ -1,6 +1,7 @@
 import { nextFrame } from "#lib/common/unity/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { TurnOrderController } from "#lib/controller/TurnOrderController.ts"
+import { DefeatTargetVictoryCondition } from "#lib/controller/victory-conditions/DefeatTargetVictoryCondition.ts"
 import type { Directions } from "#lib/enums/Directions.ts"
 import { UnitFactory } from "#lib/factory/UnitFactory.ts"
 import { Point } from "#lib/model/Point.ts"
@@ -14,7 +15,7 @@ export function initBattleState(owner: BattleController) {
 		selectTile(owner, Point.of(Math.trunc(x), Math.trunc(z)))
 		if (owner.spawnTestUnits) owner.spawnTestUnits(owner)
 		else spawnTestUnits()
-		// TODO(part 22): addVictoryCondition()
+		addVictoryCondition()
 		owner.round = new TurnOrderController(owner).round()
 		// Unity can't change state during a transition (`Enter`), so it waits a frame.
 		await nextFrame()
@@ -42,6 +43,16 @@ export function initBattleState(owner: BattleController) {
 		}
 
 		selectTile(owner, owner.units[0]!.tile!.pos)
+	}
+
+	/** The heroes win by defeating the last enemy, who escapes with 10 HP left. */
+	function addVictoryCondition(): void {
+		const vc = new DefeatTargetVictoryCondition(owner)
+		owner.victoryCondition = vc
+		const enemy = owner.units[owner.units.length - 1]!
+		vc.target = enemy
+		const health = enemy.health!
+		health.minHP = 10
 	}
 
 	return {
