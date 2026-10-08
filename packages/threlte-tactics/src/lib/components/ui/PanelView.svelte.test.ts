@@ -103,7 +103,12 @@ test("the canvas is 480 reference pixels tall and as wide as the screen's aspect
 	Object.assign(parent.style, { position: "relative", width: "800px", height: "240px" })
 	document.body.append(parent)
 	const children = createRawSnippet(() => ({ render: () => "<p>hi</p>" }))
-	const screen = await render(UICanvas, { props: { children } }, { baseElement: parent })
+	const screen = await render(
+		UICanvas,
+		{ props: { name: "Canvas", children } },
+		{ baseElement: parent }
+	)
+	expect(screen.getByRole("region", { name: "Canvas" }).element()).toBe(screen.container.firstChild)
 
 	const canvas = screen.container.querySelector<HTMLElement>(".canvas")
 	expect(canvas?.offsetWidth).toBe(1600)

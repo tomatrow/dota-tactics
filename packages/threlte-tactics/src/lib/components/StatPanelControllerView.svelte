@@ -7,7 +7,7 @@
 	let { controller }: { controller: StatPanelController } = $props()
 </script>
 
-<UICanvas>
+<UICanvas name="Stat Panel Controller">
 	<StatPanelView side="primary" statPanel={controller.primaryPanel} />
 	<StatPanelView side="secondary" statPanel={controller.secondaryPanel} />
 </UICanvas>

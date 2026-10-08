@@ -8,7 +8,7 @@
 </script>
 
 {#if controller.canvasActive}
-	<UICanvas>
+	<UICanvas name="Conversation Controller">
 		<ConversationPanelView conversationPanel={controller.rightPanel} edge="right" />
 		<ConversationPanelView conversationPanel={controller.leftPanel} edge="left" />
 	</UICanvas>

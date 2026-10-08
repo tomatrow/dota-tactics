@@ -14,11 +14,13 @@
 		"format": "prettier --cache --cache-strategy content --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
+		"test:e2e": "playwright test",
 		"test:install-browsers": "playwright install chromium",
 		"convert": "node scripts/convert-unity.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",
+		"@playwright/test": "catalog:",
 		"@sveltejs/adapter-static": "catalog:",
 		"@sveltejs/kit": "catalog:",
 		"@sveltejs/vite-plugin-svelte": "catalog:",

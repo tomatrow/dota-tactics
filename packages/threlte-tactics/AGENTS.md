@@ -30,7 +30,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   post) and evolve it as later parts land.
 - One or more commits per part, imperative messages: `Port part 6: path finding`. Commit on
   `master`; never push.
-- `pnpm lint`, `pnpm check` and `pnpm test` must be green before every commit.
+- `pnpm lint`, `pnpm check` and `pnpm test` must be green before every commit; `pnpm test:e2e`
+  too before a commit that changes the battle flow (and at milestones).
 - Keep `PORTING.md` up to date: part status, Unity → port file map, divergences.
 - Mark per-part interim code that a later part replaces with `// TODO(part N): <what>`
   (`rg "TODO\(part"` lists them); resolve them when part N lands.
@@ -155,7 +156,10 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `InitBattleState`'s random ones.
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#. Components get light smoke tests.
-- Playwright e2e is added once a battle is playable.
+- e2e (`pnpm test:e2e`, Playwright, `e2e/`): builds and previews the game, then plays a whole
+  battle by keyboard on a fake clock (`page.clock`, jumped a frame at a time; about a minute).
+  It reads the UI by its canvases' regions (`<UICanvas name>`). Press keys a frame apart: input
+  is read per frame, as in Unity.
 - Visual checks: a headless browser (Playwright's Chromium with `--headless=new`, driven over
   CDP by puppeteer-core from the browser-tools skill). Never drive the user's own Chrome.
 - First run: `pnpm test:install-browsers`.

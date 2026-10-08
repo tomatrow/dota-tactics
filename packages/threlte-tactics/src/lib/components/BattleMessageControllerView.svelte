@@ -11,7 +11,7 @@
 </script>
 
 {#if controller.canvasActive}
-	<UICanvas alpha={controller.alpha}>
+	<UICanvas name="Battle Message Controller" alpha={controller.alpha}>
 		<RectTransform
 			anchorMax={[1, 1]}
 			anchorMin={[0, 1]}

@@ -14,14 +14,15 @@ pnpm test:install-browsers # once: Playwright Chromium for browser-mode tests
 pnpm dev
 ```
 
-| Script        | What it does                                         |
-| ------------- | ---------------------------------------------------- |
-| `pnpm dev`    | Vite dev server                                      |
-| `pnpm build`  | Static build (`adapter-static`) into `build/`        |
-| `pnpm check`  | `svelte-check`                                       |
-| `pnpm lint`   | Prettier + ESLint                                    |
-| `pnpm format` | Prettier write                                       |
-| `pnpm test`   | Vitest (browser-mode `client` + Node `server` tests) |
+| Script          | What it does                                         |
+| --------------- | ---------------------------------------------------- |
+| `pnpm dev`      | Vite dev server                                      |
+| `pnpm build`    | Static build (`adapter-static`) into `build/`        |
+| `pnpm check`    | `svelte-check`                                       |
+| `pnpm lint`     | Prettier + ESLint                                    |
+| `pnpm format`   | Prettier write                                       |
+| `pnpm test`     | Vitest (browser-mode `client` + Node `server` tests) |
+| `pnpm test:e2e` | Playwright: plays a whole battle in the built game   |
 
 ## Controls
 

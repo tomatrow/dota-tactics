@@ -12,7 +12,7 @@
 </script>
 
 {#if indicator.canvasActive}
-	<UICanvas>
+	<UICanvas name="Hit Success Indicator">
 		<PanelView height={107} panel={indicator.panel} width={192}>
 			<RectTransform
 				anchorMax={[0, 0]}

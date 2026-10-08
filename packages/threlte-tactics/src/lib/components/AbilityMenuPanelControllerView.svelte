@@ -14,7 +14,7 @@
 </script>
 
 {#if controller.canvasActive}
-	<UICanvas>
+	<UICanvas name="Ability Menu Controller">
 		<PanelView panel={controller.panel} width={180}>
 			<UIImage sprite="AbilityMenu" type="Sliced" />
 			<div class="layout">

@@ -10,9 +10,12 @@
 	const referenceHeight = 480
 
 	let {
+		name,
 		alpha = 1,
 		children
 	}: {
+		/** The canvas's GameObject (e.g. its prefab's name): the region's accessible name. */
+		name: string
 		/** A `CanvasGroup`'s alpha. */
 		alpha?: number
 		children: Snippet
@@ -23,7 +26,13 @@
 	const scale = $derived(screenHeight / referenceHeight)
 </script>
 
-<div class="screen" bind:clientWidth={screenWidth} bind:clientHeight={screenHeight}>
+<div
+	class="screen"
+	aria-label={name}
+	role="region"
+	bind:clientWidth={screenWidth}
+	bind:clientHeight={screenHeight}
+>
 	{#if scale > 0}
 		<div
 			style:width="{screenWidth / scale}px"

@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 
 # Vitest browser mode
 __screenshots__
+
+# Playwright
+/test-results
+/playwright-report
