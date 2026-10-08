@@ -51,11 +51,7 @@ export function confirmAbilityTargetState(owner: BattleController) {
 		for (const child of turn.ability!.effects) {
 			if (child.target.isTarget(target)) {
 				chance = child.hitRate.calculate(target)
-
-				// TODO(part 19): the effect's prediction.
-				// The blog's placeholder estimate: the demo attack's 50 damage (negative, as the
-				// effects will predict damage).
-				amount = -50
+				amount = child.effect.predict(target)
 				break
 			}
 		}

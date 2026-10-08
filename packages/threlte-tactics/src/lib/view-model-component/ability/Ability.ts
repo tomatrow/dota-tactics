@@ -1,18 +1,20 @@
 import type { AbilityArea } from "./area-of-effect/AbilityArea.ts"
 import type { AbilityEffectTarget } from "./effect-target/AbilityEffectTarget.ts"
+import type { BaseAbilityEffect } from "./effects/BaseAbilityEffect.ts"
 import type { HitRate } from "./hit-rate/HitRate.ts"
+import type { BaseAbilityPower } from "./power/BaseAbilityPower.ts"
 import type { AbilityRange } from "./range/AbilityRange.ts"
 
 /**
  * One of an ability's child GameObjects: an effect of the ability, whom it applies to, and its
  * chance to.
  */
-// TODO(part 19): the effect.
 export interface AbilityEffect {
 	/** The GameObject's name. */
 	readonly name: string
-	readonly target: AbilityEffectTarget
 	readonly hitRate: HitRate
+	readonly target: AbilityEffectTarget
+	readonly effect: BaseAbilityEffect
 }
 
 /**
@@ -24,6 +26,7 @@ export interface AbilityEffect {
 export class Ability {
 	/** The GameObject's name. */
 	readonly name: string
+	readonly power: BaseAbilityPower | null
 	readonly range: AbilityRange
 	readonly area: AbilityArea
 	/** Its child GameObjects, in order. */
@@ -31,18 +34,25 @@ export class Ability {
 
 	constructor({
 		name,
+		power = null,
 		range,
 		area,
 		effects
 	}: {
 		name: string
+		power?: BaseAbilityPower | null
 		range: AbilityRange
 		area: AbilityArea
 		effects: readonly AbilityEffect[]
 	}) {
 		this.name = name
+		this.power = power
 		this.range = range
 		this.area = area
 		this.effects = effects
+
+		// Unity's `Instantiate`: the components wake up once the hierarchy is complete.
+		power?.attach(this)
+		for (const child of effects) child.effect.attach(this, child)
 	}
 }

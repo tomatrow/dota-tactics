@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, expectTypeOf, test } from "vitest"
+import { beforeEach, describe, expect, expectTypeOf, test, vi } from "vitest"
 import { Resources } from "#lib/common/unity/Resources.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -6,10 +6,12 @@ import { Point } from "#lib/model/Point.ts"
 import { Ability } from "#lib/view-model-component/ability/Ability.ts"
 import { FullAbilityArea } from "#lib/view-model-component/ability/area-of-effect/FullAbilityArea.ts"
 import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
+import { DamageAbilityEffect } from "#lib/view-model-component/ability/effects/DamageAbilityEffect.ts"
 import { ATypeHitRate } from "#lib/view-model-component/ability/hit-rate/ATypeHitRate.ts"
 import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Rank } from "#lib/view-model-component/actor/Rank.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
+import { BlindStatusEffect } from "#lib/view-model-component/status/effects/BlindStatusEffect.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { Directions } from "#lib/enums/Directions.ts"
@@ -451,7 +453,8 @@ describe("AbilityTargetState", () => {
 				{
 					name: "Damage",
 					target: new DefaultAbilityEffectTarget(),
-					hitRate: new ATypeHitRate(rogue, battle)
+					hitRate: new ATypeHitRate(rogue, battle),
+					effect: new DamageAbilityEffect(rogue, battle)
 				}
 			]
 		})
@@ -506,9 +509,10 @@ describe("ConfirmAbilityTargetState", () => {
 		expect(battle.pos).toBe(Point.of(1, 1))
 	})
 
-	test("the hit success indicator shows the chance to hit the target", async () => {
+	test("the hit success indicator shows the chance to hit the target, and the damage", async () => {
 		const battle = await started()
-		const [, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		const damage = (unit: Unit) => -rogue.attack!.effects[0]!.effect.predict(unit.tile!)
 		// Everyone has 50 evade. The Rogue faces north: an attack on itself counts as from the side.
 		// The Wizard, east of it, faces it; the Warrior, west of it, turns its back.
 		wizard.dir = Directions.West
@@ -525,12 +529,12 @@ describe("ConfirmAbilityTargetState", () => {
 
 		attack(battle)
 		battle.fire(0)
-		const label = "75% 50pt(s)"
+		const label = `75% ${damage(rogue)}pt(s)`
 		expect(shown()).toEqual({ active: true, at: "Show", label, fill: 0.75, color: "#ff0000" })
 		battle.move(Point.of(1, 0))
-		expect(shown()).toMatchObject({ label: "50% 50pt(s)", fill: 0.5 })
+		expect(shown()).toMatchObject({ label: `50% ${damage(wizard)}pt(s)`, fill: 0.5 })
 		battle.move(Point.of(1, 0))
-		expect(shown()).toMatchObject({ label: "88% 50pt(s)", fill: 0.88 })
+		expect(shown()).toMatchObject({ label: `88% ${damage(warrior)}pt(s)`, fill: 0.88 })
 
 		battle.fire(1)
 		expect(shown()).toMatchObject({ active: true, at: "Hide" })
@@ -572,10 +576,16 @@ describe("ConfirmAbilityTargetState", () => {
 })
 
 describe("PerformAbilityState and EndFacingState", () => {
-	test("performing uses the action and takes 50 HP from each target a frame later", async () => {
+	test("performing uses the action and applies the attack to each target a frame later", async () => {
 		const battle = await started()
 		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
+		// Every roll hits, with no variance.
+		vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
+		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
 		const hpBefore = battle.units.map((u) => u.stats.get(StatTypes.HP))
+		const [damage] = rogue.attack!.effects
+		const predicted = [rogue, warrior].map((u) => damage!.effect.predict(u.tile!))
+		expect(predicted.every((amount) => amount < 0)).toBe(true)
 		attack(battle)
 		battle.move(Point.of(-1, 0))
 		battle.fire(0)
@@ -590,10 +600,12 @@ describe("PerformAbilityState and EndFacingState", () => {
 		await advance(0.1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect([rogue, warrior, wizard].map((u) => u.stats.get(StatTypes.HP))).toEqual([
-			hpBefore[0]! - 50,
-			hpBefore[1]! - 50,
+			hpBefore[0]! + predicted[0]!,
+			hpBefore[1]! + predicted[1]!,
 			hpBefore[2]
 		])
+		const blind = (unit: Unit) => unit.status.getEffect(BlindStatusEffect) !== null
+		expect([rogue, warrior, wizard].map(blind)).toEqual([true, true, false])
 		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
 	})
 
