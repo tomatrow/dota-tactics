@@ -4,10 +4,14 @@ import type { UnitModelName } from "#lib/components/prefabs/UnitModel.svelte"
 import { Directions } from "#lib/enums/Directions.ts"
 import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Ability } from "./ability/Ability.ts"
+import type { AbilityCatalog } from "./ability/AbilityCatalog.ts"
 import { Equipment } from "./actor/Equipment.ts"
+import type { Health } from "./actor/Health.ts"
 import type { Job } from "./actor/Job.ts"
+import type { Mana } from "./actor/Mana.ts"
 import { Rank } from "./actor/Rank.ts"
 import { Stats } from "./actor/Stats.ts"
+import type { Undead } from "./actor/Undead.ts"
 import type { Movement } from "./movement/Movement.ts"
 import { Status } from "./status/Status.ts"
 import type { Tile } from "./Tile.svelte.ts"
@@ -32,8 +36,14 @@ export class Unit {
 	readonly equipment: Equipment
 	job: Job | null = null
 	movement: Movement | null = null
+	// Added once the job and rank are set up, as Unity's spawners do.
+	health: Health | null = null
+	mana: Mana | null = null
+	undead: Undead | null = null
 	/** Unity's `GetComponentInChildren<Ability>()`: the unit's attack, its first child ability. */
 	attack: Ability | null = null
+	/** Unity's `GetComponentInChildren<AbilityCatalog>()`. */
+	abilityCatalog: AbilityCatalog | null = null
 
 	#tile: Tile | null = null
 

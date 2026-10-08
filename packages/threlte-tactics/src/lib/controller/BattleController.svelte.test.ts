@@ -11,7 +11,8 @@ import { ATypeHitRate } from "#lib/view-model-component/ability/hit-rate/ATypeHi
 import { LineAbilityRange } from "#lib/view-model-component/ability/range/LineAbilityRange.ts"
 import { Rank } from "#lib/view-model-component/actor/Rank.ts"
 import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
-import { BlindStatusEffect } from "#lib/view-model-component/status/effects/BlindStatusEffect.ts"
+import { Health } from "#lib/view-model-component/actor/Health.ts"
+import { Mana } from "#lib/view-model-component/actor/Mana.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { Directions } from "#lib/enums/Directions.ts"
@@ -116,9 +117,9 @@ describe("InitBattleState", () => {
 		expect(
 			battle.units.map((u) => [u.name, u.tile?.pos, u.job?.name, u.movement?.constructor.name])
 		).toEqual([
-			["Hero(Clone)", Point.of(1, 1), "Rogue", "WalkMovement"],
-			["Hero(Clone)", Point.of(0, 1), "Warrior", "WalkMovement"],
-			["Hero(Clone)", Point.of(2, 1), "Wizard", "WalkMovement"]
+			["Rogue", Point.of(1, 1), "Rogue", "WalkMovement"],
+			["Warrior", Point.of(0, 1), "Warrior", "WalkMovement"],
+			["Wizard", Point.of(2, 1), "Wizard", "WalkMovement"]
 		])
 		expect(battle.units[1]!.transform.localPosition).toEqual([0, 0.5, 1])
 
@@ -133,6 +134,22 @@ describe("InitBattleState", () => {
 		expect(warrior.get(MHP)).toBeGreaterThanOrEqual(43 + 9 * 8)
 		expect(warrior.get(MHP)).toBeLessThanOrEqual(43 + 9 * 9)
 		expect(warrior.get(HP)).toBe(warrior.get(MHP))
+		expect(warrior.get(StatTypes.MP)).toBe(warrior.get(StatTypes.MMP))
+
+		// The blog's Hero prefab: an Attack, and an ability catalog.
+		const [rogue] = battle.units as [Unit]
+		expect([rogue.health, rogue.mana, rogue.undead]).toEqual([
+			expect.any(Health),
+			expect.any(Mana),
+			null
+		])
+		expect(rogue.attack?.name).toBe("Attack")
+		expect(
+			rogue.abilityCatalog?.categories.map((c) => [c.name, c.abilities.map((a) => a.name)])
+		).toEqual([
+			["White Magic", ["Cure", "Raise", "Holy"]],
+			["Sagacity Skill", ["Water", "Blind", "Drain"]]
+		])
 	})
 
 	test("a seed replays the stats' growth", () => {
@@ -294,7 +311,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		expect(battle.machine.current).toBe("CategorySelectionState")
 		expect(menu(battle)).toEqual({
 			title: "Action",
-			entries: ["Attack", "White Magic", "Black Magic"],
+			entries: ["Attack", "White Magic", "Sagacity Skill"],
 			selected: "Attack"
 		})
 		battle.fire(0)
@@ -311,9 +328,9 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ActionSelectionState")
 		expect(menu(battle)).toEqual({
-			title: "Black Magic",
-			entries: ["Fire", "Ice", "Lightning"],
-			selected: "Fire"
+			title: "Sagacity Skill",
+			entries: ["Water: 12", "Blind: 12", "Drain: 12"],
+			selected: "Water: 12"
 		})
 
 		battle.fire(1)
@@ -326,15 +343,58 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		expect(battle.machine.current).toBe("CommandSelectionState")
 	})
 
-	test("using an ability ends the action without locking an unmade move", async () => {
+	test("abilities the actor lacks the MP for are locked", async () => {
 		const battle = await started()
+		const [rogue] = battle.units as [Unit]
+		rogue.stats.set(StatTypes.MP, 22)
 		battle.move(Point.of(0, -1))
 		battle.fire(0)
 		battle.move(Point.of(0, -1))
 		battle.fire(0)
-		battle.fire(0)
+		expect(menu(battle)).toEqual({
+			title: "White Magic",
+			entries: ["Cure: 6", "Raise: 22", "(Holy: 32)"],
+			selected: "Cure: 6"
+		})
 
+		battle.fire(1)
+		rogue.stats.set(StatTypes.MP, 5)
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		expect(menu(battle).entries).toEqual(["(Cure: 6)", "(Raise: 22)", "(Holy: 32)"])
+	})
+
+	test("an ability aims; performing it spends its MP and ends the action", async () => {
+		const battle = await started()
+		const [rogue] = battle.units as [Unit]
+		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+		rogue.stats.set(StatTypes.HP, 1)
+		const mp = rogue.stats.get(StatTypes.MP)
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.move(Point.of(0, -1))
+		battle.fire(0)
+		battle.fire(0)
+		expect(battle.machine.current).toBe("AbilityTargetState")
+		const cure = rogue.abilityCatalog!.getAbility(0, 0)!
+		expect(battle.turn.ability).toBe(cure)
+
+		// Cure the Rogue and the units next to it: they heal by Cure's power, up to their max HP.
+		battle.fire(0)
+		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
+		const healing = cure.effects[0]!.effect.predict(rogue.tile!)
+		expect(battle.hitSuccessIndicator).toMatchObject({
+			label: `100% ${healing}pt(s)`,
+			labelColor: "#00ff00"
+		})
+		battle.fire(0)
+		await advance(0.1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
+		expect(rogue.stats.get(StatTypes.MP)).toBe(mp - 6)
+		expect(rogue.stats.get(StatTypes.HP)).toBe(1 + healing)
+		expect(battle.units.slice(1).map((u) => u.stats.get(StatTypes.HP))).toEqual(
+			battle.units.slice(1).map((u) => u.stats.get(StatTypes.MHP))
+		)
 		expect(battle.turn).toMatchObject({ hasUnitActed: true, lockMove: false })
 		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
 	})
@@ -352,7 +412,7 @@ describe("stat panel", () => {
 		battle.fire(1)
 		battle.fire(0)
 		expect(battle.machine.current).toBe("CommandSelectionState")
-		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(shown(battle)).toBe("Rogue")
 		expect(battle.statPanelController.primaryPanel.hpLabel).toMatch(/^HP 12 \//)
 
 		battle.fire(0)
@@ -366,17 +426,17 @@ describe("stat panel", () => {
 		const battle = await started()
 		battle.fire(1)
 		expect(battle.machine.current).toBe("ExploreState")
-		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(shown(battle)).toBe("Rogue")
 		battle.move(Point.of(0, 1))
 		expect(shown(battle)).toBeNull()
 		battle.move(Point.of(1, -1))
-		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(shown(battle)).toBe("Wizard")
 		expect(battle.statPanelController.primaryPanel.lvLabel).toBe("LV. 10")
 
 		battle.fire(0)
 		battle.fire(0)
 		expect(battle.machine.current).toBe("MoveTargetState")
-		expect(shown(battle)).toBe("Hero(Clone)")
+		expect(shown(battle)).toBe("Rogue")
 		battle.move(Point.of(0, 1))
 		expect(shown(battle)).toBeNull()
 	})
@@ -445,19 +505,22 @@ describe("AbilityTargetState", () => {
 		const battle = await started()
 		const [rogue, warrior] = battle.units as [Unit, Unit]
 		const range = new LineAbilityRange(rogue, { horizontal: 9 })
-		rogue.attack = new Ability({
-			name: "Line",
-			range,
-			area: new FullAbilityArea(range),
-			effects: [
-				{
-					name: "Damage",
-					target: new DefaultAbilityEffectTarget(),
-					hitRate: new ATypeHitRate(rogue, battle),
-					effect: new DamageAbilityEffect(rogue, battle)
-				}
-			]
-		})
+		rogue.attack = new Ability(
+			{
+				name: "Line",
+				range,
+				area: new FullAbilityArea(range),
+				effects: [
+					{
+						name: "Damage",
+						target: new DefaultAbilityEffectTarget(),
+						hitRate: new ATypeHitRate(rogue, battle),
+						effect: new DamageAbilityEffect(rogue, battle)
+					}
+				]
+			},
+			battle
+		)
 		attack(battle)
 		// Facing north. The secondary panel shows whoever is under the cursor: the actor.
 		expect(highlighted(battle)).toEqual(["(1,2)"])
@@ -604,8 +667,6 @@ describe("PerformAbilityState and EndFacingState", () => {
 			hpBefore[1]! + predicted[1]!,
 			hpBefore[2]
 		])
-		const blind = (unit: Unit) => unit.status.getEffect(BlindStatusEffect) !== null
-		expect([rogue, warrior, wizard].map(blind)).toEqual([true, true, false])
 		expect(menu(battle)).toMatchObject({ entries: ["Move", "(Action)", "Wait"], selected: "Move" })
 	})
 

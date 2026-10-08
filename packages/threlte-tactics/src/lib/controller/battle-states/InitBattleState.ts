@@ -4,19 +4,15 @@ import type { BattleController } from "#lib/controller/BattleController.svelte.t
 import { TurnOrderController } from "#lib/controller/TurnOrderController.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
-import { Ability } from "#lib/view-model-component/ability/Ability.ts"
-import { SpecifyAbilityArea } from "#lib/view-model-component/ability/area-of-effect/SpecifyAbilityArea.ts"
-import { DefaultAbilityEffectTarget } from "#lib/view-model-component/ability/effect-target/DefaultAbilityEffectTarget.ts"
-import { DamageAbilityEffect } from "#lib/view-model-component/ability/effects/DamageAbilityEffect.ts"
-import { InflictAbilityEffect } from "#lib/view-model-component/ability/effects/InflictAbilityEffect.ts"
-import { ATypeHitRate } from "#lib/view-model-component/ability/hit-rate/ATypeHitRate.ts"
-import { STypeHitRate } from "#lib/view-model-component/ability/hit-rate/STypeHitRate.ts"
-import { PhysicalAbilityPower } from "#lib/view-model-component/ability/power/PhysicalAbilityPower.ts"
-import { ConstantAbilityRange } from "#lib/view-model-component/ability/range/ConstantAbilityRange.ts"
+import { AbilityCatalog } from "#lib/view-model-component/ability/AbilityCatalog.ts"
+import { instantiateAbility } from "#lib/view-model-component/ability/AbilityPrefab.ts"
+import { Health } from "#lib/view-model-component/actor/Health.ts"
 import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
+import { Mana } from "#lib/view-model-component/actor/Mana.ts"
 import { WalkMovement } from "#lib/view-model-component/movement/WalkMovement.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { selectTile, type BattleStateHandlers } from "./BattleState.ts"
+import * as heroAbilities from "./heroAbilities.ts"
 
 /** Port of `Controller/Battle States/InitBattleState.cs`: builds the battle, then hands over. */
 export function initBattleState(owner: BattleController) {
@@ -35,9 +31,8 @@ export function initBattleState(owner: BattleController) {
 	function spawnTestUnits(): void {
 		const jobs = ["Rogue", "Warrior", "Wizard"]
 		for (let i = 0; i < jobs.length; ++i) {
-			// Unity's `Instantiate` names the copy "Hero(Clone)".
 			const unit = new Unit({
-				name: "Hero(Clone)",
+				name: jobs[i]!,
 				model: "Hero",
 				notifications: owner.notifications
 			})
@@ -58,35 +53,20 @@ export function initBattleState(owner: BattleController) {
 
 			unit.movement = new WalkMovement(unit)
 
-			// The blog's Hero prefab gained an "Attack" child to demo abilities: it damages and may
-			// blind.
-			unit.attack = new Ability({
-				name: "Attack",
-				power: new PhysicalAbilityPower(unit, owner, { level: 45 }),
-				range: new ConstantAbilityRange(unit, { horizontal: 3 }),
-				area: new SpecifyAbilityArea({ horizontal: 1, vertical: 1 }),
-				effects: [
-					{
-						name: "Damage",
-						hitRate: new ATypeHitRate(unit, owner),
-						target: new DefaultAbilityEffectTarget(),
-						effect: new DamageAbilityEffect(unit, owner)
-					},
-					{
-						name: "Inflict Blind",
-						hitRate: new STypeHitRate(unit, owner),
-						target: new DefaultAbilityEffectTarget(),
-						effect: new InflictAbilityEffect(unit, owner, {
-							statusName: "BlindStatusEffect",
-							duration: 10
-						})
-					}
-				]
-			})
+			unit.attack = instantiateAbility(heroAbilities.attack, unit, owner)
+			unit.abilityCatalog = new AbilityCatalog(
+				heroAbilities.abilityCatalog.map(({ name, abilities }) => ({
+					name,
+					abilities: abilities.map((prefab) => instantiateAbility(prefab, unit, owner))
+				}))
+			)
 
 			owner.units.push(unit)
 
 			unit.rank.init(10)
+
+			unit.health = new Health(unit.stats, owner.notifications)
+			unit.mana = new Mana(unit, owner.notifications)
 		}
 	}
 

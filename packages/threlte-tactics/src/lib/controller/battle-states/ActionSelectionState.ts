@@ -1,41 +1,44 @@
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
+import type { AbilityCatalog } from "#lib/view-model-component/ability/AbilityCatalog.ts"
 import { baseAbilityMenuState } from "./BaseAbilityMenuState.ts"
 import type { BattleStateHandlers } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/ActionSelectionState.cs` as of the ability menu part: the
- * abilities in the category picked in `CategorySelectionState`.
+ * Port of `Controller/Battle States/ActionSelectionState.cs`: the abilities in the category picked
+ * in `CategorySelectionState` (Unity's static `category` is `owner.actionSelectionCategory`), with
+ * their MP costs. Those the actor can't perform are locked.
  */
-// TODO(part 20): the actor's ability catalog, with magic costs and locks; confirming picks a
-// target.
 export function actionSelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner
-	const whiteMagicOptions = ["Cure", "Raise", "Holy"]
-	const blackMagicOptions = ["Fire", "Ice", "Lightning"]
+	let catalog: AbilityCatalog | null = null
 	let menuTitle = ""
 	const menuOptions: string[] = []
 
-	function setOptions(options: readonly string[]): void {
-		menuOptions.length = 0
-		menuOptions.push(...options)
-	}
-
 	const base = baseAbilityMenuState(owner, {
 		loadMenu() {
-			if (owner.actionSelectionCategory === 0) {
-				menuTitle = "White Magic"
-				setOptions(whiteMagicOptions)
-			} else {
-				menuTitle = "Black Magic"
-				setOptions(blackMagicOptions)
+			const category = owner.actionSelectionCategory
+			catalog = turn.actor!.abilityCatalog!
+			const container = catalog.getCategory(category)!
+			menuTitle = container.name
+
+			const count = catalog.abilityCount(container)
+			menuOptions.length = 0
+
+			const locks: boolean[] = []
+			for (let i = 0; i < count; ++i) {
+				const ability = catalog.getAbility(category, i)!
+				const cost = ability.magicCost
+				if (cost !== null) menuOptions.push(`${ability.name}: ${cost.amount}`)
+				else menuOptions.push(ability.name)
+				locks[i] = !ability.canPerform()
 			}
 
 			menu.show(menuTitle, menuOptions)
+			for (let i = 0; i < count; ++i) menu.setLocked(i, locks[i]!)
 		},
 		confirm() {
-			turn.hasUnitActed = true
-			if (turn.hasUnitMoved) turn.lockMove = true
-			return "CommandSelectionState"
+			turn.ability = catalog!.getAbility(owner.actionSelectionCategory, menu.selection)
+			return "AbilityTargetState"
 		},
 		cancel() {
 			return "CategorySelectionState"

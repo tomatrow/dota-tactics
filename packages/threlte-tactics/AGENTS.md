@@ -60,6 +60,11 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `onDisable()` (Unity's `OnEnable`/`OnDisable`, e.g. to observe notifications), called by
   whatever adds it. Unity's `Destroy` → `destroy(component)` (`#lib/common/unity/Object.ts`):
   like Unity's, it disables the component only once the code running now has finished.
+- **Prefabs** that game code instantiates are data plus a function or constructor that builds
+  the components (`JobPrefab` → `new Job`, `AbilityPrefab` → `instantiateAbility`). A component
+  gets what Unity's would find through `GetComponentInParent` in its constructor (e.g. its
+  unit); one that needs its GameObject's parent or siblings is handed them by the parent's
+  constructor (`attach`), which then enables it, like Unity's `Instantiate`.
 - **NotificationCenter** is kept: one instance per battle (`battle.notifications`), passed to
   the constructors of the objects that post or observe; synchronous; listeners may mutate
   payloads (`BaseException`, `ValueChangeException`…); sender filtering and

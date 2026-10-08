@@ -3,9 +3,8 @@ import type { BattleController } from "#lib/controller/BattleController.svelte.t
 import type { BattleStateHandlers } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/PerformAbilityState.cs` as of the ability effects part: uses
- * the action, applies the ability's effects to each target a frame later, then carries on with
- * the turn.
+ * Port of `Controller/Battle States/PerformAbilityState.cs` as of the magic part: uses the action,
+ * performs the ability on the targets a frame later, then carries on with the turn.
  */
 // TODO(part 22): end the battle once it's over, and skip a knocked out actor's facing.
 export function performAbilityState(owner: BattleController) {
@@ -18,10 +17,8 @@ export function performAbilityState(owner: BattleController) {
 		owner.machine.done()
 	}
 
-	// TODO(part 20): `turn.ability.perform(turn.targets)`.
 	function applyAbility(): void {
-		for (const target of turn.targets)
-			for (const child of turn.ability!.effects) child.effect.apply(target)
+		turn.ability!.perform(turn.targets)
 	}
 
 	return {

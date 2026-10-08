@@ -3,14 +3,13 @@ import { baseAbilityMenuState } from "./BaseAbilityMenuState.ts"
 import type { BattleStateHandlers, BattleStateName } from "./BattleState.ts"
 
 /**
- * Port of `Controller/Battle States/CategorySelectionState.cs` as of the ability menu part: Attack,
- * or a category of abilities.
+ * Port of `Controller/Battle States/CategorySelectionState.cs`: Attack, or one of the categories
+ * in the actor's ability catalog.
  */
-// TODO(part 20): the actor's ability catalog's categories.
 export function categorySelectionState(owner: BattleController) {
 	const { abilityMenuPanelController: menu, turn } = owner
 	let menuTitle = ""
-	let menuOptions: string[] | null = null
+	const menuOptions: string[] = []
 
 	function attack(): BattleStateName {
 		turn.ability = turn.actor!.attack
@@ -24,22 +23,20 @@ export function categorySelectionState(owner: BattleController) {
 
 	const base = baseAbilityMenuState(owner, {
 		loadMenu() {
-			if (menuOptions === null) {
-				menuTitle = "Action"
-				menuOptions = ["Attack", "White Magic", "Black Magic"]
-			}
+			menuOptions.length = 0
+
+			menuTitle = "Action"
+			menuOptions.push("Attack")
+
+			const catalog = turn.actor!.abilityCatalog!
+			for (let i = 0; i < catalog.categoryCount(); ++i)
+				menuOptions.push(catalog.getCategory(i)!.name)
 
 			menu.show(menuTitle, menuOptions)
 		},
 		confirm() {
-			switch (menu.selection) {
-				case 0:
-					return attack()
-				case 1:
-					return setCategory(0)
-				case 2:
-					return setCategory(1)
-			}
+			if (menu.selection === 0) return attack()
+			else return setCategory(menu.selection - 1)
 		},
 		cancel() {
 			return "CommandSelectionState"

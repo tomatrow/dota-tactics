@@ -52,13 +52,16 @@ function setup(attackerStats: Partial<Record<StatTypes, number>> = {}, defenderS
 	const target = defender.tile!
 	/** An ability of the attacker's with this power and these children. */
 	const ability = (power: BaseAbilityPower | null, ...effects: AbilityEffect[]) =>
-		new Ability({
-			name: "Ability",
-			power,
-			range: new ConstantAbilityRange(attacker),
-			area: new UnitAbilityArea(),
-			effects
-		})
+		new Ability(
+			{
+				name: "Ability",
+				power,
+				range: new ConstantAbilityRange(attacker),
+				area: new UnitAbilityArea(),
+				effects
+			},
+			context
+		)
 	/** A child that always hits a unit with HP left. */
 	const child = (effect: BaseAbilityEffect): AbilityEffect => ({
 		name: effect.constructor.name,
