@@ -35,3 +35,6 @@ pnpm dev
 ## Credits
 
 - Original tutorial, code and assets: Jonathan Parham, [The Liquid Fire](https://theliquidfire.com).
+- Music: “Strategy RPG Battle” (intro and loop) by Brennan Anderson, licensed under
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); transcoded from WAV to AAC
+  (`scripts/transcode-music.sh`).

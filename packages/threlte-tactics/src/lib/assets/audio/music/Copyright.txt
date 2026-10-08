@@ -1,0 +1,8 @@
+Music copyright by Brennan Anderson:
+ * Strategy RPG Battle_Intro
+ * Strategy RPG Battle_Loop
+
+Shared with Creative Commons Attribution 4.0 International Public License
+(https://creativecommons.org/licenses/by/4.0/).
+
+Changed for this port: transcoded from 24-bit WAV to AAC (scripts/transcode-music.sh).

@@ -138,8 +138,11 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.
 - Input: one `<Input>` component via `<svelte:window>`. Move: arrows/WASD with Unity's repeater
   (0.5 s threshold, 0.25 s rate). Confirm (Fire1): Enter/Space. Cancel (Fire2): Escape/Backspace.
-- Audio: Web Audio, gapless intro → loop, starts on first key press. Music is CC-BY (credit in
-  README and in-app).
+- Audio: Web Audio (`#lib/common/unity/audio.ts`). `+page.svelte` owns the one `AudioContext`
+  (Unity's audio engine) and resumes it on the first key press; `<Battle audio>` renders
+  `<Music>`, a `MusicPlayer` (intro, then loop) that stops when the battle ends. Without `audio`
+  (tests), no music. Music is CC BY 4.0: keep the credit in README and in-app (the page footer).
+  Re-encode with `scripts/transcode-music.sh`.
 
 ## Testing
 
@@ -148,6 +151,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
     touching runes, rules classes or components (incl. Threlte scenes).
   - `server` (Node): `src/**/*.test.ts`, `scripts/**/*.test.ts` for plain TS (e.g. the converter).
 - 3D components: `@threlte/test`'s `render` (queries the three `Scene` directly).
+- Audio: render on an `OfflineAudioContext` and compare samples (`#lib/testing/audio.ts`: a rate
+  where schedules land exactly on frames, ramps that tell each sample's origin).
 - Animated rules (tweens, `nextFrame`, `waitForSeconds`) are tested on fake clocks:
   `useFakeTime()` + `await advance(seconds)` (`#lib/testing/time.ts`). Read its caveat about
   mixing real and fake time in one file.

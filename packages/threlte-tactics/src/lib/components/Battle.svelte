@@ -16,14 +16,18 @@
 	import BattleScene from "./BattleScene.svelte"
 	import ConversationControllerView from "./ConversationControllerView.svelte"
 	import Input from "./Input.svelte"
+	import Music from "./Music.svelte"
 	import StatPanelControllerView from "./StatPanelControllerView.svelte"
 
 	let {
 		random,
+		audio,
 		onloadlevel
 	}: {
 		/** Unity's `UnityEngine.Random` (default: a new one). */
 		random?: Random
+		/** Unity's audio engine, to play the battle music on (default: no music). */
+		audio?: BaseAudioContext
 		/** Unity's `Application.LoadLevel(0)`: start the battle over, from scratch. */
 		onloadlevel?: () => void
 	} = $props()
@@ -39,6 +43,9 @@
 </script>
 
 <Input onfire={(button) => battle.fire(button)} onmove={(direction) => battle.move(direction)} />
+{#if audio}
+	<Music context={audio} />
+{/if}
 
 <div>
 	<!--

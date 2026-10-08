@@ -23,6 +23,30 @@ async function press(page: Page, ...keys: string[]) {
 	}
 }
 
+/** Counts the audio source nodes started and stopped (each battle starts its intro and loop). */
+function countAudioSources() {
+	const counts = { started: 0, stopped: 0 }
+	Object.assign(window, { audioSources: counts })
+	const { start, stop } = AudioBufferSourceNode.prototype
+	AudioBufferSourceNode.prototype.start = function (...args) {
+		counts.started++
+		start.apply(this, args)
+	}
+	AudioBufferSourceNode.prototype.stop = function (...args) {
+		counts.stopped++
+		stop.apply(this, args)
+	}
+}
+
+/** The canvases on the page with a WebGL context (which won't hand out a 2D one; UI images are 2D). */
+const webGLCanvases = (page: Page) =>
+	page.evaluate(
+		() => [...document.querySelectorAll("canvas")].filter((c) => !c.getContext("2d")).length
+	)
+
+const audioSources = (page: Page) =>
+	page.evaluate(() => (window as unknown as { audioSources: object }).audioSources)
+
 const intro = "Be scared... Cause I am awesome!!!"
 const outros = { lose: "I told you to be afraid.", win: "I lost?  How could this happen?" }
 
@@ -32,7 +56,10 @@ test("a whole battle: intro, the heroes' turns and the computer's, an outro, the
 	test.setTimeout(10 * 60_000)
 	// Game time runs on a fake clock, jumped half a second at a time (a frame per jump).
 	await page.clock.install()
+	await page.addInitScript(countAudioSources)
 	await page.goto("/?seed=4")
+	// The battle music: an intro, then a loop.
+	await expect.poll(() => audioSources(page)).toEqual({ started: 2, stopped: 0 })
 
 	let heroTurns = 0
 	let menuWasShown = false
@@ -66,6 +93,9 @@ test("a whole battle: intro, the heroes' turns and the computer's, an outro, the
 		menuWasShown = menu !== null
 	}
 
+	// The next battle replaced the last one: its 3D view, and its music (played from the start).
+	expect(await webGLCanvases(page)).toBe(1)
+	await expect.poll(() => audioSources(page)).toEqual({ started: 4, stopped: 2 })
 	expect(outro).toBe(outros.lose)
 	expect(heroTurns).toBeGreaterThan(3)
 	// The enemies' abilities, named as they use them.
