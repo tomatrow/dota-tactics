@@ -9,6 +9,9 @@ export function approximately(a: number, b: number): boolean {
 /** C#'s `int.MaxValue`. */
 export const intMaxValue = 2_147_483_647
 
+/** C#'s `int.MinValue`. */
+export const intMinValue = -2_147_483_648
+
 /** Unity's `Mathf.Clamp`. */
 export function clamp(value: number, min: number, max: number): number {
 	if (value < min) return min
