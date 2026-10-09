@@ -32,16 +32,36 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `master`; never push.
 - `pnpm lint`, `pnpm check` and `pnpm test` must be green before every commit; `pnpm test:e2e`
   too before a commit that changes the battle flow (and at milestones).
-- Keep `PORTING.md` up to date: part status, Unity → port file map, divergences.
-- Mark per-part interim code that a later part replaces with `// TODO(part N): <what>`
-  (`rg "TODO\(part"` lists them); resolve them when part N lands.
+- Keep `PORTING.md` up to date: part status, Unity → port file map, Divergences, Translations.
 
 ## Fidelity rules
 
-- Unity code wins. Port behaviour, numbers and timings (tween durations, AI delays) exactly.
-- Only fix crashes / clear bugs. Mark each with `// PORT-FIX: <why>` and log it in `PORTING.md`.
-- Visuals match "at a glance" (primitives, materials, ortho camera size 5, warm directional
-  light with soft shadows), not pixel-perfect.
+- **Faithful behaviour, idiomatic code.** The rules are exact: formulas (integer division
+  included), numbers, state flow, and the AI's choices for a seed. Presentation (animations,
+  timings, layout, colors) matches at a glance. Use Unity's numbers where they come for free
+  (tween durations, AI delays, easing), but never add machinery just to reproduce a detail of
+  Unity's look or motion. Write it the way TS, Svelte and three would. Don't emulate Unity or C#
+  mechanisms (left-handed space, Euler-degree tweens, `int.MaxValue` sentinels, `Mathf`, uGUI
+  layout, `Awake`/`OnEnable`).
+- Don't reproduce C#/.NET platform quirks (32-bit floats, int limits, unstable sorts) unless the
+  player could tell. Tests derive expected values from the formula.
+- **Keep the structure.** Game code (Model, View Model Component, Controller, Factory, Enums,
+  Exceptions, Extensions) keeps Unity's classes, names and folders. The blog's `Common/` helpers
+  are mechanism: swap them for idiomatic equivalents that keep their behaviour.
+- Only fix crashes and clear bugs. Log each in `PORTING.md` › Divergences, with a test that pins
+  it. Log mechanism swaps in › Translations.
+- Visuals match at a glance (primitives, materials, ortho camera size 5, warm directional light
+  with soft shadows), not pixel for pixel.
+
+## Code style
+
+- Comments say what the code does and why it must, in the present tense. No history ("Unity
+  does…", "instead of…", "we chose…"): git and `PORTING.md` hold that. A ported file's header
+  names its source: "Port of `X.cs`".
+- Component callback props and DOM handlers are lowercase (`oncomplete`). Class members are
+  camelCase. Lifecycle is `enable()`/`disable()`/`disableLater()`.
+- Rules classes: `$state` as a field or the first assignment in the constructor. Methods handed
+  out as callbacks are arrow-function fields. No `$effect`: rules objects outlive component setup.
 
 ## Architecture
 
@@ -160,7 +180,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   (`#lib/testing/spawn.ts`) puts particular units in particular places instead of
   `InitBattleState`'s random ones.
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
-  tests with expectations derived from the C#. Components get light smoke tests.
+  tests with expectations derived from the C#'s formulas. Components get light smoke tests.
 - e2e (`pnpm test:e2e`, Playwright, `e2e/`): builds and previews the game, then plays a whole
   battle by keyboard on a fake clock (`page.clock`, jumped a frame at a time; about a minute).
   It reads the UI by its canvases' regions (`<UICanvas name>`). Press keys a frame apart: input
