@@ -7,7 +7,7 @@
 <script lang="ts">
 	import type { Attachment } from "svelte/attachments"
 	import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-	import type { Vector2 } from "#lib/common/unity/vector2.ts"
+	import type { Vector2 } from "#lib/common/vector.ts"
 
 	let {
 		text,

@@ -3,7 +3,7 @@ import { afterEach, expect, test } from "vitest"
 import { render } from "vitest-browser-svelte"
 import { Panel, type PanelPosition } from "#lib/common/ui/Panel.ts"
 import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-import type { Vector2 } from "#lib/common/unity/vector2.ts"
+import type { Vector2 } from "#lib/common/vector.ts"
 import PanelView from "./PanelView.svelte"
 import UICanvas from "./UICanvas.svelte"
 

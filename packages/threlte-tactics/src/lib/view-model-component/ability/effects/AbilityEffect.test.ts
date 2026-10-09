@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Random } from "#lib/common/Random.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { EquipSlots } from "#lib/enums/EquipSlots.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -18,7 +18,7 @@ import { MagicalAbilityPower } from "#lib/view-model-component/ability/power/Mag
 import { PhysicalAbilityPower } from "#lib/view-model-component/ability/power/PhysicalAbilityPower.ts"
 import { WeaponAbilityPower } from "#lib/view-model-component/ability/power/WeaponAbilityPower.ts"
 import { ConstantAbilityRange } from "#lib/view-model-component/ability/range/ConstantAbilityRange.ts"
-import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
+import { Job } from "#lib/view-model-component/actor/Job.ts"
 import { StatModifierFeature } from "#lib/view-model-component/features/StatModifierFeature.ts"
 import { Equippable } from "#lib/view-model-component/item/Equippable.ts"
 import { BlindStatusEffect } from "#lib/view-model-component/status/effects/BlindStatusEffect.ts"
@@ -142,7 +142,7 @@ describe("DamageAbilityEffect", () => {
 		ability(physical(45), child(effect))
 		const hit = vi.fn()
 		notifications.addObserver(hit, BaseAbilityEffect.hitNotification, effect)
-		const variance = vi.spyOn(random, "rangeFloat").mockReturnValue(0.9)
+		const variance = vi.spyOn(random, "float").mockReturnValue(0.9)
 
 		effect.apply(target)
 		expect(variance).toHaveBeenCalledWith(0.9, 1.1)
@@ -173,8 +173,8 @@ describe("BaseAbilityEffect.apply", () => {
 		})
 		const missed = vi.fn()
 		notifications.addObserver(missed, BaseAbilityEffect.missedNotification, effect)
-		vi.spyOn(random, "rangeFloat").mockReturnValue(1)
-		const roll = vi.spyOn(random, "rangeInt").mockReturnValue(51)
+		vi.spyOn(random, "float").mockReturnValue(1)
+		const roll = vi.spyOn(random, "int").mockReturnValue(51)
 
 		effect.apply(target)
 		expect(missed).toHaveBeenCalledOnce()
@@ -230,7 +230,7 @@ describe("WeaponAbilityPower", () => {
 	function armed() {
 		const s = setup({ [ATK]: 100 })
 		const { notifications, random, attacker, ability, child, damage } = s
-		const job = new Job(Resources.load<JobPrefab>("Jobs/Warrior")!, { notifications, random })
+		const job = new Job(Resources.load("Jobs/Warrior")!, { notifications, random })
 		attacker.job = job
 		const effect = damage()
 		ability(new WeaponAbilityPower(attacker, s.context), child(effect))

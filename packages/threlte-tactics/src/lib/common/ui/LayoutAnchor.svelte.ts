@@ -2,7 +2,7 @@ import { quadInOut } from "svelte/easing"
 import { Tween } from "svelte/motion"
 import { tween, type Easing } from "#lib/common/animation/Tweener.ts"
 import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-import type { Vector2 } from "#lib/common/unity/vector2.ts"
+import type { Vector2 } from "#lib/common/vector.ts"
 
 /**
  * Where a rect sits in its parent, in a form CSS can lay out at any size: the rect's own `my`

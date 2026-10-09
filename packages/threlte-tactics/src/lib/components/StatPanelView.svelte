@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
 	import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-	import type { Vector2 } from "#lib/common/unity/vector2.ts"
+	import type { Vector2 } from "#lib/common/vector.ts"
 	import type { StatPanel } from "#lib/view-model-component/StatPanel.svelte.ts"
 	import PanelView from "./ui/PanelView.svelte"
 	import RectTransform from "./ui/RectTransform.svelte"

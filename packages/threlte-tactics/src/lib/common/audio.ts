@@ -1,10 +1,9 @@
 /**
- * The parts of Unity's audio API that the game uses (`AudioClip`, `AudioSource`,
- * `AudioSettings.dspTime`), on Web Audio. Unity's audio engine is an `AudioContext`: one for the
- * whole game (browsers start it only once the player has interacted with the page).
+ * Sounds and their players, on Web Audio. The game has one `AudioContext` (browsers start it only
+ * once the player has interacted with the page).
  */
 
-/** Unity's `AudioClip`: a decoded sound. */
+/** A decoded sound. */
 export class AudioClip {
 	readonly name: string
 	readonly buffer: AudioBuffer
@@ -19,7 +18,7 @@ export class AudioClip {
 		return this.buffer.duration
 	}
 
-	/** Fetches and decodes the sound at `url` (Unity loads a scene's clips with it). */
+	/** Fetches and decodes the sound at `url`. */
 	static async load(context: BaseAudioContext, name: string, url: string): Promise<AudioClip> {
 		const response = await fetch(url)
 		if (!response.ok) throw new Error(`Couldn't load ${name} (${url}): ${response.status}`)
@@ -27,13 +26,10 @@ export class AudioClip {
 	}
 }
 
-/**
- * Unity's `AudioSource`: plays its clip. A Web Audio source node plays only once, so each play is
- * a new one.
- */
+/** Plays its clip. A Web Audio source node plays only once, so each play is a new one. */
 export class AudioSource {
 	readonly context: BaseAudioContext
-	/** Where it plays to (Unity's mixer group). */
+	/** Where it plays to. */
 	readonly output: AudioNode
 	clip: AudioClip | null = null
 	#loop = false
@@ -53,7 +49,7 @@ export class AudioSource {
 		if (this.#node) this.#node.loop = value
 	}
 
-	/** Plays the clip from the start at `time` (on `dspTime`'s clock), instead of any play so far. */
+	/** Plays the clip from the start at `time` (on the context's clock), instead of any play so far. */
 	playScheduled(time: number): void {
 		this.stop()
 		if (!this.clip) return
@@ -77,9 +73,4 @@ export class AudioSource {
 		node.stop()
 		node.disconnect()
 	}
-}
-
-/** Unity's `AudioSettings.dspTime`: the audio clock, in seconds. */
-export function dspTime(context: BaseAudioContext): number {
-	return context.currentTime
 }

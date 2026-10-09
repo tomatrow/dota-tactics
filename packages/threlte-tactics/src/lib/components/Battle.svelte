@@ -6,10 +6,9 @@
 	import { Canvas } from "@threlte/core"
 	import { onMount } from "svelte"
 	import { LinearSRGBColorSpace, NoToneMapping, PCFShadowMap } from "three"
-	import type { Random } from "#lib/common/unity/Random.ts"
-	import { Resources } from "#lib/common/unity/Resources.ts"
+	import type { Random } from "#lib/common/Random.ts"
+	import { Resources } from "#lib/common/Resources.ts"
 	import { BattleController, setBattleController } from "#lib/controller/BattleController.svelte.ts"
-	import type { LevelData } from "#lib/model/LevelData.ts"
 	import AbilityMenuPanelControllerView from "./AbilityMenuPanelControllerView.svelte"
 	import BattleMessageControllerView from "./BattleMessageControllerView.svelte"
 	import HitSuccessIndicatorView from "./HitSuccessIndicatorView.svelte"
@@ -32,7 +31,7 @@
 		onloadlevel?: () => void
 	} = $props()
 
-	const levelData = Resources.load<LevelData>("Levels/Level_0")
+	const levelData = Resources.load("Levels/Level_0")
 	if (!levelData) throw new Error("Missing Resources/Levels/Level_0")
 
 	// A scene is set up once, with the props it starts with; `{#key}` it to start over.

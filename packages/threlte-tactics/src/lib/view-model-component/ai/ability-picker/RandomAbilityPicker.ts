@@ -1,4 +1,4 @@
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import type { PlanOfAttack } from "../PlanOfAttack.ts"
 import { BaseAbilityPicker } from "./BaseAbilityPicker.ts"
@@ -17,7 +17,7 @@ export class RandomAbilityPicker extends BaseAbilityPicker {
 	}
 
 	override pick(plan: PlanOfAttack): void {
-		const index = this.#random.rangeInt(0, this.pickers.length)
+		const index = this.#random.int(0, this.pickers.length)
 		const p = this.pickers[index]!
 		p.pick(plan)
 	}

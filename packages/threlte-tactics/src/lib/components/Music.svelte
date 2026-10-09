@@ -7,7 +7,7 @@
 	import intro from "#lib/assets/audio/music/Strategy RPG Battle_Intro.m4a"
 	import loop from "#lib/assets/audio/music/Strategy RPG Battle_Loop.m4a"
 	import { MusicPlayer } from "#lib/audio/MusicPlayer.ts"
-	import { AudioClip } from "#lib/common/unity/audio.ts"
+	import { AudioClip } from "#lib/common/audio.ts"
 
 	let {
 		context

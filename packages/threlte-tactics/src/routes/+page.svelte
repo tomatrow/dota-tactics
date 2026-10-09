@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from "$app/state"
-	import { Random } from "#lib/common/unity/Random.ts"
+	import { Random } from "#lib/common/Random.ts"
 	import Battle from "#lib/components/Battle.svelte"
 
 	// Unity's `UnityEngine.Random`: one for the whole game, so `?seed=` replays it all.

@@ -1,4 +1,4 @@
-import type { AudioSource } from "#lib/common/unity/audio.ts"
+import type { AudioSource } from "#lib/common/audio.ts"
 
 /** Port of `Audio/AudioSequenceData.cs`: an audio source and when it's scheduled to play. */
 export class AudioSequenceData {
@@ -9,14 +9,13 @@ export class AudioSequenceData {
 		this.source = source
 	}
 
-	/** On `dspTime`'s clock; negative when not scheduled. */
+	/** On the audio context's clock; negative when not scheduled. */
 	get startTime(): number {
 		return this.#startTime
 	}
 
 	get isScheduled(): boolean {
-		// Unity's `> 0`: its audio clock is never 0 by the time a scene starts, but a browser's is
-		// until the player first interacts with the page.
+		// A browser's audio clock is still 0 until the player first interacts with the page.
 		return this.#startTime >= 0
 	}
 

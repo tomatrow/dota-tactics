@@ -1,4 +1,4 @@
-import { waitForSeconds } from "#lib/common/unity/time.ts"
+import { wait } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
@@ -16,12 +16,12 @@ export function endFacingState(owner: BattleController) {
 	let startDir: Directions = Directions.North
 
 	async function computerControl(): Promise<void> {
-		await waitForSeconds(0.5)
+		await wait(0.5)
 		const actor = turn.actor!
 		actor.dir = owner.cpu.determineEndFacingDirection()
 		actor.match()
 		owner.facingIndicator.setDirection(actor.dir)
-		await waitForSeconds(0.5)
+		await wait(0.5)
 		owner.machine.done()
 	}
 

@@ -49,7 +49,7 @@ export class DamageAbilityEffect extends BaseAbilityEffect {
 		let value = this.predict(target)
 
 		// Add some random variance
-		value = Math.floor(value * this.random.rangeFloat(0.9, 1.1))
+		value = Math.floor(value * this.random.float(0.9, 1.1))
 
 		// Clamp the damage to a range
 		value = MathUtils.clamp(value, minDamage, maxDamage)

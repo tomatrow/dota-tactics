@@ -4,7 +4,7 @@
 -->
 <script lang="ts">
 	import type { Snippet } from "svelte"
-	import type { Vector2 } from "#lib/common/unity/vector2.ts"
+	import type { Vector2 } from "#lib/common/vector.ts"
 
 	let {
 		anchorMin = [0.5, 0.5],

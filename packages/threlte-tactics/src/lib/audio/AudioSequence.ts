@@ -1,4 +1,4 @@
-import { type AudioClip, AudioSource, dspTime } from "#lib/common/unity/audio.ts"
+import { type AudioClip, AudioSource } from "#lib/common/audio.ts"
 import { AudioSequenceData } from "./AudioSequenceData.ts"
 
 /**
@@ -50,7 +50,7 @@ export class AudioSequence {
 
 	#nextStartTime(): number {
 		const last = this.#last()
-		const now = dspTime(this.context)
+		const now = this.context.currentTime
 		return last !== null && last.endTime > now ? last.endTime : now
 	}
 }

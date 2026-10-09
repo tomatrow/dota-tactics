@@ -1,4 +1,4 @@
-import { dot, normalized } from "#lib/common/unity/vector2.ts"
+import { dot, normalized } from "#lib/common/vector.ts"
 import { Facings } from "#lib/enums/Facings.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { getNormal } from "./DirectionsExtensions.ts"

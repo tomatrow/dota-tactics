@@ -1,7 +1,7 @@
 import { fsm } from "runic-svelte-fsm"
 import { createContext } from "svelte"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Random } from "#lib/common/Random.ts"
 import { Transform } from "#lib/common/Transform.svelte.ts"
 import type { LevelData } from "#lib/model/LevelData.ts"
 import { Point } from "#lib/model/Point.ts"

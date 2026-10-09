@@ -1,7 +1,7 @@
 import { quadInOut } from "svelte/easing"
 import { Tween } from "svelte/motion"
 import { reversed, tween } from "#lib/common/animation/Tweener.ts"
-import { waitForSeconds } from "#lib/common/unity/time.ts"
+import { wait } from "#lib/common/time.ts"
 
 /**
  * Port of `Controller/BattleMessageController.cs`: a bar across the top of the screen that fades
@@ -30,7 +30,7 @@ export class BattleMessageController {
 	async #sequence(): Promise<void> {
 		// `ec.Play()`, then `ec.Reverse()`: half a second each, `EaseInOutQuad` (backwards).
 		await tween(this.#alpha, 0, 1, 0.5, quadInOut)
-		await waitForSeconds(1)
+		await wait(1)
 		await tween(this.#alpha, 1, 0, 0.5, reversed(quadInOut))
 		this.canvasActive = false
 	}

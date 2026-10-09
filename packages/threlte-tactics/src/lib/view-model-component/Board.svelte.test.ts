@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { Resources } from "#lib/common/unity/Resources.ts"
-import type { LevelData } from "#lib/model/LevelData.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import { Point } from "#lib/model/Point.ts"
 import { board } from "#lib/testing/board.ts"
 import { Board } from "./Board.svelte.ts"
@@ -30,7 +29,7 @@ describe("Tile", () => {
 
 describe("Board", () => {
 	test("loads every tile of a level", () => {
-		const level = Resources.load<LevelData>("Levels/Level_0")!
+		const level = Resources.load("Levels/Level_0")!
 		expect(level.tiles).toHaveLength(140)
 		const b = new Board()
 		b.load(level)

@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Random } from "#lib/common/Random.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import { Targets } from "#lib/enums/Targets.ts"
 import { UnitFactory } from "#lib/factory/UnitFactory.ts"
@@ -40,7 +40,7 @@ describe("Driver", () => {
 describe("AttackPattern", () => {
 	test("the enemy warrior's: Attack, then Attack or First Aid (on itself), then Earth Render", () => {
 		const { unit, random } = create("Enemy Warrior")
-		const rangeInt = vi.spyOn(random, "rangeInt").mockReturnValueOnce(1).mockReturnValueOnce(0)
+		const int = vi.spyOn(random, "int").mockReturnValueOnce(1).mockReturnValueOnce(0)
 		expect(picks(unit, 6)).toEqual([
 			["Attack", Foe],
 			["First Aid", Self],
@@ -49,7 +49,7 @@ describe("AttackPattern", () => {
 			["Attack", Foe],
 			["Earth Render", Foe]
 		])
-		expect(rangeInt.mock.calls).toEqual([
+		expect(int.mock.calls).toEqual([
 			[0, 2],
 			[0, 2]
 		])
@@ -64,7 +64,7 @@ describe("AttackPattern", () => {
 
 	test("the enemy wizard's: Water, Water or Prominence, then Cure on an ally", () => {
 		const { unit, random } = create("Enemy Wizard")
-		vi.spyOn(random, "rangeInt").mockReturnValueOnce(1)
+		vi.spyOn(random, "int").mockReturnValueOnce(1)
 		expect(picks(unit, 4)).toEqual([
 			["Water", Foe],
 			["Prominence", Foe],
@@ -75,7 +75,7 @@ describe("AttackPattern", () => {
 
 	test("the enemy rogue's: Attack, Blind or Drain (PORT-FIX: Unity's lists itself, not Drain), Air Blast", () => {
 		const { unit, random } = create("Enemy Rogue")
-		vi.spyOn(random, "rangeInt").mockReturnValueOnce(1).mockReturnValueOnce(0)
+		vi.spyOn(random, "int").mockReturnValueOnce(1).mockReturnValueOnce(0)
 		expect(picks(unit, 6)).toEqual([
 			["Attack", Foe],
 			["Drain", Foe],

@@ -1,4 +1,4 @@
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Facings } from "#lib/enums/Facings.ts"
 import { getFacing } from "#lib/extensions/FacingsExtensions.ts"
@@ -100,9 +100,9 @@ export class AttackOption {
 			caster.dir = startDirection
 
 			this.#filterBestMoves(bestOptions)
-			this.#bestMoveTile = bestOptions[this.#random.rangeInt(0, bestOptions.length)]!
+			this.#bestMoveTile = bestOptions[this.#random.int(0, bestOptions.length)]!
 		} else {
-			this.#bestMoveTile = this.#moveTargets[this.#random.rangeInt(0, this.#moveTargets.length)]!
+			this.#bestMoveTile = this.#moveTargets[this.#random.int(0, this.#moveTargets.length)]!
 		}
 	}
 

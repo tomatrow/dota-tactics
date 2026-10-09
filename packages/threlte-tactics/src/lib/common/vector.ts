@@ -1,4 +1,9 @@
-/** A Unity `Vector2` as a plain tuple (see `Vector3`). */
+/**
+ * Vectors as plain tuples: what Threlte's `position`/`scale` props and `svelte/motion`'s `Tween`
+ * accept. World vectors are in three's axes (see `Tile`).
+ */
+export type Vector3 = [x: number, y: number, z: number]
+
 export type Vector2 = [x: number, y: number]
 
 /** The unit vector in the direction of `v`, or the zero vector for the zero vector. */

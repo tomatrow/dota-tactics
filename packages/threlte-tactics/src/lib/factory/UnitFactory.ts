@@ -1,4 +1,4 @@
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Resources, type Resource, type ResourcePath } from "#lib/common/Resources.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import { Locomotions } from "#lib/enums/Locomotions.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -7,23 +7,18 @@ import type { Ability } from "#lib/view-model-component/ability/Ability.ts"
 import { AbilityCatalog } from "#lib/view-model-component/ability/AbilityCatalog.ts"
 import {
 	instantiateAbility,
-	type AbilityPrefab,
 	type AbilityPrefabContext
 } from "#lib/view-model-component/ability/AbilityPrefab.ts"
-import {
-	instantiateAttackPattern,
-	type AttackPatternPrefab
-} from "#lib/view-model-component/ai/AttackPatternPrefab.ts"
+import { instantiateAttackPattern } from "#lib/view-model-component/ai/AttackPatternPrefab.ts"
 import { Alliance } from "#lib/view-model-component/actor/Alliance.ts"
 import { Driver } from "#lib/view-model-component/actor/Driver.ts"
 import { Health } from "#lib/view-model-component/actor/Health.ts"
-import { Job, type JobPrefab } from "#lib/view-model-component/actor/Job.ts"
+import { Job } from "#lib/view-model-component/actor/Job.ts"
 import { Mana } from "#lib/view-model-component/actor/Mana.ts"
 import { FlyMovement } from "#lib/view-model-component/movement/FlyMovement.ts"
 import { TeleportMovement } from "#lib/view-model-component/movement/TeleportMovement.ts"
 import { WalkMovement } from "#lib/view-model-component/movement/WalkMovement.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
-import type { AbilityCatalogRecipe } from "./AbilityCatalogRecipe.ts"
 import type { UnitRecipe } from "./UnitRecipe.ts"
 
 /** What building a unit needs of its battle. */
@@ -31,10 +26,8 @@ export type UnitFactoryContext = AbilityPrefabContext
 
 /**
  * Port of `Factory/UnitFactory.cs`: builds a unit from a recipe, adding its components in an order
- * that lets each set itself up from the ones before.
- *
- * Unity instantiates the recipe's model prefab and adds components to it; here the model is the
- * unit's `model`, which `<UnitView>` renders.
+ * that lets each set itself up from the ones before. The recipe's model is the unit's `model`,
+ * which `<UnitView>` renders.
  */
 export const UnitFactory = {
 	/**
@@ -43,7 +36,7 @@ export const UnitFactory = {
 	 */
 	create(recipe: string | UnitRecipe, level: number, context: UnitFactoryContext): Unit | null {
 		if (typeof recipe === "string") {
-			const loaded = Resources.load<UnitRecipe>(`Unit Recipes/${recipe}`)
+			const loaded = Resources.load(`Unit Recipes/${recipe}`)
 			if (loaded === null) {
 				console.error(`No Unit Recipe for name: ${recipe}`)
 				return null
@@ -71,13 +64,10 @@ export const UnitFactory = {
 	}
 }
 
-/**
- * Unity's `InstantiatePrefab`. Where Unity logs an error and goes on with an empty GameObject
- * (which the next step then fails on), this throws.
- */
-function instantiatePrefab<T>(name: string): T {
-	const prefab = Resources.load<T>(name)
-	if (prefab === null) throw new Error(`No Prefab for name: ${name}`)
+/** The prefab at `path`; throws if there is none. */
+function instantiatePrefab<P extends ResourcePath>(path: P): Resource<P> {
+	const prefab = Resources.load(path)
+	if (prefab === null) throw new Error(`No Prefab for name: ${path}`)
 	return prefab
 }
 
@@ -86,7 +76,7 @@ function addStats(obj: Unit): void {
 }
 
 function addJob(obj: Unit, name: string, context: UnitFactoryContext): void {
-	const job = new Job(instantiatePrefab<JobPrefab>(`Jobs/${name}`), context)
+	const job = new Job(instantiatePrefab(`Jobs/${name}`), context)
 	obj.job = job
 	job.employ(obj)
 	job.loadDefaultStats()
@@ -115,15 +105,11 @@ function addRank(obj: Unit, level: number): void {
 }
 
 function addAttack(obj: Unit, name: string, context: UnitFactoryContext): void {
-	obj.attack = instantiateAbility(
-		instantiatePrefab<AbilityPrefab>(`Abilities/${name}`),
-		obj,
-		context
-	)
+	obj.attack = instantiateAbility(instantiatePrefab(`Abilities/${name}`), obj, context)
 }
 
 function addAbilityCatalog(obj: Unit, name: string, context: UnitFactoryContext): void {
-	const recipe = Resources.load<AbilityCatalogRecipe>(`Ability Catalog Recipes/${name}`)
+	const recipe = Resources.load(`Ability Catalog Recipes/${name}`)
 	if (recipe === null) {
 		console.error(`No Ability Catalog Recipe Found: ${name}`)
 		obj.abilityCatalog = new AbilityCatalog([])
@@ -134,8 +120,8 @@ function addAbilityCatalog(obj: Unit, name: string, context: UnitFactoryContext)
 		recipe.categories.map((category) => ({
 			name: category.name,
 			abilities: category.entries.map((entry): Ability => {
-				const abilityName = `Abilities/${category.name}/${entry}`
-				return instantiateAbility(instantiatePrefab<AbilityPrefab>(abilityName), obj, context)
+				const prefab = instantiatePrefab(`Abilities/${category.name}/${entry}`)
+				return instantiateAbility(prefab, obj, context)
 			})
 		}))
 	)
@@ -149,7 +135,7 @@ function addAttackPattern(obj: Unit, name: string, context: UnitFactoryContext):
 		driver.normal = Drivers.Human
 	} else {
 		driver.normal = Drivers.Computer
-		const prefab = instantiatePrefab<AttackPatternPrefab>(`Attack Pattern/${name}`)
+		const prefab = instantiatePrefab(`Attack Pattern/${name}`)
 		obj.attackPattern = instantiateAttackPattern(prefab, obj, context)
 	}
 }

@@ -1,4 +1,4 @@
-import type { Vector3 } from "#lib/common/unity/vector3.ts"
+import type { Vector3 } from "#lib/common/vector.ts"
 import { Point } from "#lib/model/Point.ts"
 import type { Unit } from "./Unit.svelte.ts"
 

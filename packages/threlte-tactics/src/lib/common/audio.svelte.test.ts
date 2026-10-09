@@ -3,10 +3,10 @@ import { describe, expect, test } from "vitest"
 import intro from "#lib/assets/audio/music/Strategy RPG Battle_Intro.m4a"
 import loop from "#lib/assets/audio/music/Strategy RPG Battle_Loop.m4a"
 import { clip, offline, ramp, rendered, sampleRate, silence } from "#lib/testing/audio.ts"
-import { AudioClip, AudioSource, dspTime } from "./audio.ts"
+import { AudioClip, AudioSource } from "./audio.ts"
 
 describe("AudioClip", () => {
-	test("loads the battle music, as long as Unity's WAVs (1,814,400 and 3,931,200 samples at 44.1 kHz)", async () => {
+	test("loads the battle music, as long as the original WAVs (1,814,400 and 3,931,200 samples at 44.1 kHz)", async () => {
 		const context = new OfflineAudioContext({ length: 1, sampleRate: 44100 })
 
 		const clips = await Promise.all([
@@ -73,9 +73,5 @@ describe("AudioSource", () => {
 		new AudioSource(context).playScheduled(0)
 
 		expect(await rendered(context)).toEqual(silence(128))
-	})
-
-	test("dspTime is the context's clock", () => {
-		expect(dspTime(offline(1))).toBe(0)
 	})
 })

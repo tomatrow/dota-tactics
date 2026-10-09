@@ -1,4 +1,4 @@
-import { waitForSeconds } from "#lib/common/unity/time.ts"
+import { wait } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import { getDirection, getNormal } from "#lib/extensions/DirectionsExtensions.ts"
@@ -42,7 +42,7 @@ export function abilityTargetState(owner: BattleController) {
 		const plan = turn.plan!
 		if (ar.directionOriented) {
 			changeDirection(getNormal(plan.attackDirection))
-			await waitForSeconds(0.25)
+			await wait(0.25)
 		} else {
 			const { fireLocation } = plan
 			let cursorPos = owner.pos
@@ -54,10 +54,10 @@ export function abilityTargetState(owner: BattleController) {
 				if (y > fireLocation.y) y--
 				cursorPos = Point.of(x, y)
 				selectTile(owner, cursorPos)
-				await waitForSeconds(0.25)
+				await wait(0.25)
 			}
 		}
-		await waitForSeconds(0.5)
+		await wait(0.5)
 		owner.machine.done()
 	}
 

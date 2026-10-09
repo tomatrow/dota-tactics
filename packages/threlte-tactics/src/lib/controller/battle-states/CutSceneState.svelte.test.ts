@@ -1,13 +1,12 @@
 import { describe, expect, test } from "vitest"
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import { BattleController } from "#lib/controller/BattleController.svelte.ts"
-import type { LevelData } from "#lib/model/LevelData.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 
 describe("CutSceneState", () => {
 	test("plays the intro conversation, advancing on either button, then hands over", async () => {
 		useFakeTime()
-		const battle = new BattleController(Resources.load<LevelData>("Levels/Level_0")!)
+		const battle = new BattleController(Resources.load("Levels/Level_0")!)
 		battle.start()
 		await advance(0.1)
 		expect(battle.machine.current).toBe("CutSceneState")

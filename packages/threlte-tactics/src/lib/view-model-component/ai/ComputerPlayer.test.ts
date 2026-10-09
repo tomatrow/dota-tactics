@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Random } from "#lib/common/Random.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Facings } from "#lib/enums/Facings.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -165,7 +165,7 @@ describe("ComputerPlayer.evaluate", () => {
 	test("an ability on itself: anywhere it can move to, aimed there", () => {
 		const { cpu, units, random } = setup(flat(5), { recipe: "Enemy Warrior", at: [0, 0] })
 		only(units[0]!, "First Aid", Targets.Self, random)
-		vi.spyOn(random, "rangeInt").mockReturnValueOnce(2)
+		vi.spyOn(random, "int").mockReturnValueOnce(2)
 		expect(evaluate(cpu)).toMatchObject({ ability: "First Aid", move: "(3,0)", fire: "(3,0)" })
 	})
 
@@ -219,7 +219,7 @@ describe("ComputerPlayer.determineEndFacingDirection", () => {
 
 	test("no foe: a random way", () => {
 		const { cpu, random } = setup(flat(5, 5), { recipe: "Enemy Warrior", at: [2, 2] })
-		vi.spyOn(random, "rangeInt").mockReturnValueOnce(3)
+		vi.spyOn(random, "int").mockReturnValueOnce(3)
 		expect(cpu.determineEndFacingDirection()).toBe(West)
 	})
 })

@@ -1,4 +1,4 @@
-import { nextFrame } from "#lib/common/unity/time.ts"
+import { nextFrame } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { refreshPrimaryStatPanel, selectTile, type BattleStateHandlers } from "./BattleState.ts"
 

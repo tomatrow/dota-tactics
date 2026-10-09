@@ -1,5 +1,5 @@
 // Fake game time for browser-mode tests: tweens (`svelte/motion`), `nextFrame` and
-// `waitForSeconds` all run on these clocks.
+// `wait` all run on these clocks.
 import { vi } from "vitest"
 
 /**

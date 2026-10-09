@@ -1,6 +1,6 @@
 import { MathUtils } from "three"
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import type { ValueModifier } from "#lib/exceptions/modifiers/ValueModifier.ts"
 import { Info } from "#lib/model/Info.ts"
 import type { Ability, AbilityEffect } from "#lib/view-model-component/ability/Ability.ts"

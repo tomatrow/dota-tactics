@@ -1,4 +1,4 @@
-import type { Vector3 } from "#lib/common/unity/vector3.ts"
+import type { Vector3 } from "#lib/common/vector.ts"
 
 /**
  * Port of `Model/LevelData.cs`: a saved board. Each tile is `[x, height, z]`, where `height` is

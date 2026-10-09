@@ -1,10 +1,10 @@
 import { describe, expect, test } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Random } from "#lib/common/Random.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Unit } from "#lib/view-model-component/Unit.svelte.ts"
-import { Job, type JobPrefab } from "./Job.ts"
+import { Job } from "./Job.ts"
 import type { Stats } from "./Stats.ts"
 
 /** A `Random` whose `value` is always `value`. */
@@ -14,7 +14,7 @@ class FixedRandom extends Random {
 		super(0)
 		this.#value = value
 	}
-	override get value(): number {
+	override value(): number {
 		return this.#value
 	}
 }
@@ -23,7 +23,7 @@ function hire(name: string, random: Random = new Random(1)) {
 	const notifications = new NotificationCenter()
 	const unit = new Unit({ name: "Hero", model: "Hero", notifications })
 	unit.stats.set(StatTypes.LVL, 1)
-	const job = new Job(Resources.load<JobPrefab>(`Jobs/${name}`)!, { notifications, random })
+	const job = new Job(Resources.load(`Jobs/${name}`)!, { notifications, random })
 	job.employ(unit)
 	job.loadDefaultStats()
 	return { stats: unit.stats, job, rank: unit.rank }
@@ -35,7 +35,7 @@ const { LVL, HP, MHP, MP, MMP, ATK, DEF, MAT, MDF, SPD, EVD, RES, MOV, JMP } = S
 describe("Job", () => {
 	test("the generated jobs hold Settings/*.csv", () => {
 		expect(Resources.paths("Jobs")).toEqual(["Jobs/Rogue", "Jobs/Warrior", "Jobs/Wizard"])
-		expect(Resources.load<JobPrefab>("Jobs/Warrior")).toEqual({
+		expect(Resources.load("Jobs/Warrior")).toEqual({
 			name: "Warrior",
 			baseStats: [43, 5, 61, 89, 11, 58, 100],
 			growStats: [8.4, 0.8, 8.8, 9.2, 1.1, 7.6, 1.1],

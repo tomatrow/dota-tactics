@@ -1,4 +1,4 @@
-import { AudioClip } from "#lib/common/unity/audio.ts"
+import { AudioClip } from "#lib/common/audio.ts"
 
 /**
  * A rate where a render quantum (128 frames) and the clips below last a power-of-two fraction of a

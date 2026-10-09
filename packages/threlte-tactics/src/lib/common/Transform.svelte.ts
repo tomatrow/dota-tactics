@@ -1,7 +1,7 @@
 import { quadInOut } from "svelte/easing"
 import { Tween } from "svelte/motion"
 import { tween, type Easing, type LoopOptions } from "#lib/common/animation/Tweener.ts"
-import type { Vector3 } from "#lib/common/unity/vector3.ts"
+import type { Vector3 } from "#lib/common/vector.ts"
 
 /**
  * Where something that moves is (a unit, its jumper, the tile selection indicator), which way it

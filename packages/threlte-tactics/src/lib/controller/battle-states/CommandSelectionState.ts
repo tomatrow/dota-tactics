@@ -1,4 +1,4 @@
-import { waitForSeconds } from "#lib/common/unity/time.ts"
+import { wait } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import { baseAbilityMenuState } from "./BaseAbilityMenuState.ts"
@@ -52,7 +52,7 @@ export function commandSelectionState(owner: BattleController) {
 			turn.ability = turn.plan.ability
 		}
 
-		await waitForSeconds(1)
+		await wait(1)
 		owner.machine.done()
 	}
 

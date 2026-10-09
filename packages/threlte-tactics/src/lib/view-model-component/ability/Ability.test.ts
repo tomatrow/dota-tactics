@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Random } from "#lib/common/Random.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { board } from "#lib/testing/board.ts"
@@ -41,7 +41,7 @@ const { HP, MHP, MP, MAT, MDF, EVD } = StatTypes
 function setup() {
 	const notifications = new NotificationCenter()
 	const random = new Random(1)
-	vi.spyOn(random, "rangeFloat").mockReturnValue(1)
+	vi.spyOn(random, "float").mockReturnValue(1)
 	const context = { notifications, random }
 	const b = board("000")
 	const unit = (name: string, x: number, hp: number, alliance: Alliances = Alliances.Hero) => {
@@ -116,7 +116,7 @@ describe("Cure and Raise", () => {
 			false,
 			true
 		])
-		vi.spyOn(context.random, "rangeInt").mockReturnValue(0)
+		vi.spyOn(context.random, "int").mockReturnValue(0)
 
 		ability.perform([ally.tile!, foe.tile!])
 		// Healing stops at the max HP. Damage: (100 - 40 / 2) * 40%.
@@ -143,7 +143,7 @@ describe("Drain", () => {
 	function drained() {
 		const s = setup()
 		const ability = instantiateAbility(drain, s.caster, s.context)
-		const roll = vi.spyOn(s.random, "rangeInt").mockReturnValue(0)
+		const roll = vi.spyOn(s.random, "int").mockReturnValue(0)
 		return { ...s, ability, roll }
 	}
 
@@ -209,7 +209,7 @@ describe("HealAbilityEffect", () => {
 			},
 			context
 		)
-		vi.mocked(context.random.rangeFloat).mockReturnValue(0.9)
+		vi.mocked(context.random.float).mockReturnValue(0.9)
 		heal.apply(ally.tile!)
 		// 15 * 0.9, floored.
 		expect(ally.stats.get(HP)).toBe(63)

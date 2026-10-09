@@ -55,7 +55,7 @@ export class ComputerPlayer {
 	/** Faces the nearest foe (so that it sees this unit's front), or a random way if there is none. */
 	determineEndFacingDirection(): Directions {
 		const actor = this.#actor
-		let dir = this.#bc.random.rangeInt(0, 4) as Directions
+		let dir = this.#bc.random.int(0, 4) as Directions
 		this.#findNearestFoe()
 		if (this.#nearestFoe !== null) {
 			const start = actor.dir
@@ -93,7 +93,7 @@ export class ComputerPlayer {
 		// With nowhere to move, stay put.
 		const tile =
 			moveOptions.length > 0 ?
-				moveOptions[this.#bc.random.rangeInt(0, moveOptions.length)]!
+				moveOptions[this.#bc.random.int(0, moveOptions.length)]!
 			:	this.#actor.tile!
 		poa.moveLocation = poa.fireLocation = tile.pos
 	}
@@ -228,7 +228,7 @@ export class ComputerPlayer {
 			}
 		}
 
-		const choice = finalPicks[this.#bc.random.rangeInt(0, finalPicks.length)]!
+		const choice = finalPicks[this.#bc.random.int(0, finalPicks.length)]!
 		poa.fireLocation = choice.target.pos
 		poa.attackDirection = choice.direction
 		poa.moveLocation = choice.bestMoveTile!.pos

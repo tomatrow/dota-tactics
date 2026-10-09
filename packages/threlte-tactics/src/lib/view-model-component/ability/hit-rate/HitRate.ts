@@ -1,5 +1,5 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import { MatchException } from "#lib/exceptions/MatchException.ts"
 import { Info } from "#lib/model/Info.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
@@ -54,7 +54,7 @@ export abstract class HitRate {
 	abstract calculate(target: Tile): number
 
 	rollForHit(target: Tile): boolean {
-		const roll = this.#random.rangeInt(0, 101)
+		const roll = this.#random.int(0, 101)
 		const chance = this.calculate(target)
 		return roll <= chance
 	}

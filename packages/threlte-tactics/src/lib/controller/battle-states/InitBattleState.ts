@@ -1,4 +1,4 @@
-import { nextFrame } from "#lib/common/unity/time.ts"
+import { nextFrame } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { TurnOrderController } from "#lib/controller/TurnOrderController.ts"
 import { DefeatTargetVictoryCondition } from "#lib/controller/victory-conditions/DefeatTargetVictoryCondition.ts"
@@ -28,15 +28,15 @@ export function initBattleState(owner: BattleController) {
 
 		const locations = [...owner.board.tiles.values()]
 		for (let i = 0; i < recipes.length; ++i) {
-			const level = owner.random.rangeInt(9, 12)
+			const level = owner.random.int(9, 12)
 			const unit = UnitFactory.create(recipes[i]!, level, owner)!
 
-			const random = owner.random.rangeInt(0, locations.length)
+			const random = owner.random.int(0, locations.length)
 			const randomTile = locations[random]!
 			locations.splice(random, 1)
 
 			unit.place(randomTile)
-			unit.dir = owner.random.rangeInt(0, 4) as Directions
+			unit.dir = owner.random.int(0, 4) as Directions
 			unit.match()
 
 			owner.units.push(unit)

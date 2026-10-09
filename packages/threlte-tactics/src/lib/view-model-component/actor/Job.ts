@@ -2,7 +2,7 @@ import type {
 	Handler,
 	NotificationCenter
 } from "#lib/common/notification-center/NotificationCenter.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import type { Feature, FeatureTarget } from "#lib/view-model-component/features/Feature.ts"
 import { StatModifierFeature } from "#lib/view-model-component/features/StatModifierFeature.ts"
@@ -111,7 +111,7 @@ export class Job {
 
 			let value = stats.get(type)
 			value += whole
-			if (this.#random.value > 1 - fraction) value++
+			if (this.#random.value() > 1 - fraction) value++
 
 			stats.setValue(type, value, false)
 		}

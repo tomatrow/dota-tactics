@@ -1,4 +1,4 @@
-import type { AudioClip } from "#lib/common/unity/audio.ts"
+import type { AudioClip } from "#lib/common/audio.ts"
 import { AudioSequence } from "./AudioSequence.ts"
 
 /** Port of `Audio/MusicPlayer.cs`: plays an intro, then a loop for as long as the scene lasts. */
@@ -18,7 +18,7 @@ export class MusicPlayer {
 		this.sequence.getData(this.loopClip).source.loop = true
 	}
 
-	/** Stops the music (Unity's sources go with their scene). */
+	/** Stops the music, as the battle ends. */
 	destroy(): void {
 		this.sequence?.stop()
 	}

@@ -1,5 +1,5 @@
 import { linear, quadOut } from "svelte/easing"
-import { nextFrame } from "#lib/common/unity/time.ts"
+import { nextFrame } from "#lib/common/time.ts"
 import { getDirection } from "#lib/extensions/DirectionsExtensions.ts"
 import { Tile } from "../Tile.svelte.ts"
 import { Movement } from "./Movement.ts"

@@ -1,5 +1,5 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { Ability, type AbilityEffect } from "./Ability.ts"
 import { AbilityMagicCost } from "./AbilityMagicCost.ts"

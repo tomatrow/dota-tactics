@@ -1,4 +1,4 @@
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import type { ConversationData } from "#lib/model/ConversationData.ts"
 import { didPlayerWin, isBattleOver, type BattleStateHandlers } from "./BattleState.ts"
@@ -17,7 +17,7 @@ export function cutSceneState(owner: BattleController) {
 					didPlayerWin(owner) ? "OutroSceneWin"
 					:	"OutroSceneLose"
 				:	"IntroScene"
-			data = Resources.load<ConversationData>(`Conversations/${name}`)
+			data = Resources.load(`Conversations/${name}`)
 			if (!data) throw new Error(`Missing Resources/Conversations/${name}`)
 			// Unity's `completeEvent`, which this state listens to while it is current.
 			void owner.conversationController.show(data).then(() => owner.machine.done())

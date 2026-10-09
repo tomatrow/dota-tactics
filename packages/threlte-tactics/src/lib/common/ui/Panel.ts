@@ -1,6 +1,6 @@
 import type { Easing } from "#lib/common/animation/Tweener.ts"
 import type { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-import type { Vector2 } from "#lib/common/unity/vector2.ts"
+import type { Vector2 } from "#lib/common/vector.ts"
 import { LayoutAnchor } from "./LayoutAnchor.svelte.ts"
 
 /** Port of `Panel.Position`: a named place for a panel (Unity sets these up in the inspector). */

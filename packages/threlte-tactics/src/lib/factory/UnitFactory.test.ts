@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
-import { Resources } from "#lib/common/unity/Resources.ts"
+import { Random } from "#lib/common/Random.ts"
+import { Resources } from "#lib/common/Resources.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -14,7 +14,6 @@ import { TeleportMovement } from "#lib/view-model-component/movement/TeleportMov
 import { WalkMovement } from "#lib/view-model-component/movement/WalkMovement.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { UnitFactory } from "./UnitFactory.ts"
-import type { UnitRecipe } from "./UnitRecipe.ts"
 
 const context = () => ({ notifications: new NotificationCenter(), random: new Random(1) })
 
@@ -105,7 +104,7 @@ describe("UnitFactory", () => {
 		const paths = Resources.paths("Unit Recipes")
 		expect(paths).toHaveLength(6)
 		for (const path of paths) {
-			const recipe = Resources.load<UnitRecipe>(path)!
+			const recipe = Resources.load(path)!
 			expect(UnitFactory.create(recipe, 1, context())?.name).toBe(recipe.name)
 		}
 	})
@@ -118,14 +117,14 @@ describe("UnitFactory", () => {
 
 	test("an ability catalog recipe that's missing: an empty catalog, and an error logged", () => {
 		const error = vi.spyOn(console, "error").mockImplementation(() => {})
-		const recipe = Resources.load<UnitRecipe>("Unit Recipes/Kamau")!
+		const recipe = Resources.load("Unit Recipes/Kamau")!
 		const unit = UnitFactory.create({ ...recipe, abilityCatalog: "Nothing" }, 1, context())!
 		expect(unit.abilityCatalog?.categoryCount()).toBe(0)
 		expect(error).toHaveBeenCalledWith("No Ability Catalog Recipe Found: Nothing")
 	})
 
 	test("a prefab that's missing throws (Unity goes on with an empty GameObject)", () => {
-		const recipe = Resources.load<UnitRecipe>("Unit Recipes/Kamau")!
+		const recipe = Resources.load("Unit Recipes/Kamau")!
 		expect(() => UnitFactory.create({ ...recipe, job: "Bard" }, 1, context())).toThrow(
 			"No Prefab for name: Jobs/Bard"
 		)

@@ -1,4 +1,4 @@
-import { waitForSeconds } from "#lib/common/unity/time.ts"
+import { wait } from "#lib/common/time.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import { Drivers } from "#lib/enums/Drivers.ts"
 import type { Point } from "#lib/model/Point.ts"
@@ -54,7 +54,7 @@ export function confirmAbilityTargetState(owner: BattleController) {
 
 	async function computerDisplayAbilitySelection(): Promise<void> {
 		owner.battleMessageController.display(turn.ability!.name)
-		await waitForSeconds(2)
+		await wait(2)
 		owner.machine.done()
 	}
 

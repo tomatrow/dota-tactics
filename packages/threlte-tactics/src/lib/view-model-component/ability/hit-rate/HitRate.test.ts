@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Random } from "#lib/common/unity/Random.ts"
+import { Random } from "#lib/common/Random.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Facings } from "#lib/enums/Facings.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
@@ -164,7 +164,7 @@ describe("rollForHit", () => {
 	test("hits when a roll of 0–100 is at most the chance", () => {
 		const { attacker, target, context, random } = setup(side)
 		const hitRate = new ATypeHitRate(attacker, context)
-		const roll = vi.spyOn(random, "rangeInt").mockReturnValue(75)
+		const roll = vi.spyOn(random, "int").mockReturnValue(75)
 		expect(hitRate.rollForHit(target)).toBe(true)
 		expect(roll).toHaveBeenCalledWith(0, 101)
 		roll.mockReturnValue(76)

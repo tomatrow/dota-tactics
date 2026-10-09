@@ -353,7 +353,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 	test("an ability aims; performing it spends its MP and ends the action", async () => {
 		const battle = await started()
 		const [rogue] = battle.units as [Unit]
-		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+		vi.spyOn(battle.random, "float").mockReturnValue(1)
 		rogue.stats.set(StatTypes.HP, 1)
 		const mp = rogue.stats.get(StatTypes.MP)
 		battle.move(Point.of(0, -1))
@@ -624,8 +624,8 @@ describe("PerformAbilityState and EndFacingState", () => {
 		const battle = await started()
 		const [rogue, warrior, wizard] = battle.units as [Unit, Unit, Unit]
 		// Every roll hits, with no variance.
-		vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
-		vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+		vi.spyOn(battle.random, "int").mockReturnValue(0)
+		vi.spyOn(battle.random, "float").mockReturnValue(1)
 		const hpBefore = battle.units.map((u) => u.stats.get(StatTypes.HP))
 		const [damage] = rogue.attack!.effects
 		const predicted = [rogue, warrior].map((u) => damage!.effect.predict(u.tile!))
@@ -710,8 +710,8 @@ describe("PerformAbilityState and EndFacingState", () => {
 
 /** Every roll hits, with no variance. */
 const sure = (battle: BattleController) => {
-	vi.spyOn(battle.random, "rangeInt").mockReturnValue(0)
-	vi.spyOn(battle.random, "rangeFloat").mockReturnValue(1)
+	vi.spyOn(battle.random, "int").mockReturnValue(0)
+	vi.spyOn(battle.random, "float").mockReturnValue(1)
 }
 
 /** Plays the conversation through (`count` messages), to its end. */

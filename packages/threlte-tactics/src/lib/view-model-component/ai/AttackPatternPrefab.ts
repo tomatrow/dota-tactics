@@ -1,4 +1,4 @@
-import type { Random } from "#lib/common/unity/Random.ts"
+import type { Random } from "#lib/common/Random.ts"
 import type { Targets } from "#lib/enums/Targets.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import type { BaseAbilityPicker } from "./ability-picker/BaseAbilityPicker.ts"

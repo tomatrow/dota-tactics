@@ -111,8 +111,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
     are allowed; where Unity relied on its ignore-during-transition guard, defer explicitly.
 - **Coroutines**: `TurnOrderController.Round()` → JS generator. Animated sequences → `async`
   functions awaiting `svelte/motion` `Tween`s (`svelte/easing`; hand-port a curve only if
-  missing); `yield return null` / `WaitForSeconds` → `nextFrame()` / `waitForSeconds()`
-  (`#lib/common/unity/time.ts`). Per-frame behaviour → Threlte `useTask` (with
+  missing); `yield return null` / `WaitForSeconds` → `nextFrame()` / `wait()`
+  (`#lib/common/time.ts`). Per-frame behaviour → Threlte `useTask` (with
   `autoInvalidate: false` + `invalidate()` when something moved, so on-demand rendering idles).
 - **Transforms** that game code moves (the tile selection indicator, units and their `Jumper`)
   are `Transform` instances (`#lib/common/Transform.svelte.ts`): `position`, `yaw` (radians about
@@ -132,7 +132,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   class names (`ConeAbilityRange.svelte.ts`); methods camelCase. Import via `#lib/...` with the
   real file extension (`#lib/materials/materials.ts`).
 - **Data**: `src/lib/resources/` mirrors Unity's `Assets/Resources` (same names and paths); load
-  with `Resources.load<T>("Levels/Level_0")` (`#lib/common/unity/Resources.ts`).
+  with `Resources.load("Levels/Level_0")` (`#lib/common/Resources.ts`, typed by folder).
   `scripts/convert-unity.ts` (`pnpm convert`) turns Unity YAML/CSV into committed `.ts` modules
   (`satisfies` our types) in the folders it owns (`generatedFolders`); never edit those by hand.
   A test fails when they are stale. Prefabs that are data (abilities) are generated too, each
@@ -159,7 +159,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.
 - Input: one `<Input>` component via `<svelte:window>`. Move: arrows/WASD with Unity's repeater
   (0.5 s threshold, 0.25 s rate). Confirm (Fire1): Enter/Space. Cancel (Fire2): Escape/Backspace.
-- Audio: Web Audio (`#lib/common/unity/audio.ts`). `+page.svelte` owns the one `AudioContext`
+- Audio: Web Audio (`#lib/common/audio.ts`). `+page.svelte` owns the one `AudioContext`
   (Unity's audio engine) and resumes it on the first key press; `<Battle audio>` renders
   `<Music>`, a `MusicPlayer` (intro, then loop) that stops when the battle ends. Without `audio`
   (tests), no music. Music is CC BY 4.0: keep the credit in README and in-app (the page footer).
@@ -174,7 +174,7 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - 3D components: `@threlte/test`'s `render` (queries the three `Scene` directly).
 - Audio: render on an `OfflineAudioContext` and compare samples (`#lib/testing/audio.ts`: a rate
   where schedules land exactly on frames, ramps that tell each sample's origin).
-- Animated rules (tweens, `nextFrame`, `waitForSeconds`) are tested on fake clocks:
+- Animated rules (tweens, `nextFrame`, `wait`) are tested on fake clocks:
   `useFakeTime()` + `await advance(seconds)` (`#lib/testing/time.ts`). Read its caveat about
   mixing real and fake time in one file.
 - Battles in tests: `new BattleController(level, { seed, spawnTestUnits: spawn(...) })`

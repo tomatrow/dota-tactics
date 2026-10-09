@@ -6,7 +6,7 @@
 <script lang="ts">
 	import { T, useTask, useThrelte } from "@threlte/core"
 	import { Group, Vector3 as ThreeVector3 } from "three"
-	import type { Vector3 } from "#lib/common/unity/vector3.ts"
+	import type { Vector3 } from "#lib/common/vector.ts"
 
 	let {
 		follow,
