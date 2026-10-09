@@ -1,0 +1,75 @@
+/* Full-bleed isometric stage; FFT-style blue menu windows float at the corners. */
+:root {
+	color-scheme: dark;
+	--bg: #0b101c;
+	--win-a: #24386c;
+	--win-b: #101a38;
+	--edge: #cdbd8c;
+	--fg: #eee6d0;
+	--muted: #a2abc4;
+	--radiant: #74d48e;
+	--dire: #e3624f;
+	--neutral: #e8c35f;
+	--cursor: #ffe39a;
+	--display: "Spectral SC", "Palatino Linotype", Georgia, serif;
+	--body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+	--mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+}
+
+body {
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--body);
+	overflow: hidden;
+}
+
+.win {
+	position: fixed;
+	z-index: 2;
+	box-sizing: border-box;
+	background: linear-gradient(180deg, var(--win-a), var(--win-b));
+	border: 1px solid var(--edge);
+	border-radius: 6px;
+	box-shadow:
+		inset 0 0 0 2px rgb(0 0 0 / 0.35),
+		0 6px 18px rgb(0 0 0 / 0.45);
+	padding: 10px 14px;
+	font-size: 13px;
+	line-height: 1.45;
+}
+
+.team-radiant {
+	color: var(--radiant);
+}
+.team-dire {
+	color: var(--dire);
+}
+
+/* Floating landmark labels (three.js CSS2D objects). */
+.lbl {
+	pointer-events: none;
+	font: 600 12px var(--display);
+	letter-spacing: 0.06em;
+	white-space: nowrap;
+	padding: 1px 6px;
+	border-radius: 3px;
+	background: rgb(8 12 24 / 0.72);
+	border: 1px solid rgb(205 189 140 / 0.45);
+	color: var(--fg);
+}
+.lbl.team-neutral,
+.lbl.team-none {
+	color: var(--neutral);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+	}
+}

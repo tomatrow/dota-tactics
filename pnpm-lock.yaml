@@ -260,6 +260,66 @@ importers:
         specifier: 'catalog:'
         version: 6.0.3
 
+  packages/dota-tactics-grid:
+    devDependencies:
+      '@eslint/js':
+        specifier: 'catalog:'
+        version: 10.0.1(eslint@10.12.0)
+      '@sveltejs/adapter-static':
+        specifier: 'catalog:'
+        version: 4.0.0(@sveltejs/kit@3.0.1(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.71.1))(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.71.1))(typescript@6.0.3)(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1)))
+      '@sveltejs/kit':
+        specifier: 'catalog:'
+        version: 3.0.1(@sveltejs/vite-plugin-svelte@7.3.1(svelte@5.57.2(@typescript-eslint/types@8.71.1))(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1)))(svelte@5.57.2(@typescript-eslint/types@8.71.1))(typescript@6.0.3)(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1))
+      '@sveltejs/vite-plugin-svelte':
+        specifier: 'catalog:'
+        version: 7.3.1(svelte@5.57.2(@typescript-eslint/types@8.71.1))(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.1
+      '@types/three':
+        specifier: 'catalog:'
+        version: 0.186.0
+      eslint:
+        specifier: 'catalog:'
+        version: 10.12.0
+      eslint-config-prettier:
+        specifier: 'catalog:'
+        version: 10.1.8(eslint@10.12.0)
+      eslint-plugin-svelte:
+        specifier: 'catalog:'
+        version: 3.23.0(eslint@10.12.0)(svelte@5.57.2(@typescript-eslint/types@8.71.1))
+      globals:
+        specifier: 'catalog:'
+        version: 17.13.0
+      prettier:
+        specifier: 'catalog:'
+        version: 3.9.9
+      prettier-plugin-svelte:
+        specifier: 'catalog:'
+        version: 4.1.1(prettier@3.9.9)(svelte@5.57.2(@typescript-eslint/types@8.71.1))
+      svelte:
+        specifier: 'catalog:'
+        version: 5.57.2(@typescript-eslint/types@8.71.1)
+      svelte-check:
+        specifier: 'catalog:'
+        version: 4.7.6(picomatch@4.0.7)(svelte@5.57.2(@typescript-eslint/types@8.71.1))(typescript@6.0.3)
+      three:
+        specifier: 'catalog:'
+        version: 0.186.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.71.1(eslint@10.12.0)(typescript@6.0.3)
+      vite:
+        specifier: 'catalog:'
+        version: 8.3.3(@types/node@24.19.1)(yaml@2.9.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.3(@types/node@24.19.1)(@vitest/browser-playwright@5.0.3)(@vitest/ui@5.0.3)(vite@8.3.3(@types/node@24.19.1)(yaml@2.9.1))
+
   packages/threlte-tactics:
     devDependencies:
       '@eslint/js':

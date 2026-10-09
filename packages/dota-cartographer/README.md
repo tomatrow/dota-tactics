@@ -6,6 +6,9 @@ Roshan…) and the creep lanes. It runs headless on macOS (or Linux/Windows) wit
 
 This is an isolated experiment: a Python package, not part of the pnpm workspace or the root scripts.
 
+To see the output in 3D, use [`dota-tactics-grid`](../dota-tactics-grid): a tactics-board viewer that
+loads `out/dota_map.json` directly.
+
 ## Usage
 
 Python and uv are pinned in the repo-root `mise.toml`; this package's `mise.toml` adds the tasks.
