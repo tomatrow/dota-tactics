@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { describeEntity, describeTile } from "#lib/map/describe.ts"
-	import type { MapModel } from "#lib/map/model.ts"
 	import type { Team } from "#lib/map/schema.ts"
-	import type { Selection } from "#lib/selection.ts"
+	import { getViewerState } from "#lib/state.svelte.ts"
 
-	let { model, focus, pinned }: { model: MapModel; focus: Selection | null; pinned: boolean } =
-		$props()
+	const view = getViewerState()
+	const { model } = view
+	const focus = $derived(view.focus)
+	const pinned = $derived(view.pinned !== null)
 
 	const TEAM_COLOURS: Partial<Record<Team, string>> = {
 		radiant: "var(--radiant)",

@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { Viewer, Visibility } from "#lib/scene/viewer.ts"
-	import type { ViewerState } from "#lib/state.svelte.ts"
+	import { getViewerState, type Visibility } from "#lib/state.svelte.ts"
 
-	let { view, viewer }: { view: ViewerState; viewer: Viewer | undefined } = $props()
+	const view = getViewerState()
 
 	const toggles: { key: keyof Visibility; label: string }[] = [
 		{ key: "trees", label: "Trees" },
@@ -17,9 +16,9 @@
 
 <nav class="win" aria-label="View controls">
 	<div class="row">
-		<button onclick={() => viewer?.rotate(-1)} type="button">Rotate left</button>
-		<button onclick={() => viewer?.rotate(1)} type="button">Rotate right</button>
-		<button onclick={() => viewer?.home()} type="button">Reset view</button>
+		<button onclick={() => view.rotate(-1)} type="button">Rotate left</button>
+		<button onclick={() => view.rotate(1)} type="button">Rotate right</button>
+		<button onclick={() => view.home()} type="button">Reset view</button>
 	</div>
 	<div class="row">
 		{#each toggles as { key, label } (key)}

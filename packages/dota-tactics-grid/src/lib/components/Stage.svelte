@@ -1,45 +1,22 @@
+<!--
+	The 3D view, filling the window behind the UI.
+-->
 <script lang="ts">
-	import type { LayerStyle } from "#lib/map/layers.ts"
-	import type { MapModel } from "#lib/map/model.ts"
-	import { Viewer } from "#lib/scene/viewer.ts"
-	import { sameSelection } from "#lib/selection.ts"
-	import type { ViewerState } from "#lib/state.svelte.ts"
-
-	interface Props {
-		model: MapModel
-		view: ViewerState
-		layerStyle: LayerStyle
-		viewer?: Viewer
-	}
-
-	let { model, view, layerStyle, viewer = $bindable() }: Props = $props()
-	let container: HTMLDivElement
-
-	$effect(() => {
-		const created = new Viewer(container, model, {
-			hover: (selection) => (view.hover = selection),
-			// Clicking pins; clicking the pinned thing again (or off the board) releases it.
-			click: (selection) =>
-				(view.pinned = selection && !sameSelection(selection, view.pinned) ? selection : null)
-		})
-		viewer = created
-		return () => {
-			viewer = undefined
-			created.dispose()
-		}
-	})
-
-	$effect(() => viewer?.setLayer(view.layer, layerStyle))
-	$effect(() => viewer?.setVisibility(view.visibility))
-	$effect(() => viewer?.setVerticalScale(view.verticalScale))
-	$effect(() => viewer?.setPinned(view.pinned))
+	import { Canvas } from "@threlte/core"
+	import { PCFShadowMap, WebGLRenderer } from "three"
+	import Scene from "./scene/Scene.svelte"
 </script>
 
-<div
-	bind:this={container}
-	aria-label="Isometric tactics grid of the Dota 2 map"
-	role="application"
-></div>
+<div aria-label="Isometric tactics grid of the Dota 2 map" role="application">
+	<Canvas
+		createRenderer={(canvas) => new WebGLRenderer({ canvas, powerPreference: "high-performance" })}
+		dpr={[1, 2]}
+		renderMode="always"
+		shadows={PCFShadowMap}
+	>
+		<Scene />
+	</Canvas>
+</div>
 
 <style>
 	div {

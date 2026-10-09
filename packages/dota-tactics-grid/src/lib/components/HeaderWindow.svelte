@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { MapModel } from "#lib/map/model.ts"
+	import { getViewerState } from "#lib/state.svelte.ts"
 
-	let { model }: { model: MapModel } = $props()
+	const { model } = getViewerState()
 
 	const n = (value: number) => value.toLocaleString("en-US")
 	const meta = $derived(model.data.meta)

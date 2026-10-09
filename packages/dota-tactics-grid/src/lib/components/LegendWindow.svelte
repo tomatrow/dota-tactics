@@ -1,7 +1,9 @@
 <script lang="ts">
-	import { LAYER_MODES, type LayerMode, type Legend } from "#lib/map/layers.ts"
+	import { LAYER_MODES } from "#lib/map/layers.ts"
+	import { getViewerState } from "#lib/state.svelte.ts"
 
-	let { layer = $bindable(), legend }: { layer: LayerMode; legend: Legend } = $props()
+	const view = getViewerState()
+	const legend = $derived(view.look.legend)
 
 	const n = (value: number) => value.toLocaleString("en-US")
 	const markers = [
@@ -26,7 +28,7 @@
 	<summary>Legend</summary>
 	<label>
 		<span>Layer</span>
-		<select bind:value={layer}>
+		<select bind:value={view.layer}>
 			{#each LAYER_MODES as mode (mode.id)}
 				<option value={mode.id}>{mode.label}</option>
 			{/each}
