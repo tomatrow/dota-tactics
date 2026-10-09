@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Prominence",
 	power: { type: "MagicalAbilityPower", level: 20 },
-	range: { type: "InfiniteAbilityRange", horizontal: 1, vertical: 2147483647 },
+	range: { type: "InfiniteAbilityRange", horizontal: 1, vertical: Infinity },
 	area: { type: "FullAbilityArea" },
 	magicCost: 32,
 	children: [

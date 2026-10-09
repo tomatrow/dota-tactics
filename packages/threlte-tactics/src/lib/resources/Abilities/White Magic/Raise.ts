@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Raise",
 	power: { type: "PhysicalAbilityPower", level: 45 },
-	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: 2147483647 },
+	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: Infinity },
 	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 2 },
 	magicCost: 22,
 	children: [

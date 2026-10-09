@@ -30,8 +30,13 @@ export class ValueChangeException extends BaseException {
 		if (this.#modifiers === null) return this.toValue
 
 		let value = this.toValue
-		// Array.sort is stable: modifiers with equal sort orders apply in the order they were added.
-		this.#modifiers.sort((x, y) => x.sortOrder - y.sortOrder)
+		// Stable: modifiers with equal sort orders apply in the order they were added. (Compared, not
+		// subtracted: `Infinity - Infinity` is NaN.)
+		this.#modifiers.sort((x, y) =>
+			x.sortOrder < y.sortOrder ? -1
+			: x.sortOrder > y.sortOrder ? 1
+			: 0
+		)
 		for (const modifier of this.#modifiers) value = modifier.modify(this.fromValue, value)
 
 		return value

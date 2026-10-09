@@ -1,5 +1,5 @@
+import { MathUtils } from "three"
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { clamp, intMaxValue } from "#lib/common/unity/mathf.ts"
 import { TurnOrderController } from "#lib/controller/TurnOrderController.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { ClampValueModifier } from "#lib/exceptions/modifiers/ClampValueModifier.ts"
@@ -54,13 +54,12 @@ export class Mana {
 	}
 
 	readonly #onMPWillChange = (_sender: Stats, vce: ValueChangeException): void => {
-		// PORT-FIX: Unity clamps MP to the max *HP*, so regenerating could take MP over its max.
-		vce.addModifier(new ClampValueModifier(intMaxValue, 0, this.#stats.get(StatTypes.MMP)))
+		vce.addModifier(new ClampValueModifier(Infinity, 0, this.#stats.get(StatTypes.MMP)))
 	}
 
 	readonly #onMMPDidChange = (_sender: Stats, oldMMP: number): void => {
 		if (this.mmp > oldMMP) this.mp += this.mmp - oldMMP
-		else this.mp = clamp(this.mp, 0, this.mmp)
+		else this.mp = MathUtils.clamp(this.mp, 0, this.mmp)
 	}
 
 	readonly #onTurnBegan = (): void => {

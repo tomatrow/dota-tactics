@@ -1,4 +1,4 @@
-import { clamp } from "#lib/common/unity/mathf.ts"
+import { MathUtils } from "three"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import { BaseAbilityEffect, maxDamage, minDamage } from "./BaseAbilityEffect.ts"
@@ -38,7 +38,7 @@ export class DamageAbilityEffect extends BaseAbilityEffect {
 		damage = this.getStat(attacker, defender, BaseAbilityEffect.tweakDamageNotification, damage)
 
 		// Clamp the damage to a range
-		damage = clamp(damage, minDamage, maxDamage)
+		damage = MathUtils.clamp(damage, minDamage, maxDamage)
 		return -damage
 	}
 
@@ -52,7 +52,7 @@ export class DamageAbilityEffect extends BaseAbilityEffect {
 		value = Math.floor(value * this.random.rangeFloat(0.9, 1.1))
 
 		// Clamp the damage to a range
-		value = clamp(value, minDamage, maxDamage)
+		value = MathUtils.clamp(value, minDamage, maxDamage)
 
 		// Apply the damage to the target
 		const s = defender.stats

@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Earth Render",
 	power: { type: "PhysicalAbilityPower", level: 34 },
-	range: { type: "LineAbilityRange", horizontal: 2147483647, vertical: 2147483647 },
+	range: { type: "LineAbilityRange", horizontal: Infinity, vertical: Infinity },
 	area: { type: "FullAbilityArea" },
 	children: [
 		{

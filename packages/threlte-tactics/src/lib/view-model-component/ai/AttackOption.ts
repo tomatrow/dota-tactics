@@ -1,4 +1,3 @@
-import { intMinValue } from "#lib/common/unity/mathf.ts"
 import type { Random } from "#lib/common/unity/Random.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Facings } from "#lib/enums/Facings.ts"
@@ -37,7 +36,6 @@ export class AttackOption {
 	readonly #moveTargets: Tile[] = []
 	readonly #random: Random
 
-	/** @param random Unity's `UnityEngine.Random`. */
 	constructor(random: Random) {
 		this.#random = random
 	}
@@ -81,7 +79,7 @@ export class AttackOption {
 		if (this.#moveTargets.length === 0) return
 
 		if (this.#isAbilityAngleBased(ability)) {
-			this.#bestAngleBasedScore = intMinValue
+			this.#bestAngleBasedScore = -Infinity
 			const startTile = caster.tile
 			const startDirection = caster.dir
 			caster.dir = this.direction

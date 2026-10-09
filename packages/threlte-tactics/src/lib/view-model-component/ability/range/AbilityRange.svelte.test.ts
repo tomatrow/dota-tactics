@@ -24,7 +24,7 @@ describe("ConstantAbilityRange", () => {
 	test("reaches every tile within `horizontal` steps, the user's own included", () => {
 		const b = board(...flat)
 		const range = new ConstantAbilityRange(unitAt(b, 2, 2))
-		expect(range).toMatchObject({ horizontal: 1, vertical: 2_147_483_647 })
+		expect(range).toMatchObject({ horizontal: 1, vertical: Infinity })
 		expect(positions(range.getTilesInRange(b))).toEqual([
 			"(1,2)",
 			"(2,1)",

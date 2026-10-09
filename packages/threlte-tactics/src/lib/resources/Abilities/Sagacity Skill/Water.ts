@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Water",
 	power: { type: "MagicalAbilityPower", level: 34 },
-	range: { type: "ConstantAbilityRange", horizontal: 3, vertical: 2147483647 },
+	range: { type: "ConstantAbilityRange", horizontal: 3, vertical: Infinity },
 	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 2 },
 	magicCost: 12,
 	children: [

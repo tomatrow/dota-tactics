@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "First Aid",
 	power: { type: "MagicalAbilityPower", level: 25 },
-	range: { type: "SelfAbilityRange", horizontal: 1, vertical: 2147483647 },
+	range: { type: "SelfAbilityRange", horizontal: 1, vertical: Infinity },
 	area: { type: "FullAbilityArea" },
 	children: [
 		{

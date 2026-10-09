@@ -20,7 +20,7 @@ export default {
 		},
 		{
 			name: "Blind Or Drain",
-			// PORT-FIX: Unity's lists itself instead of Drain, so it always ends up picking Blind.
+			// Corrected: Unity's data lists the picker itself instead of Drain.
 			picker: { type: "RandomAbilityPicker", pickers: ["Blind", "Drain"] }
 		},
 		{

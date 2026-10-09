@@ -1,5 +1,5 @@
+import { MathUtils } from "three"
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { clamp } from "#lib/common/unity/mathf.ts"
 import type { Random } from "#lib/common/unity/Random.ts"
 import type { ValueModifier } from "#lib/exceptions/modifiers/ValueModifier.ts"
 import { Info } from "#lib/model/Info.ts"
@@ -7,7 +7,7 @@ import type { Ability, AbilityEffect } from "#lib/view-model-component/ability/A
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
-// Unity's protected consts: the most an effect changes a stat by.
+// The most an effect changes a stat by.
 export const minDamage = -999
 export const maxDamage = 999
 
@@ -127,7 +127,7 @@ export abstract class BaseAbilityEffect {
 		for (const mod of mods) value = mod.modify(startValue, value)
 
 		let retValue = Math.floor(value)
-		retValue = clamp(retValue, minDamage, maxDamage)
+		retValue = MathUtils.clamp(retValue, minDamage, maxDamage)
 		return retValue
 	}
 }

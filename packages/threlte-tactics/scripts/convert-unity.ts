@@ -39,7 +39,23 @@ export const generatedFolders = [
 /** Generated file contents, keyed by path relative to `src/lib/resources/`. */
 type Output = Map<string, string>
 
-const json = (value: unknown) => JSON.stringify(value)
+/** A JS literal for `value`: its JSON, except that ±Infinity stay themselves. */
+const json = (value: unknown) =>
+	JSON.stringify(value, (_key, v: unknown) =>
+		v === Infinity ? "\0Infinity"
+		: v === -Infinity ? "\0-Infinity"
+		: v
+	).replace(/"\\u0000(-?Infinity)"/g, "$1")
+
+/** A C# int field's value. `int.MaxValue` and `int.MinValue` mean "no limit". */
+function int(value: unknown): number {
+	const n = Number(value)
+	return (
+		n === 2147483647 ? Infinity
+		: n === -2147483648 ? -Infinity
+		: n
+	)
+}
 
 function module(source: string, imports: string[], body: string): string {
 	return [
@@ -250,7 +266,8 @@ function abilityComponents(scripts: Scripts, behaviours: UnityObject[]) {
 			if (field.startsWith("m_")) continue
 			const type = ancestry.map((c) => c.fields.get(field)).find(Boolean)
 			if (type === "bool") component[field] = value === 1
-			else if (type === "int" || type === "float") component[field] = Number(value)
+			else if (type === "int") component[field] = int(value)
+			else if (type === "float") component[field] = Number(value)
 			else if (type === "string") component[field] = String(value ?? "")
 			else throw new Error(`Unknown field ${cls.name}.${field}`)
 		}
@@ -328,8 +345,8 @@ async function convertAbilities(out: Output): Promise<void> {
 // --- Attack patterns (`View Model Component/AI/`) ----------------------------------------------
 
 /**
- * PORT-FIX: corrections to random ability pickers' `pickers`, by prefab and GameObject. Each
- * checks that Unity's data is still what it corrects.
+ * Corrections to random ability pickers' `pickers`, by prefab and GameObject (see `PORTING.md` ›
+ * Divergences). Each checks that Unity's data is still what it corrects.
  */
 const pickerFixes: Record<
 	string,
@@ -339,7 +356,7 @@ const pickerFixes: Record<
 		"Blind Or Drain": {
 			unity: ["Blind", "Blind Or Drain"],
 			fixed: ["Blind", "Drain"],
-			why: "Unity's lists itself instead of Drain, so it always ends up picking Blind."
+			why: "Unity's data lists the picker itself instead of Drain."
 		}
 	}
 }
@@ -367,7 +384,7 @@ async function convertAttackPattern(scripts: Scripts, file: string): Promise<str
 		if (!fix) return { pickers, comment: "" }
 		if (json(pickers) !== json(fix.unity))
 			throw new Error(`The fix for ${name} in ${file} no longer applies: ${json(pickers)}`)
-		return { pickers: fix.fixed, comment: `// PORT-FIX: ${fix.why}\n` }
+		return { pickers: fix.fixed, comment: `// Corrected: ${fix.why}\n` }
 	}
 
 	const pattern = only(root)

@@ -19,10 +19,12 @@ describe("Rank", () => {
 			expect(Rank.levelForExperience(Rank.experienceForLevel(i))).toBe(i)
 	})
 
-	test("follows an ease-in curve, in 32-bit floats like Unity", () => {
+	test("follows an ease-in curve", () => {
 		expect(Rank.experienceForLevel(1)).toBe(0)
 		expect(Rank.experienceForLevel(2)).toBe(104)
-		expect(Rank.experienceForLevel(99) - Rank.experienceForLevel(98)).toBe(20304)
+		// 999999 × (97/98)², truncated.
+		expect(Rank.experienceForLevel(98)).toBe(979694)
+		expect(Rank.experienceForLevel(99) - Rank.experienceForLevel(98)).toBe(20305)
 		expect(Rank.experienceForLevel(99)).toBe(999999)
 		expect(Rank.experienceForLevel(150)).toBe(999999)
 		expect(Rank.levelForExperience(103)).toBe(1)

@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Cure",
 	power: { type: "MagicalAbilityPower", level: 40 },
-	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: 2147483647 },
+	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: Infinity },
 	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 1 },
 	magicCost: 6,
 	children: [

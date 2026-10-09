@@ -1,4 +1,4 @@
-import { clamp } from "#lib/common/unity/mathf.ts"
+import { MathUtils } from "three"
 import { Facings } from "#lib/enums/Facings.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { getFacing } from "#lib/extensions/FacingsExtensions.ts"
@@ -21,7 +21,7 @@ export class STypeHitRate extends HitRate {
 		let res = this.#getResistance(defender)
 		res = this.adjustForStatusEffects(defender, res)
 		res = this.#adjustForRelativeFacing(defender, res)
-		res = clamp(res, 0, 100)
+		res = MathUtils.clamp(res, 0, 100)
 		return this.final(res)
 	}
 

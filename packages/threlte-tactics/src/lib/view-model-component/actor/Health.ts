@@ -1,5 +1,5 @@
+import { MathUtils } from "three"
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { clamp, intMaxValue } from "#lib/common/unity/mathf.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { ClampValueModifier } from "#lib/exceptions/modifiers/ClampValueModifier.ts"
 import type { ValueChangeException } from "#lib/exceptions/ValueChangeException.ts"
@@ -48,11 +48,11 @@ export class Health {
 	}
 
 	readonly #onHPWillChange = (_sender: Stats, vce: ValueChangeException): void => {
-		vce.addModifier(new ClampValueModifier(intMaxValue, this.minHP, this.#stats.get(StatTypes.MHP)))
+		vce.addModifier(new ClampValueModifier(Infinity, this.minHP, this.#stats.get(StatTypes.MHP)))
 	}
 
 	readonly #onMHPDidChange = (_sender: Stats, oldMHP: number): void => {
 		if (this.mhp > oldMHP) this.hp += this.mhp - oldMHP
-		else this.hp = clamp(this.hp, this.minHP, this.mhp)
+		else this.hp = MathUtils.clamp(this.hp, this.minHP, this.mhp)
 	}
 }

@@ -1,4 +1,4 @@
-import { clamp } from "#lib/common/unity/mathf.ts"
+import { MathUtils } from "three"
 import { ValueModifier } from "./ValueModifier.ts"
 
 /** Port of `Exceptions/Modifiers/ClampValueModifier.cs`. */
@@ -13,6 +13,6 @@ export class ClampValueModifier extends ValueModifier {
 	}
 
 	modify(_fromValue: number, toValue: number): number {
-		return clamp(toValue, this.min, this.max)
+		return MathUtils.clamp(toValue, this.min, this.max)
 	}
 }

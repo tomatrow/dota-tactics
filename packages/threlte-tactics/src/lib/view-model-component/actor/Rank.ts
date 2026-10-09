@@ -1,8 +1,8 @@
+import { MathUtils } from "three"
 import type {
 	Handler,
 	NotificationCenter
 } from "#lib/common/notification-center/NotificationCenter.ts"
-import { clamp01, intMaxValue } from "#lib/common/unity/mathf.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { ClampValueModifier } from "#lib/exceptions/modifiers/ClampValueModifier.ts"
 import { Stats } from "./Stats.ts"
@@ -20,12 +20,13 @@ export class Rank {
 	static readonly maxExperience = 999999
 
 	static experienceForLevel(level: number): number {
-		// In 32-bit floats, like C#: the result differs by one at a few levels (e.g. the blog's
-		// 20,304 experience from level 98 to 99).
-		const f = Math.fround
-		const levelPercent = f(clamp01(f((level - Rank.minLevel) / (Rank.maxLevel - Rank.minLevel))))
-		// EasingEquations.EaseInQuad(0, maxExperience, levelPercent)
-		return Math.trunc(f(f(Rank.maxExperience * levelPercent) * levelPercent))
+		const levelPercent = MathUtils.clamp(
+			(level - Rank.minLevel) / (Rank.maxLevel - Rank.minLevel),
+			0,
+			1
+		)
+		// An ease-in-quad curve from 0 to the max.
+		return Math.trunc(Rank.maxExperience * levelPercent * levelPercent)
 	}
 
 	static levelForExperience(exp: number): number {
@@ -73,7 +74,7 @@ export class Rank {
 	}
 
 	readonly #onExpWillChange: Handler<typeof expWillChange> = (_sender, vce) => {
-		vce.addModifier(new ClampValueModifier(intMaxValue, this.exp, Rank.maxExperience))
+		vce.addModifier(new ClampValueModifier(Infinity, this.exp, Rank.maxExperience))
 	}
 
 	readonly #onExpDidChange: Handler<typeof expDidChange> = () => {

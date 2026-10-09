@@ -1,4 +1,3 @@
-import { intMinValue } from "#lib/common/unity/mathf.ts"
 import type { BattleController } from "#lib/controller/BattleController.svelte.ts"
 import type { Directions } from "#lib/enums/Directions.ts"
 import { Facings } from "#lib/enums/Facings.ts"
@@ -11,7 +10,7 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import { AttackOption } from "./AttackOption.ts"
 import { PlanOfAttack } from "./PlanOfAttack.ts"
 
-/** What the computer player needs of its battle (Unity: the `BattleController` it's on). */
+/** What the computer player needs of its battle. */
 export type ComputerPlayerOwner = Pick<BattleController, "board" | "random" | "turn">
 
 /**
@@ -19,7 +18,7 @@ export type ComputerPlayerOwner = Pick<BattleController, "board" | "random" | "t
  * The unit's attack pattern picks the ability; this tries every place it can move to and every way
  * it can aim from there, and picks the one that affects the most of whom the ability is meant for
  * (and the fewest others), from the best angle. With no good option it heads for the nearest foe.
- * A component of Unity's Battle Controller, which the battle states ask.
+ * The battle states ask it.
  */
 export class ComputerPlayer {
 	readonly #bc: ComputerPlayerOwner
@@ -91,8 +90,7 @@ export class ComputerPlayer {
 	/** Where it stands doesn't matter (an ability on itself, or on everyone): anywhere it can go. */
 	#planPositionIndependent(poa: PlanOfAttack): void {
 		const moveOptions = this.#getMoveOptions()
-		// PORT-FIX: with nowhere to move, stay put. Unity indexes the empty list, which throws and
-		// leaves the battle stuck.
+		// With nowhere to move, stay put.
 		const tile =
 			moveOptions.length > 0 ?
 				moveOptions[this.#bc.random.rangeInt(0, moveOptions.length)]!
@@ -217,10 +215,8 @@ export class ComputerPlayer {
 		}
 
 		const finalPicks: AttackOption[] = []
-		// PORT-FIX: Unity starts from 0, so when every angle based score is negative (more of the
-		// wrong units hit from behind than of the right ones from the front) there's no final pick,
-		// which throws and leaves the battle stuck. The same picks otherwise.
-		bestScore = intMinValue
+		// The best option wins even when every angle-based score is negative.
+		bestScore = -Infinity
 		for (const option of bestOptions) {
 			const score = option.bestAngleBasedScore
 			if (score > bestScore) {

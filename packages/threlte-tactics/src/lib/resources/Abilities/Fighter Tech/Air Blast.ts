@@ -4,7 +4,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 export default {
 	name: "Air Blast",
 	power: { type: "PhysicalAbilityPower", level: 0 },
-	range: { type: "ConeAbilityRange", horizontal: 2, vertical: 2147483647 },
+	range: { type: "ConeAbilityRange", horizontal: 2, vertical: Infinity },
 	area: { type: "FullAbilityArea" },
 	children: [
 		{

@@ -1,4 +1,4 @@
-import { lerp } from "#lib/common/unity/mathf.ts"
+import { MathUtils } from "three"
 import type { Rank } from "#lib/view-model-component/actor/Rank.ts"
 
 /** Port of `Controller/ExperienceManager.cs`: shares experience between a party. */
@@ -6,7 +6,7 @@ import type { Rank } from "#lib/view-model-component/actor/Rank.ts"
 const minLevelBonus = 1.5
 const maxLevelBonus = 0.5
 
-/** Unity's `Party` (a list of GameObjects); members without a rank are skipped. */
+/** A party: its members' ranks (members without one are skipped). */
 export type Party = readonly { readonly rank: Rank | null }[]
 
 /** Splits `amount` between the party's ranks, giving lower levels a bigger share. */
@@ -16,8 +16,8 @@ export function awardExperience(amount: number, party: Party): void {
 	for (const member of party) if (member.rank !== null) ranks.push(member.rank)
 
 	// Step 1: determine the range in actor level stats
-	let min = Number.MAX_SAFE_INTEGER
-	let max = Number.MIN_SAFE_INTEGER
+	let min = Infinity
+	let max = -Infinity
 	for (let i = ranks.length - 1; i >= 0; --i) {
 		min = Math.min(ranks[i]!.lvl, min)
 		max = Math.max(ranks[i]!.lvl, max)
@@ -27,9 +27,9 @@ export function awardExperience(amount: number, party: Party): void {
 	const weights: number[] = new Array<number>(ranks.length)
 	let summedWeights = 0
 	for (let i = ranks.length - 1; i >= 0; --i) {
-		// PORT-FIX: Unity divides 0 by 0 when every level is the same; the NaN weights award nothing.
+		// When every level is the same, everyone gets the lowest level's weight.
 		const percent = max === min ? 0 : (ranks[i]!.lvl - min) / (max - min)
-		weights[i] = lerp(minLevelBonus, maxLevelBonus, percent)
+		weights[i] = MathUtils.lerp(minLevelBonus, maxLevelBonus, percent)
 		summedWeights += weights[i]!
 	}
 

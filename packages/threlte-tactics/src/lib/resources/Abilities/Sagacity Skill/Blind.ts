@@ -3,7 +3,7 @@ import type { AbilityPrefab } from "#lib/view-model-component/ability/AbilityPre
 
 export default {
 	name: "Blind",
-	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: 2147483647 },
+	range: { type: "ConstantAbilityRange", horizontal: 4, vertical: Infinity },
 	area: { type: "UnitAbilityArea" },
 	magicCost: 12,
 	children: [

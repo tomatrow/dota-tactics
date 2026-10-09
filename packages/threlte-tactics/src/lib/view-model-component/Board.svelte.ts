@@ -7,8 +7,8 @@ import { Tile } from "./Tile.svelte.ts"
 export class Board {
 	readonly tiles = new SvelteMap<Point, Tile>()
 
-	#min = Point.of(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
-	#max = Point.of(Number.MIN_SAFE_INTEGER, Number.MIN_SAFE_INTEGER)
+	#min = Point.of(Infinity, Infinity)
+	#max = Point.of(-Infinity, -Infinity)
 
 	readonly #dirs = [Point.of(0, 1), Point.of(0, -1), Point.of(1, 0), Point.of(-1, 0)]
 
@@ -24,15 +24,14 @@ export class Board {
 	}
 
 	load(data: LevelData): void {
-		let minX = Number.MAX_SAFE_INTEGER
-		let minY = Number.MAX_SAFE_INTEGER
-		let maxX = Number.MIN_SAFE_INTEGER
-		let maxY = Number.MIN_SAFE_INTEGER
+		let minX = Infinity
+		let minY = Infinity
+		let maxX = -Infinity
+		let maxY = -Infinity
 
 		for (const v of data.tiles) {
 			const t = new Tile()
 			t.load(v)
-			// Like Unity's Dictionary.Add.
 			if (this.tiles.has(t.pos)) throw new Error(`Duplicate tile at ${t.pos}`)
 			this.tiles.set(t.pos, t)
 
@@ -96,8 +95,7 @@ export class Board {
 	#clearSearch(): void {
 		for (const t of this.tiles.values()) {
 			t.prev = null
-			// Unity's int.MaxValue.
-			t.distance = Number.MAX_SAFE_INTEGER
+			t.distance = Infinity
 		}
 	}
 }

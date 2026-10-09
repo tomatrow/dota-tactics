@@ -1,4 +1,4 @@
-import { clamp } from "#lib/common/unity/mathf.ts"
+import { MathUtils } from "three"
 import { Facings } from "#lib/enums/Facings.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { getFacing } from "#lib/extensions/FacingsExtensions.ts"
@@ -20,13 +20,13 @@ export class ATypeHitRate extends HitRate {
 		let evade = this.#getEvade(defender)
 		evade = this.#adjustForRelativeFacing(defender, evade)
 		evade = this.adjustForStatusEffects(defender, evade)
-		evade = clamp(evade, 5, 95)
+		evade = MathUtils.clamp(evade, 5, 95)
 		return this.final(evade)
 	}
 
 	#getEvade(target: Unit): number {
 		const s = target.stats
-		return clamp(s.get(StatTypes.EVD), 0, 100)
+		return MathUtils.clamp(s.get(StatTypes.EVD), 0, 100)
 	}
 
 	#adjustForRelativeFacing(target: Unit, rate: number): number {

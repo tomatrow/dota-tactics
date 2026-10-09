@@ -434,7 +434,7 @@ describe("stat panel", () => {
  */
 const demoAttack: AbilityPrefab = {
 	...Attack,
-	range: { type: "ConstantAbilityRange", horizontal: 3, vertical: 2_147_483_647 },
+	range: { type: "ConstantAbilityRange", horizontal: 3, vertical: Infinity },
 	area: { type: "SpecifyAbilityArea", horizontal: 1, vertical: 1 }
 }
 
