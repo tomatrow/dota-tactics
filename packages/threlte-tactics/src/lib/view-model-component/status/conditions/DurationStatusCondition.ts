@@ -8,14 +8,14 @@ import { StatusCondition } from "./StatusCondition.ts"
 export class DurationStatusCondition extends StatusCondition {
 	duration = 10
 
-	override onEnable(): void {
+	override enable(): void {
 		this.status.notifications.addObserver(
 			this.#onNewTurn,
 			TurnOrderController.roundBeganNotification
 		)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.status.notifications.removeObserver(
 			this.#onNewTurn,
 			TurnOrderController.roundBeganNotification

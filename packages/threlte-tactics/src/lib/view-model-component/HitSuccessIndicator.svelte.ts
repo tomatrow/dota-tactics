@@ -29,7 +29,6 @@ export class HitSuccessIndicator {
 	/** `label.color`, starting with the prefab's. */
 	labelColor = $state("rgb(145 34 41)")
 
-	/** Unity's `Start`. */
 	constructor() {
 		this.panel.setPosition(HideKey, false)
 		this.canvasActive = false

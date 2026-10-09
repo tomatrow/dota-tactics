@@ -27,7 +27,6 @@ export class StatPanelController {
 	readonly primaryPanel: StatPanel
 	readonly secondaryPanel: StatPanel
 
-	/** Unity's `Start`. */
 	constructor() {
 		this.primaryPanel = new StatPanel(primaryPositions)
 		this.secondaryPanel = new StatPanel(secondaryPositions)

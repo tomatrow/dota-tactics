@@ -16,8 +16,7 @@ export interface AbilityPowerContext {
  * Port of `View Model Component/Ability/Power/BaseAbilityPower.cs`: the base attack, defense and
  * power that its ability's effects calculate with (see `BaseAbilityEffect.getStat`).
  *
- * Its unit (Unity's `GetComponentInParent<Unit>()`) is the one it's created for; `Ability`
- * attaches it to its ability, which enables it.
+ * Its unit is the one it's created for; `Ability` attaches it to its ability, which enables it.
  */
 export abstract class BaseAbilityPower {
 	protected readonly owner: Unit
@@ -33,20 +32,20 @@ export abstract class BaseAbilityPower {
 	protected abstract getBaseDefense(target: Unit): number
 	protected abstract getPower(): number
 
-	/** Puts the power on its `ability`; Unity then enables it. */
+	/** Puts the power on its `ability`, then enables it. */
 	attach(ability: Ability): void {
 		this.#ability = ability
-		this.onEnable()
+		this.enable()
 	}
 
-	onEnable(): void {
+	enable(): void {
 		const n = this.#notifications
 		n.addObserver(this.#onGetBaseAttack, BaseAbilityEffect.getAttackNotification)
 		n.addObserver(this.#onGetBaseDefense, BaseAbilityEffect.getDefenseNotification)
 		n.addObserver(this.#onGetPower, BaseAbilityEffect.getPowerNotification)
 	}
 
-	onDisable(): void {
+	disable(): void {
 		const n = this.#notifications
 		n.removeObserver(this.#onGetBaseAttack, BaseAbilityEffect.getAttackNotification)
 		n.removeObserver(this.#onGetBaseDefense, BaseAbilityEffect.getDefenseNotification)
@@ -66,7 +65,7 @@ export abstract class BaseAbilityPower {
 		if (this.#isMyEffect(sender)) info.arg2.push(new AddValueModifier(0, this.getPower()))
 	}
 
-	/** Whether `sender` is one of its ability's effects (Unity: a child of its GameObject). */
+	/** Whether `sender` is one of its ability's effects. */
 	#isMyEffect(sender: BaseAbilityEffect): boolean {
 		return this.#ability !== null && sender.ability === this.#ability
 	}

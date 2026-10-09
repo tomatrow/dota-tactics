@@ -9,7 +9,7 @@ import { StatusEffect } from "./StatusEffect.ts"
  * counter (CTR) gains, so the unit gets turns about twice as often.
  */
 export class HasteStatusEffect extends StatusEffect {
-	override onEnable(): void {
+	override enable(): void {
 		this.notifications.addObserver(
 			this.#onCounterWillChange,
 			Stats.willChangeNotification(StatTypes.CTR),
@@ -17,7 +17,7 @@ export class HasteStatusEffect extends StatusEffect {
 		)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.notifications.removeObserver(
 			this.#onCounterWillChange,
 			Stats.willChangeNotification(StatTypes.CTR),

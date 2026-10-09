@@ -8,18 +8,17 @@ const hpDidChange = Stats.didChangeNotification(StatTypes.HP)
 
 /**
  * Port of `Controller/AutoStatusController.cs`: knocks out any unit whose HP drop to 0, until
- * they're above 0 again. On the Battle Controller, like Unity's.
+ * they're above 0 again.
  */
 export class AutoStatusController {
 	readonly #notifications: NotificationCenter
 
-	/** Unity's `OnEnable`. */
 	constructor(notifications: NotificationCenter) {
 		this.#notifications = notifications
 		notifications.addObserver(this.#onHPDidChangeNotification, hpDidChange)
 	}
 
-	/** Unity's `OnDisable`. */
+	/** Stops observing HP changes. */
 	disable(): void {
 		this.#notifications.removeObserver(this.#onHPDidChangeNotification, hpDidChange)
 	}

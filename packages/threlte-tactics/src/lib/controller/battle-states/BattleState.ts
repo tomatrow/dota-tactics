@@ -36,7 +36,7 @@ export type BattleStateName =
  * machine checks against its states).
  */
 export interface BattleActions {
-	/** `BattleController.Start`: leave the initial `None` state. */
+	/** `BattleController.start()`: leaves the initial `None` state. */
 	start(): BattleStateName | void
 	/** Unity's `OnMove`: a direction from the `InputController`. */
 	move(direction: Point): BattleStateName | void

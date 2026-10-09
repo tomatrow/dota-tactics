@@ -41,7 +41,6 @@ export class ConversationController {
 	#transition: Promise<void> | null = null
 	#complete: (() => void) | null = null
 
-	/** Unity's `Start`. */
 	constructor() {
 		if (this.leftPanel.panel.currentPosition === null)
 			this.leftPanel.panel.setPosition(HideBottom, false)

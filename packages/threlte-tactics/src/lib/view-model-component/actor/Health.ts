@@ -17,7 +17,6 @@ export class Health {
 	readonly #stats: Stats
 	readonly #notifications: NotificationCenter
 
-	/** Unity's `Awake` + `OnEnable`. */
 	constructor(stats: Stats, notifications: NotificationCenter) {
 		this.#stats = stats
 		this.#notifications = notifications
@@ -41,7 +40,7 @@ export class Health {
 		this.#stats.set(StatTypes.MHP, value)
 	}
 
-	/** Unity's `OnDisable`. */
+	/** Stops observing its stats. */
 	disable(): void {
 		this.#notifications.removeObserver(this.#onHPWillChange, hpWillChange, this.#stats)
 		this.#notifications.removeObserver(this.#onMHPDidChange, mhpDidChange, this.#stats)

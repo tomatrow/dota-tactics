@@ -62,8 +62,8 @@ export class Job {
 		this.#random = random
 	}
 
-	/** Unity's `OnDestroy`. */
-	destroy(): void {
+	/** Stops observing its unit's level. */
+	disable(): void {
 		this.#notifications.removeObserver(this.onLvlChangeNotification, lvlDidChange, this.#stats)
 	}
 

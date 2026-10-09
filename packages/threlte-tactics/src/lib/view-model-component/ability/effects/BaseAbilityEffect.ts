@@ -46,9 +46,8 @@ export interface AbilityEffectContext {
  * Port of `View Model Component/Ability/Effects/BaseAbilityEffect.cs`: what an ability does to a
  * target, if its hit rate lets it.
  *
- * Unity's component sits on one of the ability's child GameObjects, next to that effect's
- * `AbilityEffectTarget` and `HitRate`; `Ability` attaches it there (`attach`). Its unit (Unity's
- * `GetComponentInParent<Unit>()`) is the one it's created for.
+ * It sits on one of its ability's `effects`, next to that effect's `AbilityEffectTarget` and
+ * `HitRate`: `Ability` attaches it there (`attach`). Its unit is the one it's created for.
  */
 export abstract class BaseAbilityEffect {
 	static readonly getAttackNotification = "BaseAbilityEffect.GetAttackNotification"
@@ -64,7 +63,7 @@ export abstract class BaseAbilityEffect {
 	protected readonly notifications: NotificationCenter
 	protected readonly random: Random
 	#ability: Ability | null = null
-	#gameObject: AbilityEffect | null = null
+	#child: AbilityEffect | null = null
 
 	constructor(owner: Unit, { notifications, random }: AbilityEffectContext) {
 		this.owner = owner
@@ -72,31 +71,31 @@ export abstract class BaseAbilityEffect {
 		this.random = random
 	}
 
-	/** The ability whose child it is (Unity: `transform.parent`). */
+	/** Its ability. */
 	get ability(): Ability | null {
 		return this.#ability
 	}
 
-	/** The child GameObject it's on, with its sibling components. */
-	protected get gameObject(): AbilityEffect {
-		return this.#gameObject!
+	/** The ability's `effects` entry it's on, with its sibling components. */
+	protected get child(): AbilityEffect {
+		return this.#child!
 	}
 
-	/** Puts the effect on its ability's child `gameObject`; Unity then enables it. */
-	attach(ability: Ability, gameObject: AbilityEffect): void {
+	/** Puts the effect on its ability's `effects` entry, then enables it. */
+	attach(ability: Ability, child: AbilityEffect): void {
 		this.#ability = ability
-		this.#gameObject = gameObject
-		this.onEnable()
+		this.#child = child
+		this.enable()
 	}
 
-	protected onEnable(): void {}
+	protected enable(): void {}
 
 	abstract predict(target: Tile): number
 
 	apply(target: Tile): void {
-		if (!this.gameObject.target.isTarget(target)) return
+		if (!this.child.target.isTarget(target)) return
 
-		if (this.gameObject.hitRate.rollForHit(target))
+		if (this.child.hitRate.rollForHit(target))
 			this.notifications.postNotification(
 				BaseAbilityEffect.hitNotification,
 				this,

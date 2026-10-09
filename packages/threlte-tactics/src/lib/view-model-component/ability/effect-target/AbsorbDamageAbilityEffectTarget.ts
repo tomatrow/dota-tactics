@@ -22,10 +22,9 @@ export class AbsorbDamageAbilityEffectTarget extends BaseAbilityEffect {
 		this.trackedSiblingIndex = trackedSiblingIndex
 	}
 
-	/** Unity's `Awake` + `OnEnable`. */
-	protected override onEnable(): void {
+	protected override enable(): void {
 		this.#effect = this.#getTrackedEffect()
-		// (With no tracked effect, Unity observes every effect's hits and misses.)
+		// (With no tracked effect, it observes every effect's hits and misses.)
 		this.notifications.addObserver(
 			this.#onEffectHit,
 			BaseAbilityEffect.hitNotification,

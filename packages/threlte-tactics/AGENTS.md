@@ -77,10 +77,12 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   Unity class hierarchies (ranges, areas, effects, status effects, movement) stay TS classes.
   Dynamic Unity children (status effects, features, equipment) become lists queried by class
   (`unit.status.getEffect(KnockOutStatusEffect)` for `GetComponentInChildren<…>()`).
-- **Component lifetimes**: a component added and removed at runtime has `onEnable()` /
-  `onDisable()` (Unity's `OnEnable`/`OnDisable`, e.g. to observe notifications), called by
-  whatever adds it. Unity's `Destroy` → `destroy(component)` (`#lib/common/unity/Object.ts`):
-  like Unity's, it disables the component only once the code running now has finished.
+- **Component lifetimes**: a component that observes notifications subscribes in `enable()` and
+  unsubscribes in `disable()`. One added and removed at runtime (status effects and conditions)
+  is created, then enabled by whatever adds it: two steps, as a base constructor can't subscribe
+  handlers that a subclass's fields define. One that lives as long as its unit subscribes in its
+  constructor. Unity's `Destroy` → `disableLater(component)` (`#lib/common/lifecycle.ts`): it
+  disables the component only once the code running now has finished.
 - **Prefabs** that game code instantiates are data plus a function or constructor that builds
   the components (`JobPrefab` → `new Job`, `AbilityPrefab` → `instantiateAbility`,
   `AttackPatternPrefab` → `instantiateAttackPattern`). A component

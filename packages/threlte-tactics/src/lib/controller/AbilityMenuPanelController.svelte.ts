@@ -35,7 +35,6 @@ export class AbilityMenuPanelController {
 	menuEntries: AbilityMenuEntry[] = $state.raw([])
 	#selection = 0
 
-	/** Unity's `Start`. */
 	constructor() {
 		this.panel.setPosition(HideKey, false)
 		this.canvasActive = false

@@ -1,5 +1,5 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import type { Behaviour } from "#lib/common/unity/Object.ts"
+import type { Behaviour } from "#lib/common/lifecycle.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import type { Status } from "#lib/view-model-component/status/Status.ts"
 
@@ -8,11 +8,11 @@ export type StatusEffectType<T extends StatusEffect = StatusEffect> = new (statu
 
 /**
  * Port of `View Model Component/Status/Effects/StatusEffect.cs`: something a status does to its
- * unit, while any of its conditions lasts. Subclasses start in `onEnable` (called once `Status`
- * adds them) and stop in `onDisable` (once `Status` destroys them).
+ * unit, while any of its conditions lasts. Subclasses start in `enable` (called once `Status`
+ * adds them) and stop in `disable` (once `Status` has removed them: see `disableLater`).
  */
 export abstract class StatusEffect implements Behaviour {
-	/** The unit the effect is on (Unity: `GetComponentInParent<Unit>()`). */
+	/** The unit the effect is on. */
 	protected readonly owner: Unit
 	protected readonly notifications: NotificationCenter
 
@@ -21,6 +21,6 @@ export abstract class StatusEffect implements Behaviour {
 		this.notifications = status.notifications
 	}
 
-	onEnable(): void {}
-	onDisable(): void {}
+	enable(): void {}
+	disable(): void {}
 }

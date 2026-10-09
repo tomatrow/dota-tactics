@@ -38,7 +38,6 @@ export class Rank {
 	readonly #stats: Stats
 	readonly #notifications: NotificationCenter
 
-	/** Unity's `Awake` + `OnEnable`. */
 	constructor(stats: Stats, notifications: NotificationCenter) {
 		this.#stats = stats
 		this.#notifications = notifications
@@ -62,7 +61,7 @@ export class Rank {
 		return (this.lvl - Rank.minLevel) / (Rank.maxLevel - Rank.minLevel)
 	}
 
-	/** Unity's `OnDisable`. */
+	/** Stops observing its stats. */
 	disable(): void {
 		this.#notifications.removeObserver(this.#onExpWillChange, expWillChange, this.#stats)
 		this.#notifications.removeObserver(this.#onExpDidChange, expDidChange, this.#stats)

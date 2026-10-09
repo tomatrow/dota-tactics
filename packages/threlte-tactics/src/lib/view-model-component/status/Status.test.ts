@@ -18,7 +18,7 @@ import { Status } from "./Status.ts"
 
 const { CTR, HP, MHP, SPD } = StatTypes
 
-/** Lets Unity's end of frame pass: destroyed effects and conditions are disabled by then. */
+/** Lets the current code finish: removed effects and conditions are disabled by then. */
 const endOfFrame = () => new Promise<void>((resolve) => queueMicrotask(resolve))
 
 /** Units with these speeds, and a turn order over them. */
@@ -33,7 +33,7 @@ function setup(...speeds: number[]) {
 	})
 	const turnOrder = new TurnOrderController({ notifications, turn: new Turn(), units })
 	const round = turnOrder.round()
-	/** Begins the next turn (Unity's frame ends before the turn goes on); whose it is. */
+	/** Begins the next turn (the frame ends before the turn goes on); whose it is. */
 	const next = async () => {
 		const unit = round.next().value
 		await endOfFrame()
@@ -78,7 +78,7 @@ describe("Status", () => {
 		expect(removed.mock.calls).toEqual([[status, poison]])
 	})
 
-	test("like Unity's Destroy, a removed effect works until the end of the frame", async () => {
+	test("a removed effect works until the current code finishes", async () => {
 		const { units } = setup(100)
 		const [unit] = units as [Unit]
 		const condition = unit.status.add(HasteStatusEffect, StatusCondition)
@@ -93,7 +93,7 @@ describe("Status", () => {
 		expect(unit.stats.get(CTR)).toBe(300)
 	})
 
-	test("adding an effect again before the old one's destroyed doubles it up, as in Unity", async () => {
+	test("adding an effect again before the old one is disabled doubles it up", async () => {
 		const { units } = setup(100)
 		const [unit] = units as [Unit]
 

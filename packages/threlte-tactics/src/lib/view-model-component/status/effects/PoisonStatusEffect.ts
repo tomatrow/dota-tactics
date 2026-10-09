@@ -7,7 +7,7 @@ import { StatusEffect } from "./StatusEffect.ts"
  * begins, the unit loses a tenth of its max HP (never below 0, and nothing can prevent it).
  */
 export class PoisonStatusEffect extends StatusEffect {
-	override onEnable(): void {
+	override enable(): void {
 		this.notifications.addObserver(
 			this.#onNewTurn,
 			TurnOrderController.turnBeganNotification,
@@ -15,7 +15,7 @@ export class PoisonStatusEffect extends StatusEffect {
 		)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.notifications.removeObserver(
 			this.#onNewTurn,
 			TurnOrderController.turnBeganNotification,

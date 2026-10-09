@@ -132,7 +132,7 @@ export class BattleController {
 		return this.board.getTile(this.pos)
 	}
 
-	/** Unity's `Start`. */
+	/** Starts the battle: leaves the initial `None` state. */
 	start(): void {
 		this.machine.start()
 	}

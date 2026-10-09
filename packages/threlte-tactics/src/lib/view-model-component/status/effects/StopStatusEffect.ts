@@ -10,7 +10,7 @@ import { StatusEffect } from "./StatusEffect.ts"
  * can't change, so the unit gets no turns; and attacks on it always hit.
  */
 export class StopStatusEffect extends StatusEffect {
-	override onEnable(): void {
+	override enable(): void {
 		this.notifications.addObserver(
 			this.#onCounterWillChange,
 			Stats.willChangeNotification(StatTypes.CTR),
@@ -19,7 +19,7 @@ export class StopStatusEffect extends StatusEffect {
 		this.notifications.addObserver(this.#onAutomaticHitCheck, HitRate.automaticHitCheckNotification)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.notifications.removeObserver(
 			this.#onCounterWillChange,
 			Stats.willChangeNotification(StatTypes.CTR),

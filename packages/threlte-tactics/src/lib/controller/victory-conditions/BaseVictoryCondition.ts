@@ -6,7 +6,7 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 
 const hpDidChange = Stats.didChangeNotification(StatTypes.HP)
 
-/** What a victory condition needs of its battle (Unity: the `BattleController` it's on). */
+/** What a victory condition needs of its battle. */
 export interface VictoryConditionOwner {
 	readonly notifications: NotificationCenter
 	readonly units: readonly Unit[]
@@ -21,7 +21,6 @@ export abstract class BaseVictoryCondition {
 	#victor: Alliances = Alliances.None
 	protected readonly bc: VictoryConditionOwner
 
-	/** Unity's `Awake` + `OnEnable`. */
 	constructor(bc: VictoryConditionOwner) {
 		this.bc = bc
 		bc.notifications.addObserver(this.#onHPDidChangeNotification, hpDidChange)
@@ -36,7 +35,7 @@ export abstract class BaseVictoryCondition {
 		this.#victor = value
 	}
 
-	/** Unity's `OnDisable`. */
+	/** Stops observing HP changes. */
 	disable(): void {
 		this.bc.notifications.removeObserver(this.#onHPDidChangeNotification, hpDidChange)
 	}

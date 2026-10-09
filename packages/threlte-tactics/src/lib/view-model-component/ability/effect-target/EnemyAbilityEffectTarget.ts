@@ -10,7 +10,7 @@ import { AbilityEffectTarget } from "./AbilityEffectTarget.ts"
 export class EnemyAbilityEffectTarget extends AbilityEffectTarget {
 	readonly #owner: Unit
 
-	/** `owner`: the unit whose ability this is (Unity's `GetComponentInParent`). */
+	/** `owner`: the unit whose ability this is. */
 	constructor(owner: Unit) {
 		super()
 		this.#owner = owner
@@ -19,7 +19,7 @@ export class EnemyAbilityEffectTarget extends AbilityEffectTarget {
 	override isTarget(tile: Tile | null): boolean {
 		if (tile === null || tile.content === null) return false
 
-		// Unity looks the unit's alliance up in `Start`, after the factory has added it.
+		// Read now, not when constructed: the factory adds the alliance after the abilities.
 		const alliance = this.#owner.alliance!
 		const other = tile.content.alliance!
 		return alliance.isMatch(other, Targets.Foe)

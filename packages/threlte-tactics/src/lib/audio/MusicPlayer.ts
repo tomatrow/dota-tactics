@@ -19,7 +19,7 @@ export class MusicPlayer {
 	}
 
 	/** Stops the music, as the battle ends. */
-	destroy(): void {
+	stop(): void {
 		this.sequence?.stop()
 	}
 }

@@ -24,7 +24,7 @@ describe("MusicPlayer", () => {
 		)
 		player.start(context)
 		void context.suspend(256 / sampleRate).then(async () => {
-			player.destroy()
+			player.stop()
 			await context.resume()
 		})
 

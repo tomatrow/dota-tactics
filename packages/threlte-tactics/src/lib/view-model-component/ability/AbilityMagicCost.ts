@@ -8,8 +8,7 @@ import { Ability, type AbilityContext } from "./Ability.ts"
  * Port of `View Model Component/Ability/AbilityMagicCost.cs`: an ability needs `amount` MP to be
  * performed, and performing it spends them.
  *
- * Its unit (Unity's `GetComponentInParent<Stats>()`) is the one it's created for; `Ability`
- * attaches it to its ability, which enables it.
+ * Its unit is the one it's created for; `Ability` attaches it to its ability, which enables it.
  */
 export class AbilityMagicCost {
 	amount: number
@@ -23,19 +22,19 @@ export class AbilityMagicCost {
 		this.amount = amount
 	}
 
-	/** Puts the cost on its ability (Unity: `GetComponent<Ability>()`); Unity then enables it. */
+	/** Puts the cost on its ability, then enables it. */
 	attach(owner: Ability): void {
 		this.#owner = owner
-		this.onEnable()
+		this.enable()
 	}
 
-	onEnable(): void {
+	enable(): void {
 		const n = this.#notifications
 		n.addObserver(this.#onCanPerformCheck, Ability.canPerformCheck, this.#owner)
 		n.addObserver(this.#onDidPerformNotification, Ability.didPerformNotification, this.#owner)
 	}
 
-	onDisable(): void {
+	disable(): void {
 		const n = this.#notifications
 		n.removeObserver(this.#onCanPerformCheck, Ability.canPerformCheck, this.#owner)
 		n.removeObserver(this.#onDidPerformNotification, Ability.didPerformNotification, this.#owner)

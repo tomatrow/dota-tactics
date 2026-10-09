@@ -33,7 +33,7 @@
 		)
 		return () => {
 			destroyed = true
-			player?.destroy()
+			player?.stop()
 		}
 	})
 </script>

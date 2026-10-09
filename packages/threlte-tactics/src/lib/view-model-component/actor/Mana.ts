@@ -19,7 +19,6 @@ export class Mana {
 	readonly #stats: Stats
 	readonly #notifications: NotificationCenter
 
-	/** Unity's `Awake` + `OnEnable`. */
 	constructor(unit: Unit, notifications: NotificationCenter) {
 		this.#unit = unit
 		this.#stats = unit.stats
@@ -45,7 +44,7 @@ export class Mana {
 		this.#stats.set(StatTypes.MMP, value)
 	}
 
-	/** Unity's `OnDisable`. */
+	/** Stops observing its stats. */
 	disable(): void {
 		const n = this.#notifications
 		n.removeObserver(this.#onMPWillChange, mpWillChange, this.#stats)

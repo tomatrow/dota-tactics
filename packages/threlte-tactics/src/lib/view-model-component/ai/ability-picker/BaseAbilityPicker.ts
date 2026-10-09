@@ -10,7 +10,6 @@ export abstract class BaseAbilityPicker {
 	/** The unit whose attack pattern this is part of. */
 	protected readonly owner: Unit
 
-	/** Unity's `Start` (`GetComponentInParent<Unit>()`). */
 	constructor(owner: Unit) {
 		this.owner = owner
 	}

@@ -11,7 +11,7 @@ import { TurnOrderController } from "./TurnOrderController.ts"
 
 const { HP, MHP, CTR, SPD } = StatTypes
 
-/** Unity disables a destroyed component at the end of the frame; here, after a microtask. */
+/** Lets the current code finish: removed effects are disabled by then. */
 const endOfFrame = () => new Promise<void>((resolve) => queueMicrotask(resolve))
 
 /** Units with 100 max HP (and full), 100 speed, `Health`, and an auto status controller. */
@@ -46,7 +46,7 @@ describe("AutoStatusController and KnockOutStatusEffect", () => {
 		])
 	})
 
-	test("is squashed flat until revived (at the end of the frame, as Unity destroys it)", async () => {
+	test("is squashed flat until revived (once the current code finishes)", async () => {
 		const { unit, ko } = setup()
 		unit.stats.set(HP, 0)
 		expect(unit.transform.scale).toEqual([0.75, 0.1, 0.75])

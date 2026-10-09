@@ -15,7 +15,6 @@ export abstract class Movement {
 	protected readonly jumper: Transform
 	protected readonly stats: Stats
 
-	/** Unity's `Awake` + `Start`. */
 	constructor(unit: Unit) {
 		this.unit = unit
 		this.jumper = unit.jumper

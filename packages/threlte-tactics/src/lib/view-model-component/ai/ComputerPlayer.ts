@@ -24,7 +24,6 @@ export class ComputerPlayer {
 	readonly #bc: ComputerPlayerOwner
 	#nearestFoe: Unit | null = null
 
-	/** Unity's `Awake`. */
 	constructor(bc: ComputerPlayerOwner) {
 		this.#bc = bc
 	}

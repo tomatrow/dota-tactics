@@ -8,11 +8,11 @@ import { StatusEffect } from "./StatusEffect.ts"
  * more (+50 to the defender's evade), and attacks on it hit more (−20).
  */
 export class BlindStatusEffect extends StatusEffect {
-	override onEnable(): void {
+	override enable(): void {
 		this.notifications.addObserver(this.#onHitRateStatusCheck, HitRate.statusCheckNotification)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.notifications.removeObserver(this.#onHitRateStatusCheck, HitRate.statusCheckNotification)
 	}
 

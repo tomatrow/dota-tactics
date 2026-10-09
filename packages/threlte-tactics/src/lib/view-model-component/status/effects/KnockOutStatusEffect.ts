@@ -13,13 +13,12 @@ import { StatusEffect } from "./StatusEffect.ts"
 export class KnockOutStatusEffect extends StatusEffect {
 	readonly #stats: Stats
 
-	/** Unity's `Awake`. */
 	constructor(status: Status) {
 		super(status)
 		this.#stats = this.owner.stats
 	}
 
-	override onEnable(): void {
+	override enable(): void {
 		this.owner.transform.scale = [0.75, 0.1, 0.75]
 		this.notifications.addObserver(
 			this.#onTurnCheck,
@@ -33,7 +32,7 @@ export class KnockOutStatusEffect extends StatusEffect {
 		)
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.owner.transform.scale = [1, 1, 1]
 		this.notifications.removeObserver(
 			this.#onTurnCheck,

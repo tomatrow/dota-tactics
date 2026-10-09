@@ -1,5 +1,5 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { destroy } from "#lib/common/unity/Object.ts"
+import { disableLater } from "#lib/common/lifecycle.ts"
 import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 import type { StatusCondition, StatusConditionType } from "./conditions/StatusCondition.ts"
 import type { StatusEffect, StatusEffectType } from "./effects/StatusEffect.ts"
@@ -11,17 +11,14 @@ declare module "#lib/common/notification-center/NotificationCenter.ts" {
 	}
 }
 
-/** A class to look components up by, abstract or not (Unity's `GetComponent<T>()`'s `T`). */
+/** A class to look effects and conditions up by, abstract or not. */
 type ComponentType<T> = abstract new (...args: never[]) => T
 
 /**
  * Port of `View Model Component/Status/Status.cs`: a unit's status effects, each kept on for as
- * long as any of its conditions remains.
- *
- * Unity keeps them in the hierarchy: each effect on a child of the unit, each of its conditions on
- * a child of the effect's. Here the hierarchy is a list per effect, in the order they were added
- * (the order Unity's `GetComponentsInChildren` finds them in). Removing a condition or effect takes
- * it out at once, but, like Unity's `Destroy`, only disables it at the end of the frame.
+ * long as any of its conditions remains. Effects and their conditions are kept in the order they
+ * were added. Removing a condition or effect takes it out at once, but only disables it once the
+ * code running now has finished (`disableLater`).
  */
 export class Status {
 	static readonly addedNotification = "Status.AddedNotification"
@@ -47,13 +44,13 @@ export class Status {
 		if (effect === null) {
 			effect = new effectType(this)
 			this.#effects.set(effect, [])
-			effect.onEnable()
+			effect.enable()
 			this.notifications.postNotification(Status.addedNotification, this, effect)
 		}
 
 		const condition = new conditionType(this)
 		this.#effects.get(effect)!.push(condition)
-		condition.onEnable()
+		condition.enable()
 		return condition
 	}
 
@@ -62,11 +59,11 @@ export class Status {
 		const conditions = this.#effects.get(effect)!
 
 		conditions.splice(conditions.indexOf(target), 1)
-		destroy(target)
+		disableLater(target)
 
 		if (conditions.length === 0) {
 			this.#effects.delete(effect)
-			destroy(effect)
+			disableLater(effect)
 			this.notifications.postNotification(Status.removedNotification, this, effect)
 		}
 	}
@@ -76,20 +73,20 @@ export class Status {
 		return this.getEffectOf(condition) !== null
 	}
 
-	/** The unit's first effect of `type` (Unity: `GetComponentInChildren<T>()`). */
+	/** The unit's first effect of `type`. */
 	getEffect<T>(type: ComponentType<T>): T | null {
 		for (const effect of this.#effects.keys()) if (effect instanceof type) return effect
 		return null
 	}
 
-	/** The conditions of `type`, effect by effect (Unity: `GetComponentsInChildren<T>()`). */
+	/** The conditions of `type`, effect by effect. */
 	getConditions<T>(type: ComponentType<T>): T[] {
 		return [...this.#effects.values()]
 			.flat()
 			.filter((c): c is T & StatusCondition => c instanceof type)
 	}
 
-	/** The effect `condition` keeps on (Unity: `condition.GetComponentInParent<StatusEffect>()`). */
+	/** The effect `condition` keeps on. */
 	getEffectOf(condition: StatusCondition): StatusEffect | null {
 		for (const [effect, conditions] of this.#effects)
 			if (conditions.includes(condition)) return effect

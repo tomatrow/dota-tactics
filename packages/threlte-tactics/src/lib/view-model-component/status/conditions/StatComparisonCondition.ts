@@ -14,7 +14,6 @@ export class StatComparisonCondition extends StatusCondition {
 	#condition: (() => boolean) | null = null
 	readonly #stats: Stats
 
-	/** Unity's `Awake`. */
 	constructor(status: Status) {
 		super(status)
 		this.#stats = status.owner.stats
@@ -32,7 +31,7 @@ export class StatComparisonCondition extends StatusCondition {
 		return this.#condition
 	}
 
-	override onDisable(): void {
+	override disable(): void {
 		this.status.notifications.removeObserver(
 			this.#onStatChanged,
 			Stats.didChangeNotification(this.#type),
