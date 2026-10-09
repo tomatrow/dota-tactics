@@ -1,51 +1,26 @@
 import { quadOut } from "svelte/easing"
-import { Panel } from "#lib/common/ui/Panel.ts"
-import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
 import { AbilityMenuEntry } from "#lib/view-model-component/AbilityMenuEntry.svelte.ts"
-
-const ShowKey = "Show"
-const HideKey = "Hide"
 
 /**
  * Port of `Controller/AbilityMenuPanelController.cs`: the menu of commands, categories or abilities
- * in the bottom right corner. Rendered by `<AbilityMenuPanelControllerView>`.
- *
- * Unity pools the entries' GameObjects (`GameObjectPoolController`); here they are plain objects
- * that `{#each}` renders.
+ * in the bottom right corner. Rendered by `<AbilityMenuPanelControllerView>`, which slides it in
+ * from the right while `shown`.
  */
 export class AbilityMenuPanelController {
-	/** The prefab's `Panel` positions. */
-	readonly panel = new Panel([
-		{
-			name: HideKey,
-			myAnchor: TextAnchor.LowerLeft,
-			parentAnchor: TextAnchor.LowerRight,
-			offset: [0, 20]
-		},
-		{
-			name: ShowKey,
-			myAnchor: TextAnchor.LowerRight,
-			parentAnchor: TextAnchor.LowerRight,
-			offset: [0, 20]
-		}
-	])
-	/** Whether the canvas is active (`canvas.activeSelf`). */
-	canvasActive = $state(true)
+	/** How it slides in and out (seconds). */
+	static readonly transition = { duration: 0.5, easing: quadOut }
+
+	/** Whether it's on screen. */
+	shown = $state(false)
 	title = $state("Ability")
 	menuEntries: AbilityMenuEntry[] = $state.raw([])
 	#selection = 0
-
-	constructor() {
-		this.panel.setPosition(HideKey, false)
-		this.canvasActive = false
-	}
 
 	get selection(): number {
 		return this.#selection
 	}
 
 	show(title: string, options: readonly string[]): void {
-		this.canvasActive = true
 		this.#clear()
 		this.title = title
 		this.menuEntries = options.map((option) => {
@@ -54,16 +29,12 @@ export class AbilityMenuPanelController {
 			return entry
 		})
 		this.#setSelection(0)
-		void this.#togglePos(ShowKey)
+		this.shown = true
 	}
 
+	/** Slides the menu out, its entries with it. */
 	hide(): void {
-		void this.#togglePos(HideKey).then(() => {
-			if (this.panel.currentPosition === this.panel.get(HideKey)) {
-				this.#clear()
-				this.canvasActive = false
-			}
-		})
+		this.shown = false
 	}
 
 	setLocked(index: number, value: boolean): void {
@@ -109,11 +80,5 @@ export class AbilityMenuPanelController {
 
 	#inRange(index: number): boolean {
 		return index >= 0 && index < this.menuEntries.length
-	}
-
-	#togglePos(pos: string): Promise<void> {
-		const transition = this.panel.setPosition(pos, true, { duration: 0.5, equation: quadOut })
-		if (transition === null) throw new Error(`No panel position "${pos}"`)
-		return transition
 	}
 }

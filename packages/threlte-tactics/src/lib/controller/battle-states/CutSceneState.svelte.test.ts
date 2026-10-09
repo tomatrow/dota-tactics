@@ -12,10 +12,10 @@ describe("CutSceneState", () => {
 		expect(battle.machine.current).toBe("CutSceneState")
 
 		const { conversationController: conversation } = battle
-		expect(conversation.canvasActive).toBe(true)
+		expect(conversation.rightPanel.shown).toBe(true)
 		expect(conversation.rightPanel.message).toBe("Be scared... Cause I am awesome!!!")
 
-		// Unity's IntroScene: 3 speakers, 6 messages.
+		// IntroScene: 3 speakers, 6 messages.
 		for (let i = 0; i < 6; ++i) {
 			// Long enough for one panel to leave and the next to arrive.
 			await advance(1.2)
@@ -26,6 +26,6 @@ describe("CutSceneState", () => {
 		// `SelectUnitState` gave a unit its turn.
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(battle.units).toContain(battle.turn.actor)
-		expect(conversation.canvasActive).toBe(false)
+		expect([conversation.leftPanel.shown, conversation.rightPanel.shown]).toEqual([false, false])
 	})
 })

@@ -1,8 +1,8 @@
 <!--
-	A Unity screen-space overlay `Canvas` with the project's `CanvasScaler` (scale with screen size,
-	reference resolution 640×480, match height): content is laid out in reference pixels on a
-	480-pixel-tall canvas as wide as the screen's aspect ratio allows, then zoomed to the screen.
-	Fills the nearest positioned ancestor.
+	A UI layer laid out in reference pixels on a stage 480 pixels tall and as wide as the screen's
+	aspect ratio allows, then zoomed to fill the screen's height (the Unity project's 640×480
+	`CanvasScaler`, matching height). Positions inside are CSS ones (top left origin, y down). Fills
+	the nearest positioned ancestor.
 -->
 <script lang="ts">
 	import type { Snippet } from "svelte"
@@ -11,13 +11,10 @@
 
 	let {
 		name,
-		alpha = 1,
 		children
 	}: {
-		/** The canvas's GameObject (e.g. its prefab's name): the region's accessible name. */
+		/** The region's accessible name (the Unity prefab's). */
 		name: string
-		/** A `CanvasGroup`'s alpha. */
-		alpha?: number
 		children: Snippet
 	} = $props()
 
@@ -34,12 +31,7 @@
 	bind:clientHeight={screenHeight}
 >
 	{#if scale > 0}
-		<div
-			style:width="{screenWidth / scale}px"
-			style:zoom={scale}
-			style:opacity={alpha === 1 ? undefined : alpha}
-			class="canvas"
-		>
+		<div style:width="{screenWidth / scale}px" style:zoom={scale} class="stage">
 			{@render children()}
 		</div>
 	{/if}
@@ -57,11 +49,10 @@
 		pointer-events: none;
 	}
 
-	.canvas {
-		bottom: 0;
+	.stage {
+		top: 0;
 		left: 0;
 		height: 480px;
-		/* Unity's default font. */
 		font-family: Arial, Helvetica, sans-serif;
 	}
 </style>

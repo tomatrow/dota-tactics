@@ -4,25 +4,16 @@ import { BattleMessageController } from "./BattleMessageController.svelte.ts"
 
 beforeEach(useFakeTime)
 
-test("fades the message in for half a second, shows it for a second, then fades it out", async () => {
+test("shows the message while it fades in (half a second) and for a second after", async () => {
 	const controller = new BattleMessageController()
-	expect(controller.canvasActive).toBe(false)
+	expect(controller.shown).toBe(false)
 
 	controller.display("Earth Render")
-	expect(controller).toMatchObject({ canvasActive: true, label: "Earth Render", alpha: 0 })
-	// (Give or take a frame.)
-	const halfway = () => expect(Math.abs(controller.alpha - 0.5)).toBeLessThan(0.1)
-	await advance(0.25)
-	halfway()
-	await advance(0.3)
-	expect(controller.alpha).toBe(1)
-	await advance(0.9)
-	expect(controller.alpha).toBe(1)
-	await advance(0.3)
-	halfway()
-	expect(controller.canvasActive).toBe(true)
-	await advance(0.3)
-	expect(controller).toMatchObject({ canvasActive: false, alpha: 0 })
+	expect(controller).toMatchObject({ shown: true, label: "Earth Render" })
+	await advance(1.4)
+	expect(controller.shown).toBe(true)
+	await advance(0.2)
+	expect(controller.shown).toBe(false)
 })
 
 test("shows each message it is given", async () => {
@@ -30,7 +21,5 @@ test("shows each message it is given", async () => {
 	controller.display("Water")
 	await advance(2.1)
 	controller.display("Cure")
-	expect(controller).toMatchObject({ canvasActive: true, label: "Cure", alpha: 0 })
-	await advance(0.6)
-	expect(controller.alpha).toBe(1)
+	expect(controller).toMatchObject({ shown: true, label: "Cure" })
 })

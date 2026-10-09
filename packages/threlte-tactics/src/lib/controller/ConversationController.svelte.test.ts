@@ -1,22 +1,19 @@
 import { describe, expect, test } from "vitest"
-import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
 import type { ConversationData } from "#lib/model/ConversationData.ts"
 import { advance, useFakeTime } from "#lib/testing/time.ts"
 import { ConversationController } from "./ConversationController.svelte.ts"
 
 const data: ConversationData = {
 	list: [
-		{ messages: ["One", "Two"], speaker: "EvilAvatar", anchor: TextAnchor.UpperRight },
-		{ messages: ["Three"], speaker: "Avatar", anchor: TextAnchor.LowerLeft }
+		{ messages: ["One", "Two"], speaker: "EvilAvatar", anchor: "UpperRight" },
+		{ messages: ["Three"], speaker: "Avatar", anchor: "LowerLeft" }
 	]
 }
 
 describe("ConversationController", () => {
-	test("starts hidden, with both panels at Hide Bottom", () => {
+	test("starts with both panels hidden", () => {
 		const controller = new ConversationController()
-		expect(controller.canvasActive).toBe(false)
-		expect(controller.leftPanel.panel.currentPosition?.name).toBe("Hide Bottom")
-		expect(controller.rightPanel.panel.currentPosition?.name).toBe("Hide Bottom")
+		expect([controller.leftPanel.shown, controller.rightPanel.shown]).toEqual([false, false])
 	})
 
 	test("plays each speaker's messages in their corner, one per next()", async () => {
@@ -27,8 +24,7 @@ describe("ConversationController", () => {
 		void controller.show(data).then(() => (complete = true))
 
 		// The first speaker's panel slides in at the top right.
-		expect(controller.canvasActive).toBe(true)
-		expect(rightPanel.panel.currentPosition?.name).toBe("Show Top")
+		expect([rightPanel.shown, rightPanel.edge]).toEqual([true, "top"])
 		expect([rightPanel.speaker, rightPanel.message, rightPanel.arrow]).toEqual([
 			"EvilAvatar",
 			"One",
@@ -45,13 +41,13 @@ describe("ConversationController", () => {
 
 		// Out of messages: the panel leaves the way it came…
 		controller.next()
-		expect(rightPanel.panel.currentPosition?.name).toBe("Hide Top")
+		expect([rightPanel.shown, rightPanel.edge]).toEqual([false, "top"])
 		controller.next()
 		expect(leftPanel.message).toBe("")
 
 		// …then the next speaker's comes in at the bottom left.
 		await advance(0.6)
-		expect(leftPanel.panel.currentPosition?.name).toBe("Show Bottom")
+		expect([leftPanel.shown, leftPanel.edge]).toEqual([true, "bottom"])
 		expect([leftPanel.speaker, leftPanel.message, leftPanel.arrow]).toEqual([
 			"Avatar",
 			"Three",
@@ -60,17 +56,16 @@ describe("ConversationController", () => {
 
 		await advance(0.6)
 		controller.next()
-		expect(leftPanel.panel.currentPosition?.name).toBe("Hide Bottom")
+		expect(leftPanel.shown).toBe(false)
 		expect(complete).toBe(false)
 
 		await advance(0.6)
 		expect(complete).toBe(true)
-		expect(controller.canvasActive).toBe(false)
 	})
 
 	test("does nothing on next() before a conversation", () => {
 		const controller = new ConversationController()
 		controller.next()
-		expect(controller.canvasActive).toBe(false)
+		expect([controller.leftPanel.shown, controller.rightPanel.shown]).toEqual([false, false])
 	})
 })

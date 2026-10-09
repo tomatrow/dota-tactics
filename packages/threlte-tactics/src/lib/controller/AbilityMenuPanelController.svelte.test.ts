@@ -1,8 +1,5 @@
-import { beforeEach, describe, expect, test } from "vitest"
-import { advance, useFakeTime } from "#lib/testing/time.ts"
+import { describe, expect, test } from "vitest"
 import { AbilityMenuPanelController } from "./AbilityMenuPanelController.svelte.ts"
-
-beforeEach(useFakeTime)
 
 const selected = (controller: AbilityMenuPanelController) =>
 	controller.menuEntries[controller.selection]?.title
@@ -10,16 +7,14 @@ const selected = (controller: AbilityMenuPanelController) =>
 describe("AbilityMenuPanelController", () => {
 	test("starts hidden", () => {
 		const controller = new AbilityMenuPanelController()
-		expect(controller.canvasActive).toBe(false)
-		expect(controller.panel.currentPosition?.name).toBe("Hide")
+		expect(controller.shown).toBe(false)
 	})
 
 	test("shows a titled menu with the first entry selected", () => {
 		const controller = new AbilityMenuPanelController()
 		controller.show("Commands", ["Move", "Action", "Wait"])
 
-		expect(controller.canvasActive).toBe(true)
-		expect(controller.panel.currentPosition?.name).toBe("Show")
+		expect(controller.shown).toBe(true)
 		expect(controller.title).toBe("Commands")
 		expect(controller.menuEntries.map((e) => [e.title, e.isSelected])).toEqual([
 			["Move", true],
@@ -76,26 +71,14 @@ describe("AbilityMenuPanelController", () => {
 		])
 	})
 
-	test("hiding clears the menu and deactivates the canvas once the panel is out", async () => {
+	test("hiding keeps the entries (they slide out with the panel); showing again replaces them", () => {
 		const controller = new AbilityMenuPanelController()
 		controller.show("Commands", ["Move"])
-		await advance(0.6)
 		controller.hide()
-		await advance(0.4)
+		expect(controller.shown).toBe(false)
 		expect(controller.menuEntries).toHaveLength(1)
-		await advance(0.2)
-		expect(controller.menuEntries).toHaveLength(0)
-		expect(controller.canvasActive).toBe(false)
-	})
-
-	test("showing again while hiding keeps the new menu", async () => {
-		const controller = new AbilityMenuPanelController()
-		controller.show("Commands", ["Move"])
-		controller.hide()
 		controller.show("Action", ["Attack"])
-		await advance(1)
-		expect(controller.canvasActive).toBe(true)
+		expect(controller.shown).toBe(true)
 		expect(controller.menuEntries.map((e) => e.title)).toEqual(["Attack"])
-		expect(controller.panel.currentPosition?.name).toBe("Show")
 	})
 })

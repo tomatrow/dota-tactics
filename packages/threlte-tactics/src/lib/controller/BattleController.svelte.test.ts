@@ -62,8 +62,7 @@ const highlighted = (battle: BattleController) =>
 	[...battle.board.tiles.values()].filter((t) => t.color !== "#ffffff").map((t) => `${t.pos}`)
 
 /** The HP label of a stat panel that is showing, or `null`. */
-const shownHp = (panel: StatPanel) =>
-	panel.panel.currentPosition?.name === "Show" ? panel.hpLabel : null
+const shownHp = (panel: StatPanel) => (panel.shown ? panel.hpLabel : null)
 
 /** What a stat panel shows for `unit`'s HP. */
 const hp = (unit: Unit) => `HP ${unit.stats.get(StatTypes.HP)} / ${unit.stats.get(StatTypes.MHP)}`
@@ -194,7 +193,7 @@ describe("CommandSelectionState", () => {
 			entries: ["Move", "Action", "Wait"],
 			selected: "Move"
 		})
-		expect(battle.abilityMenuPanelController.canvasActive).toBe(true)
+		expect(battle.abilityMenuPanelController.shown).toBe(true)
 
 		battle.move(Point.of(1, 0))
 		expect(menu(battle).selected).toBe("Action")
@@ -389,7 +388,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 describe("stat panel", () => {
 	const shown = (battle: BattleController) => {
 		const { primaryPanel } = battle.statPanelController
-		return primaryPanel.panel.currentPosition?.name === "Show" ? primaryPanel.nameLabel : null
+		return primaryPanel.shown ? primaryPanel.nameLabel : null
 	}
 
 	test("the menus show the actor's stats", async () => {
@@ -563,27 +562,24 @@ describe("ConfirmAbilityTargetState", () => {
 		warrior.dir = Directions.West
 		const indicator = battle.hitSuccessIndicator
 		const shown = () => ({
-			active: indicator.canvasActive,
-			at: indicator.panel.currentPosition?.name,
+			shown: indicator.shown,
 			label: indicator.label,
 			fill: indicator.fillAmount,
 			color: indicator.labelColor
 		})
-		expect(shown()).toMatchObject({ active: false, at: "Hide" })
+		expect(shown()).toMatchObject({ shown: false })
 
 		attack(battle)
 		battle.fire(0)
 		const label = `75% ${damage(rogue)}pt(s)`
-		expect(shown()).toEqual({ active: true, at: "Show", label, fill: 0.75, color: "#ff0000" })
+		expect(shown()).toEqual({ shown: true, label, fill: 0.75, color: "#ff0000" })
 		battle.move(Point.of(1, 0))
 		expect(shown()).toMatchObject({ label: `50% ${damage(wizard)}pt(s)`, fill: 0.5 })
 		battle.move(Point.of(1, 0))
 		expect(shown()).toMatchObject({ label: `88% ${damage(warrior)}pt(s)`, fill: 0.88 })
 
 		battle.fire(1)
-		expect(shown()).toMatchObject({ active: true, at: "Hide" })
-		await advance(0.6)
-		expect(shown()).toMatchObject({ active: false, at: "Hide" })
+		expect(shown()).toMatchObject({ shown: false })
 	})
 
 	test("only targets units with hit points left", async () => {
@@ -608,7 +604,7 @@ describe("ConfirmAbilityTargetState", () => {
 		expect(highlighted(battle).sort()).toEqual(["(3,1)", "(4,1)", "(5,1)"])
 		expect(battle.turn.targets).toEqual([])
 		expect(shownHp(battle.statPanelController.secondaryPanel)).toBeNull()
-		expect(battle.hitSuccessIndicator.canvasActive).toBe(false)
+		expect(battle.hitSuccessIndicator.shown).toBe(false)
 
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ConfirmAbilityTargetState")
@@ -848,7 +844,7 @@ describe("the computer's turn", () => {
 		expect(battle.cpu.evaluate).toHaveBeenCalledOnce()
 		expect(battle.turn.plan?.moveLocation).toBe(Point.of(2, 1))
 		expect(battle.turn.ability).toBe(warrior.attack)
-		expect(battle.abilityMenuPanelController.canvasActive).toBe(false)
+		expect(battle.abilityMenuPanelController.shown).toBe(false)
 		expect(shownHp(battle.statPanelController.primaryPanel)).toBe(hp(warrior))
 
 		battle.move(Point.of(0, 1))
@@ -883,8 +879,8 @@ describe("the computer's turn", () => {
 
 		expect(await until(battle, "ConfirmAbilityTargetState")).toBeCloseTo(0.75, 1)
 		expect(battle.turn.targets).toEqual([kamau.tile])
-		expect(battle.hitSuccessIndicator.canvasActive).toBe(false)
-		expect(battle.battleMessageController).toMatchObject({ canvasActive: true, label: "Attack" })
+		expect(battle.hitSuccessIndicator.shown).toBe(false)
+		expect(battle.battleMessageController).toMatchObject({ shown: true, label: "Attack" })
 
 		expect(await until(battle, "PerformAbilityState")).toBeCloseTo(2, 1)
 		await until(battle, "EndFacingState")

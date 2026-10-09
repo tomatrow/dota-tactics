@@ -1,11 +1,19 @@
 import { expect, test, type Page } from "@playwright/test"
 
-/** The text on each of the game's UI canvases, or `null` while it isn't shown. */
+/**
+ * The text on each of the game's UI canvases, or `null` while they show nothing. Panels slide in
+ * and out on real time (CSS animations), not the fake clock: this waits for slides to finish.
+ */
 function ui(page: Page) {
-	return page.evaluate(() => {
+	return page.evaluate(async () => {
+		const sliding = document
+			.getAnimations()
+			.filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+		// (A slide that's cancelled, say to reverse, is over too.)
+		await Promise.all(sliding.map((animation) => animation.finished.catch(() => undefined)))
 		const text = (name: string) => {
 			const region = document.querySelector<HTMLElement>(`[role=region][aria-label="${name}"]`)
-			return region ? region.innerText.replace(/\s+/g, " ").trim() : null
+			return region?.innerText.replace(/\s+/g, " ").trim() || null
 		}
 		return {
 			conversation: text("Conversation Controller"),

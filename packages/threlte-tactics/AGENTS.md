@@ -151,14 +151,15 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - `/` is the battle. `<Battle>` creates the `BattleController` (which owns the notification
   center and the PRNG), provides it via context, and renders the Threlte `<Canvas>` (`renderMode="on-demand"`) plus a DOM
   overlay for UI.
-- UI (uGUI) → DOM overlay. Each Unity canvas prefab → content inside a `<UICanvas>`
-  (`#lib/components/ui/`: Canvas + CanvasScaler, laid out in 640×480 reference pixels, match
-  height). Port prefab hierarchies with `<RectTransform>` (the prefab's anchors, pivot, position,
-  size and scale, verbatim), `<UIImage>` (sprites from `sprites.ts`, `Sliced` 9-slicing, `Filled`
-  horizontally) and `<UIText>` (alignment, font style, color, Best Fit, `Shadow`). Unity's `Panel` →
-  a `Panel` (`#lib/common/ui/Panel.ts`, positions as data) rendered by `<PanelView>`;
-  `setPosition(name, animated, { duration, equation })` returns the completion promise (Unity's
-  `completedEvent`; never resolves if interrupted). `FacingIndicator` stays 3D.
+- UI (uGUI) → DOM overlay, plain HTML and CSS. Each Unity canvas prefab → content inside a
+  `<UICanvas>` (`#lib/components/ui/`): a stage 480 reference pixels tall, zoomed to the screen's
+  height (the project's 640×480 `CanvasScaler`). Lay prefabs out with ordinary CSS in reference
+  pixels (top left origin, y down), converting the prefab's RectTransforms once, by hand.
+  9-sliced sprites → `<SlicedImage>` (drawn on a canvas: `border-image` leaves seams); Best Fit →
+  the `fitText` attachment; other sprites → `<img>` from `sprites.ts`. A panel that slides in and
+  out (Unity's `Panel`) is a `shown` field on its rules class, plus a static `transition`
+  (`{ duration, easing }`); its view renders it in `{#if shown}` with `transition:fly`/`fade`. Rules
+  that must wait for a slide `await wait(duration)`. `FacingIndicator` stays 3D.
 - Input: one `<Input>` component via `<svelte:window>`. Move: arrows/WASD with Unity's repeater
   (0.5 s threshold, 0.25 s rate). Confirm (Fire1): Enter/Space. Cancel (Fire2): Escape/Backspace.
 - Audio: Web Audio (`#lib/common/audio.ts`). `+page.svelte` owns the one `AudioContext`
@@ -185,7 +186,8 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
 - Rules logic (pathfinding, stats/modifiers, turn order, hit rate, damage, AI) gets thorough
   tests with expectations derived from the C#'s formulas. Components get light smoke tests.
 - e2e (`pnpm test:e2e`, Playwright, `e2e/`): builds and previews the game, then plays a whole
-  battle by keyboard on a fake clock (`page.clock`, jumped a frame at a time; about a minute).
+  battle by keyboard on a fake clock (`page.clock`, jumped a frame at a time; a few minutes:
+  UI slides run on real time, and it waits for them before reading the UI).
   It reads the UI by its canvases' regions (`<UICanvas name>`). Press keys a frame apart: input
   is read per frame, as in Unity.
 - Visual checks: a headless browser (Playwright's Chromium with `--headless=new`, driven over

@@ -1,26 +1,27 @@
+import { quadOut } from "svelte/easing"
 import type { SpriteName } from "#lib/assets/textures/ui/sprites.ts"
-import { Panel, type PanelPosition } from "#lib/common/ui/Panel.ts"
 import type { SpeakerData } from "#lib/model/SpeakerData.ts"
 
 /**
  * Port of `View Model Component/ConversationPanel.cs`: one speech panel (portrait, message and a
  * "more" arrow) that steps through a speaker's messages. Rendered by `<ConversationPanelView>`,
- * which also plays the arrow's bounce (Unity's `Start`).
+ * which slides it in from its side of the screen while `shown`.
  */
 export class ConversationPanel {
+	/** How it slides in and out (seconds). */
+	static readonly transition = { duration: 0.5, easing: quadOut }
+
 	message = $state("")
 	speaker: SpriteName = $state("Avatar")
-	/** Whether the "more" arrow shows (`arrow.activeSelf`). */
+	/** Whether the "more" arrow shows. */
 	arrow = $state(true)
-	readonly panel: Panel
-
-	constructor(positionList: readonly PanelPosition[]) {
-		this.panel = new Panel(positionList)
-	}
+	/** Whether it's on screen. */
+	shown = $state(false)
+	/** The edge of the screen it shows at. */
+	edge: "top" | "bottom" = $state("bottom");
 
 	/** Shows each message in turn; advanced manually, one message per `next()`. */
 	*display(sd: SpeakerData): Generator<void, void, void> {
-		// (`SetNativeSize`: the view sizes the portrait from its sprite.)
 		this.speaker = sd.speaker
 
 		for (let i = 0; i < sd.messages.length; ++i) {

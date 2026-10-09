@@ -9,10 +9,10 @@
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { format, resolveConfig } from "prettier"
-import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import { Locomotions } from "#lib/enums/Locomotions.ts"
 import { Targets } from "#lib/enums/Targets.ts"
+import { anchors } from "#lib/model/SpeakerData.ts"
 import {
 	readGuid,
 	readScriptableObject,
@@ -109,8 +109,6 @@ async function uiSprites(): Promise<Map<string, string>> {
 	return sprites
 }
 
-const textAnchorNames = new Map(Object.entries(TextAnchor).map(([name, value]) => [value, name]))
-
 interface UnitySpeakerData {
 	messages: string[]
 	speaker: UnityRef
@@ -123,18 +121,15 @@ async function convertConversations(out: Output): Promise<void> {
 		const data = await readScriptableObject(path.join(unityAssets, "Resources/Conversations", file))
 		const list = (data.list as UnitySpeakerData[]).map((sd) => {
 			const speaker = sprites.get(sd.speaker.guid ?? "")
-			const anchor = textAnchorNames.get(sd.anchor as TextAnchor)
+			const anchor = anchors[sd.anchor]
 			if (!speaker || !anchor) throw new Error(`Unknown speaker or anchor in ${file}`)
-			return `{ messages: ${json(sd.messages.map(String))}, speaker: ${json(speaker)}, anchor: TextAnchor.${anchor} }`
+			return `{ messages: ${json(sd.messages.map(String))}, speaker: ${json(speaker)}, anchor: ${json(anchor)} }`
 		})
 		out.set(
 			`Conversations/${basename(file)}.ts`,
 			module(
 				`Resources/Conversations/${file}`,
-				[
-					`import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"`,
-					`import type { ConversationData } from "#lib/model/ConversationData.ts"`
-				],
+				[`import type { ConversationData } from "#lib/model/ConversationData.ts"`],
 				`export default { list: [${list.join(", ")}] } satisfies ConversationData`
 			)
 		)

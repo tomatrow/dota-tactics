@@ -1,33 +1,52 @@
-<!-- Renders a `BattleMessageController`: `Battle Message Controller.prefab`'s canvas. -->
+<!--
+	Renders a `BattleMessageController`: `Battle Message Controller.prefab`, a bar 60 pixels tall
+	across the screen, 20 pixels down from the top.
+-->
 <script lang="ts">
-	import { TextAnchor } from "#lib/common/unity/TextAnchor.ts"
-	import type { BattleMessageController } from "#lib/controller/BattleMessageController.svelte.ts"
-	import RectTransform from "./ui/RectTransform.svelte"
+	import { fade } from "svelte/transition"
+	import { BattleMessageController } from "#lib/controller/BattleMessageController.svelte.ts"
+	import SlicedImage from "./ui/SlicedImage.svelte"
 	import UICanvas from "./ui/UICanvas.svelte"
-	import UIImage from "./ui/UIImage.svelte"
-	import UIText from "./ui/UIText.svelte"
 
 	let { controller }: { controller: BattleMessageController } = $props()
+
+	const { duration, easing } = BattleMessageController.transition
 </script>
 
-{#if controller.canvasActive}
-	<UICanvas name="Battle Message Controller" alpha={controller.alpha}>
-		<RectTransform
-			anchorMax={[1, 1]}
-			anchorMin={[0, 1]}
-			anchoredPosition={[0, -20]}
-			pivot={[0.5, 1]}
-			sizeDelta={[0, 60]}
-		>
-			<UIImage alpha={0.70588237} sprite="ActionNameBacker" type="Sliced" />
-			<RectTransform anchorMax={[1, 1]} anchorMin={[0, 0]} sizeDelta={[0, 0]}>
-				<UIText
-					alignment={TextAnchor.MiddleCenter}
-					color="#ffffff"
-					fontSize={20}
-					text={controller.label}
-				/>
-			</RectTransform>
-		</RectTransform>
-	</UICanvas>
-{/if}
+<UICanvas name="Battle Message Controller">
+	{#if controller.shown}
+		<div class="bar" transition:fade={{ duration: duration * 1000, easing }}>
+			<div class="backer"><SlicedImage sprite="ActionNameBacker" /></div>
+			<p>{controller.label}</p>
+		</div>
+	{/if}
+</UICanvas>
+
+<style>
+	.bar {
+		position: absolute;
+		top: 20px;
+		right: 0;
+		left: 0;
+		height: 60px;
+	}
+
+	.backer {
+		position: absolute;
+		inset: 0;
+		/* The image's color: white at 180/255 alpha. */
+		opacity: 0.70588;
+	}
+
+	p {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin: 0;
+		color: #fff;
+		font-size: 20px;
+		white-space: pre-wrap;
+	}
+</style>

@@ -1,37 +1,28 @@
 import { quadInOut } from "svelte/easing"
-import { Tween } from "svelte/motion"
-import { reversed, tween } from "#lib/common/animation/Tweener.ts"
 import { wait } from "#lib/common/time.ts"
 
 /**
  * Port of `Controller/BattleMessageController.cs`: a bar across the top of the screen that fades
  * in with a message (the ability a computer-driven unit uses), stays a second, and fades out.
- * Rendered by `<BattleMessageControllerView>`.
+ * Rendered by `<BattleMessageControllerView>`, which fades it while `shown` changes.
  */
 export class BattleMessageController {
-	/** Whether the canvas is active (`canvas.activeSelf`); the prefab's isn't. */
-	canvasActive = $state(false)
-	/** `label.text`, starting with the prefab's. */
-	label = $state("New Text")
-	/** The canvas group's alpha, which the `EasingControl` (`ec`) animates. */
-	readonly #alpha = new Tween(1)
+	/** How it fades in and out (seconds). */
+	static readonly transition = { duration: 0.5, easing: quadInOut }
 
-	get alpha(): number {
-		return this.#alpha.current
-	}
+	/** Whether it's on screen. */
+	shown = $state(false)
+	label = $state("New Text")
 
 	display(message: string): void {
-		void this.#alpha.set(0, { duration: 0 })
-		this.canvasActive = true
+		this.shown = true
 		this.label = message
 		void this.#sequence()
 	}
 
 	async #sequence(): Promise<void> {
-		// `ec.Play()`, then `ec.Reverse()`: half a second each, `EaseInOutQuad` (backwards).
-		await tween(this.#alpha, 0, 1, 0.5, quadInOut)
-		await wait(1)
-		await tween(this.#alpha, 1, 0, 0.5, reversed(quadInOut))
-		this.canvasActive = false
+		// Fade in, then stay a second.
+		await wait(BattleMessageController.transition.duration + 1)
+		this.shown = false
 	}
 }

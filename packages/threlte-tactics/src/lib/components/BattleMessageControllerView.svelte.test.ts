@@ -12,7 +12,7 @@ test("shows the message on the bar across the top, while displayed", async () =>
 	const label = screen.getByText("Prominence")
 	await expect.element(label).toBeInTheDocument()
 	await expect.element(label).toHaveStyle({ color: "rgb(255, 255, 255)" })
-	const bar = screen.container.querySelector("canvas")!
-	expect(Number(bar.style.opacity)).toBeCloseTo(0.706, 3)
+	const backer = screen.container.querySelector("canvas")!.parentElement!
+	expect(Number(getComputedStyle(backer).opacity)).toBeCloseTo(0.706, 3)
 	await expect.element(label, { timeout: 3000 }).not.toBeInTheDocument()
 })

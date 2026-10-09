@@ -7,9 +7,7 @@
 	let { controller }: { controller: ConversationController } = $props()
 </script>
 
-{#if controller.canvasActive}
-	<UICanvas name="Conversation Controller">
-		<ConversationPanelView conversationPanel={controller.rightPanel} edge="right" />
-		<ConversationPanelView conversationPanel={controller.leftPanel} edge="left" />
-	</UICanvas>
-{/if}
+<UICanvas name="Conversation Controller">
+	<ConversationPanelView conversationPanel={controller.rightPanel} side="right" />
+	<ConversationPanelView conversationPanel={controller.leftPanel} side="left" />
+</UICanvas>

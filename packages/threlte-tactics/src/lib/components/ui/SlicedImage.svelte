@@ -1,29 +1,15 @@
 <!--
-	A uGUI `Image`: draws a sprite over its whole rect. `Sliced` uses the sprite's 9-slice border
-	(at 1 sprite pixel per reference pixel, as every sprite here is imported), drawn on a canvas at
-	the screen's resolution: CSS `border-image` leaves hairline seams between slices at fractional
-	scales. `Filled` shows the left `fillAmount` (0–1) of the sprite (fill method Horizontal, fill
-	origin Left).
+	A 9-slice sprite stretched over its positioned parent: the corners keep their size (one sprite
+	pixel per reference pixel, as every sprite here is imported), the edges and middle stretch.
+	Drawn on a canvas at the screen's resolution: CSS `border-image` leaves hairline seams between
+	slices at fractional scales.
 -->
 <script lang="ts">
 	import type { Attachment } from "svelte/attachments"
 	import { on } from "svelte/events"
 	import { sprites, type Sprite, type SpriteName } from "#lib/assets/textures/ui/sprites.ts"
 
-	let {
-		sprite,
-		type = "Simple",
-		fillAmount = 1,
-		alpha = 1
-	}: {
-		sprite: SpriteName
-		type?: "Simple" | "Sliced" | "Filled"
-		fillAmount?: number
-		/** The image's color's alpha (its color is otherwise white: no tint). */
-		alpha?: number
-	} = $props()
-
-	const s: Sprite = $derived(sprites[sprite])
+	let { sprite }: { sprite: SpriteName } = $props()
 
 	function sliced({ src, width, height, border }: Sprite): Attachment<HTMLCanvasElement> {
 		return (canvas) => {
@@ -43,7 +29,7 @@
 				const dy = [0, Math.round(top * k), canvas.height - Math.round(bottom * k), canvas.height]
 				context.clearRect(0, 0, canvas.width, canvas.height)
 				// A slice with no sprite pixels between its borders (e.g. `BlueAttackPanel`'s center)
-				// still fills its space: Unity stretches the line of texels at the border.
+				// still fills its space, with the line of texels at the border stretched.
 				const span = (from: number, to: number, size: number) =>
 					to > from ? [from, to - from] : [Math.min(from, size - 1), 1]
 				for (let row = 0; row < 3; ++row)
@@ -73,20 +59,10 @@
 	}
 </script>
 
-{#if type === "Sliced"}
-	<canvas style:opacity={alpha === 1 ? undefined : alpha} {@attach sliced(s)}></canvas>
-{:else}
-	<img
-		style:clip-path={type === "Filled" ? `inset(0 ${(1 - fillAmount) * 100}% 0 0)` : undefined}
-		style:opacity={alpha === 1 ? undefined : alpha}
-		alt=""
-		src={s.src}
-	/>
-{/if}
+<canvas {@attach sliced(sprites[sprite])}></canvas>
 
 <style>
-	canvas,
-	img {
+	canvas {
 		position: absolute;
 		inset: 0;
 		width: 100%;
