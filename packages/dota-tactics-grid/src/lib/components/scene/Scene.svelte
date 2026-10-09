@@ -5,17 +5,7 @@
 	import { isInstanceOf, T, useTask, useThrelte } from "@threlte/core"
 	import { onDestroy } from "svelte"
 	import { on } from "svelte/events"
-	import {
-		Color,
-		DirectionalLight,
-		HemisphereLight,
-		Matrix4,
-		PMREMGenerator,
-		Raycaster,
-		Vector2,
-		type Object3D
-	} from "three"
-	import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js"
+	import { Color, Matrix4, Raycaster, Vector2, type Object3D } from "three"
 	import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js"
 	import type { MapEntity } from "#lib/map/schema.ts"
 	import { frustum } from "#lib/scene/camera.ts"
@@ -30,6 +20,7 @@
 	import { sameSelection, type Selection } from "#lib/selection.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 	import CameraRig from "./CameraRig.svelte"
+	import Lighting from "./Lighting.svelte"
 	import Renderer from "./Renderer.svelte"
 
 	/** Tile edge lines fade in between these on-screen tile sizes (CSS px). */
@@ -42,34 +33,15 @@
 		return t * t * (3 - 2 * t)
 	}
 
+	/**
+	 * An instance rather than `<T.Color>`: Threlte recognises classes by their source starting
+	 * "class ", and minified base classes start "class{".
+	 */
+	const background = new Color(0x0b101c)
+
 	const view = getViewerState()
 	const { model } = view
-	const { renderer, scene, camera, canvas, dom, size, renderStage } = useThrelte()
-
-	scene.background = new Color(0x0b101c)
-	const pmrem = new PMREMGenerator(renderer)
-	scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture
-	scene.environmentIntensity = 0.22
-	pmrem.dispose()
-	const sky = new HemisphereLight(0xd6e2ff, 0x3a3222, 0.75)
-	const sun = new DirectionalLight(0xfff0d8, 3.4)
-	// From the west and high: shadows fall east, to the right of things from the home view.
-	sun.position.set(-260, 380, 60)
-	sun.castShadow = true
-	sun.shadow.mapSize.set(4096, 4096)
-	const extent = 240
-	Object.assign(sun.shadow.camera, {
-		left: -extent,
-		right: extent,
-		top: extent,
-		bottom: -extent,
-		near: 50,
-		far: 1100
-	})
-	sun.shadow.camera.updateProjectionMatrix()
-	sun.shadow.bias = -0.0004
-	sun.shadow.normalBias = 0.06
-	sun.shadow.radius = 2.5
+	const { scene, camera, canvas, dom, size, renderStage } = useThrelte()
 
 	const initialScale = view.verticalScale
 	const terrain = new Terrain(model)
@@ -242,8 +214,6 @@
 		lanes.dispose()
 		hoverCursor.dispose()
 		pinCursor.dispose()
-		scene.environment?.dispose()
-		sun.shadow.dispose()
 		labelRenderer.domElement.remove()
 	})
 </script>
@@ -251,8 +221,8 @@
 <CameraRig />
 <Renderer />
 
-<T is={sky} />
-<T is={sun} />
+<T attach="background" is={background} />
+<Lighting />
 
 <T.Group scale.y={view.verticalScale}>
 	<T is={terrain.mesh} />
