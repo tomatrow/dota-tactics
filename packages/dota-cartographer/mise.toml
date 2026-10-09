@@ -1,0 +1,25 @@
+# Tool versions (python, uv) are pinned in the repo-root mise.toml; this file only adds tasks.
+# Tasks run from this directory, so out/, work/ and .tools/ land here.
+
+[settings]
+python.uv_venv_auto = true
+
+[tasks.extract]
+description = "Extract the Dota 2 map into out/dota_map.json and out/preview.png"
+run = "uv run dota-cartographer"
+
+[tasks.test]
+description = "Run the unit tests"
+run = "uv run pytest"
+
+[tasks.lint]
+description = "Lint and check formatting"
+run = ["uv run ruff check", "uv run ruff format --check"]
+
+[tasks.format]
+description = "Format and apply safe lint fixes"
+run = ["uv run ruff format", "uv run ruff check --fix"]
+
+[tasks.check]
+description = "Type-check with pyright"
+run = "uv run pyright"

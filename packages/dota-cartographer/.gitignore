@@ -1,0 +1,8 @@
+# Pinned Source 2 Viewer CLI download
+.tools/
+# Raw files extracted from Valve's VPKs (not ours to commit)
+work/
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

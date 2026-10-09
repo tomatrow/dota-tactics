@@ -1,0 +1,46 @@
+[project]
+name = "dota-cartographer"
+version = "0.1.0"
+description = "Extract the Dota 2 map from dota.vpk into a tile-grid JSON (height, walkability, water, trees, buildings, lanes)."
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "embreex>=4.4.0",
+    "numpy>=2.5.3",
+    "pillow>=12.3.0",
+    "trimesh>=5.1.1",
+]
+
+[project.scripts]
+dota-cartographer = "dota_cartographer.cli:main"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.414",
+    "pytest>=9.1.1",
+    "ruff>=0.16.10",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13"]
+build-backend = "uv_build"
+
+[tool.uv]
+# Python comes from mise (repo-root mise.toml); never let uv fetch its own.
+python-downloads = "never"
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "PTH", "NPY"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.14"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
