@@ -4,12 +4,9 @@ import {
 	DataTexture,
 	LinearFilter,
 	LinearMipmapLinearFilter,
-	Mesh,
-	MeshStandardMaterial,
 	NoColorSpace,
 	RepeatWrapping,
-	RGBAFormat,
-	Vector2
+	RGBAFormat
 } from "three"
 import type { MapModel } from "#lib/map/model.ts"
 import { buildColumns } from "./columns.ts"
@@ -24,7 +21,7 @@ export const WATER_DEPTH = 20
 const RIPPLE_SCALE = 1 / 6
 
 /** A tileable ripple normal map from a sum of integer-frequency sine waves. */
-function rippleTexture(size = 128): DataTexture {
+export function rippleTexture(size = 128): DataTexture {
 	const waves = [
 		[1, 2, 0.9, 0.3],
 		[3, -1, 0.5, 1.7],
@@ -64,50 +61,20 @@ function rippleTexture(size = 128): DataTexture {
 	return texture
 }
 
-export class Water {
-	readonly mesh: Mesh<BufferGeometry, MeshStandardMaterial>
-	private readonly ripples: DataTexture
-
-	constructor(model: MapModel) {
-		const surface = (i: number) => (model.water[i] ? model.height[i] + WATER_DEPTH : Number.NaN)
-		const columns = buildColumns(
-			model,
-			surface,
-			(i) => (model.water[i] ? surface(i) : model.height[i]),
-			floorHeight(model)
-		)
-		const geometry = new BufferGeometry()
-		geometry.setAttribute("position", new BufferAttribute(columns.positions, 3))
-		geometry.setAttribute("normal", new BufferAttribute(columns.normals, 3))
-		geometry.setAttribute("uv", new BufferAttribute(columns.uvs, 2))
-		geometry.setIndex(new BufferAttribute(columns.indices, 1))
-		geometry.computeBoundingSphere()
-
-		this.ripples = rippleTexture()
-		const material = new MeshStandardMaterial({
-			color: 0x2a78b8,
-			roughness: 0.12,
-			metalness: 0,
-			transparent: true,
-			opacity: 0.66,
-			normalMap: this.ripples,
-			normalScale: new Vector2(0.45, 0.45),
-			emissive: 0x0b2440,
-			depthWrite: false
-		})
-		this.mesh = new Mesh(geometry, material)
-		this.mesh.receiveShadow = true
-		this.mesh.renderOrder = 1
-		this.mesh.name = "water"
-	}
-
-	animate(seconds: number) {
-		this.ripples.offset.set(seconds * 0.012, seconds * 0.007)
-	}
-
-	dispose() {
-		this.mesh.geometry.dispose()
-		this.mesh.material.dispose()
-		this.ripples.dispose()
-	}
+/** The water surfaces: a column top per water tile, with walls where surfaces step down. */
+export function waterGeometry(model: MapModel): BufferGeometry {
+	const surface = (i: number) => (model.water[i] ? model.height[i] + WATER_DEPTH : Number.NaN)
+	const columns = buildColumns(
+		model,
+		surface,
+		(i) => (model.water[i] ? surface(i) : model.height[i]),
+		floorHeight(model)
+	)
+	const geometry = new BufferGeometry()
+	geometry.setAttribute("position", new BufferAttribute(columns.positions, 3))
+	geometry.setAttribute("normal", new BufferAttribute(columns.normals, 3))
+	geometry.setAttribute("uv", new BufferAttribute(columns.uvs, 2))
+	geometry.setIndex(new BufferAttribute(columns.indices, 1))
+	geometry.computeBoundingSphere()
+	return geometry
 }

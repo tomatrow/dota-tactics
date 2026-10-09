@@ -2,36 +2,27 @@
 	Everything in the 3D view: camera, renderer, lights, the board and what stands on it.
 -->
 <script lang="ts">
-	import { isInstanceOf, T, useTask, useThrelte } from "@threlte/core"
+	import { T, useTask, useThrelte } from "@threlte/core"
 	import { onDestroy } from "svelte"
 	import { on } from "svelte/events"
 	import { Color, Matrix4, Raycaster, Vector2, type Object3D } from "three"
 	import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js"
 	import type { MapEntity } from "#lib/map/schema.ts"
-	import { frustum } from "#lib/scene/camera.ts"
 	import { floorHeight, sceneY, tileX, tileZ } from "#lib/scene/coords.ts"
 	import { TileCursor } from "#lib/scene/cursor.ts"
 	import { Entities } from "#lib/scene/entities.ts"
 	import { Lanes } from "#lib/scene/lanes.ts"
 	import { pickColumn } from "#lib/scene/picking.ts"
-	import { Terrain } from "#lib/scene/terrain.ts"
 	import { Trees } from "#lib/scene/trees.ts"
-	import { Water } from "#lib/scene/water.ts"
 	import { sameSelection, type Selection } from "#lib/selection.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 	import CameraRig from "./CameraRig.svelte"
 	import Lighting from "./Lighting.svelte"
 	import Renderer from "./Renderer.svelte"
+	import Terrain from "./Terrain.svelte"
+	import Water from "./Water.svelte"
 
-	/** Tile edge lines fade in between these on-screen tile sizes (CSS px). */
-	const GRID_FADE: [number, number] = [6, 16]
-	const GRID_OPACITY = 0.38
 	const CLICK_SLOP = 6
-
-	const smoothstep = (a: number, b: number, x: number) => {
-		const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
-		return t * t * (3 - 2 * t)
-	}
 
 	/**
 	 * An instance rather than `<T.Color>`: Threlte recognises classes by their source starting
@@ -44,15 +35,11 @@
 	const { scene, camera, canvas, dom, size, renderStage } = useThrelte()
 
 	const initialScale = view.verticalScale
-	const terrain = new Terrain(model)
-	const water = new Water(model)
 	const trees = new Trees(model, initialScale)
 	const entities = new Entities(model, initialScale)
 	const lanes = new Lanes(model, initialScale)
 	const hoverCursor = new TileCursor(0xffe39a, 0.4)
 	const pinCursor = new TileCursor(0x9fe3ff, 0.3)
-
-	$effect(() => terrain.paint(view.look))
 
 	$effect(() => {
 		const scale = view.verticalScale
@@ -93,13 +80,6 @@
 	let elapsed = 0
 	useTask((delta) => {
 		elapsed += delta
-		const { halfHeight } = frustum(Math.max(1, $size.width), Math.max(1, $size.height))
-		const zoom = isInstanceOf(camera.current, "OrthographicCamera") ? camera.current.zoom : 1
-		const tilePixels = ($size.height / (2 * halfHeight)) * zoom
-		terrain.setGridOpacity(
-			view.visibility.grid ? GRID_OPACITY * smoothstep(GRID_FADE[0], GRID_FADE[1], tilePixels) : 0
-		)
-		water.animate(elapsed)
 		entities.animate(elapsed, Math.min(0.1, delta))
 	})
 
@@ -207,8 +187,6 @@
 	})
 
 	onDestroy(() => {
-		terrain.dispose()
-		water.dispose()
 		trees.dispose()
 		entities.dispose()
 		lanes.dispose()
@@ -225,8 +203,8 @@
 <Lighting />
 
 <T.Group scale.y={view.verticalScale}>
-	<T is={terrain.mesh} />
-	<T is={water.mesh} visible={view.layer === "terrain"} />
+	<Terrain />
+	<Water />
 </T.Group>
 <T is={trees.group} visible={view.visibility.trees} />
 <T is={entities.major} visible={view.visibility.entities} />

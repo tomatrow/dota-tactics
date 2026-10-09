@@ -19,6 +19,12 @@ export function frustum(width: number, height: number): { halfWidth: number; hal
 	return { halfWidth, halfHeight: halfWidth / aspect }
 }
 
+/** How many CSS pixels a tile spans on screen at this zoom. */
+export function tilePixels(width: number, height: number, zoom: number): number {
+	const h = Math.max(1, height)
+	return (h / (2 * frustum(Math.max(1, width), h).halfHeight)) * zoom
+}
+
 const QUARTER = Math.PI / 2
 
 /**
