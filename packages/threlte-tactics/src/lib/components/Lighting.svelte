@@ -2,9 +2,9 @@
 	The scene's lighting: the `Directional Light` from `Battle.unity`, plus ambient light that
 	approximates what Unity derives from its default skybox.
 
-	Colors are raw gamma-space values (the canvas has color management off, like Unity's Gamma color
-	space). Intensities are multiplied by π because three's lights are physically based, while
-	Unity's Standard shader treats an intensity of 1 as "albedo × N·L".
+	Colors are raw gamma-space values (the canvas has color management off). Intensities are
+	multiplied by π because three's lights are physically based, while Unity's Standard shader treats
+	an intensity of 1 as "albedo × N·L".
 -->
 <script lang="ts">
 	import { T } from "@threlte/core"

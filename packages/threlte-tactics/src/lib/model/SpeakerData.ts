@@ -1,6 +1,9 @@
 import type { SpriteName } from "#lib/assets/textures/ui/sprites.ts"
 
-/** Where on the screen a speaker's panel shows, in the order of Unity's `TextAnchor` values. */
+/**
+ * Where on the screen a speaker's panel shows, in the order of `TextAnchor`'s values (which the
+ * conversation assets store).
+ */
 export const anchors = [
 	"UpperLeft",
 	"UpperCenter",

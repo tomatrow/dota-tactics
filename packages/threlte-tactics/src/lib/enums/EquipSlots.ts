@@ -13,5 +13,5 @@ export const EquipSlots = {
 	Accessory: 1 << 4
 } as const
 
-/** One or more slots (Unity's `[Flags]` enum), e.g. `EquipSlots.Primary | EquipSlots.Secondary`. */
+/** One or more slots (a bit mask), e.g. `EquipSlots.Primary | EquipSlots.Secondary`. */
 export type EquipSlots = number

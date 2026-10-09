@@ -17,7 +17,7 @@ export function initBattleState(owner: BattleController) {
 		else spawnTestUnits()
 		addVictoryCondition()
 		owner.round = new TurnOrderController(owner).round()
-		// Unity can't change state during a transition (`Enter`), so it waits a frame.
+		// Hand over a frame later: a state doesn't change state while it is being entered.
 		await nextFrame()
 		owner.machine.done()
 	}

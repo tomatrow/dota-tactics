@@ -10,7 +10,7 @@
 	let { entry }: { entry: AbilityMenuEntry } = $props()
 
 	const bullet = $derived(sprites[entry.bullet])
-	// Unity's `Outline` (effect distance 1, -1): the text drawn four times, offset diagonally.
+	// The prefab's `Outline` (effect distance 1, -1): the text drawn four times, offset diagonally.
 	const outline = $derived(
 		[
 			[1, 1],

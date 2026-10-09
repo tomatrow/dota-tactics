@@ -51,7 +51,8 @@ describe("ValueChangeException", () => {
 		const modify = (m: { modify(from: number, to: number): number }, to: number) => m.modify(0, to)
 		expect(modify(new ClampValueModifier(0, 5, 10), 3)).toBe(5)
 		expect(modify(new ClampValueModifier(0, 5, 10), 12)).toBe(10)
-		// Unity's naming: MaxValueModifier keeps the value at least `max`; MinValueModifier at most `min`.
+		// Despite the names, MaxValueModifier keeps the value at least `max`, MinValueModifier at
+		// most `min`.
 		expect(modify(new MaxValueModifier(0, 5), 3)).toBe(5)
 		expect(modify(new MaxValueModifier(0, 5), 8)).toBe(8)
 		expect(modify(new MinValueModifier(0, 5), 3)).toBe(3)

@@ -32,7 +32,7 @@ describe("awardExperience", () => {
 		expect(members[2]!.rank!.exp - Rank.experienceForLevel(4)).toBe(25)
 	})
 
-	test("splits evenly between equal levels (PORT-FIX: Unity awards nothing)", () => {
+	test("splits evenly between equal levels", () => {
 		const members = party(4, 4)
 		awardExperience(101, members)
 		expect(gained(members, [4, 4])).toEqual([50, 50])

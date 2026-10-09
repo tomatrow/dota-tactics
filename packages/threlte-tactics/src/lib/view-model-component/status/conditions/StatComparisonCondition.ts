@@ -50,7 +50,7 @@ export class StatComparisonCondition extends StatusCondition {
 		)
 	}
 
-	// Arrow functions, so they can be passed as `condition` (C#'s method groups).
+	// Arrow functions, so they can be passed as `condition`.
 	readonly equalTo = (): boolean => this.#stats.get(this.#type) === this.#value
 	readonly lessThan = (): boolean => this.#stats.get(this.#type) < this.#value
 	readonly lessThanOrEqualTo = (): boolean => this.#stats.get(this.#type) <= this.#value

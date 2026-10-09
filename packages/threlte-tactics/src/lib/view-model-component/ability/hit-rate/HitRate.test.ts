@@ -42,8 +42,8 @@ function setup(from: Point) {
 	return { notifications, random, attacker, defender, target, context }
 }
 
-/** Lets Unity's end of frame pass: removed status effects are disabled by then. */
-const endOfFrame = () => new Promise<void>((resolve) => queueMicrotask(resolve))
+/** Lets the current code finish: removed status effects are disabled by then. */
+const disabledLater = () => new Promise<void>((resolve) => queueMicrotask(resolve))
 
 const front = Point.of(2, 4)
 const side = Point.of(0, 2)
@@ -91,7 +91,7 @@ describe("ATypeHitRate", () => {
 		const blind = attacker.status.add(BlindStatusEffect, StatusCondition)
 		expect(hitRate.calculate(target)).toBe(5)
 		blind.remove()
-		await endOfFrame()
+		await disabledLater()
 		defender.status.add(BlindStatusEffect, StatusCondition)
 		expect(hitRate.calculate(target)).toBe(70)
 	})

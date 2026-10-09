@@ -36,7 +36,7 @@ import type { BaseVictoryCondition } from "./victory-conditions/BaseVictoryCondi
 
 function createStateMachine(owner: BattleController) {
 	return fsm("None", {
-		// Unity's state machine starts with no current state.
+		// The battle starts in no state; `start()` enters the first.
 		None: { start: () => "InitBattleState" },
 		AbilityTargetState: abilityTargetState(owner),
 		ActionSelectionState: actionSelectionState(owner),
@@ -58,27 +58,25 @@ function createStateMachine(owner: BattleController) {
 export interface BattleOptions {
 	/** For a new `random` (default: a random one). */
 	seed?: number
-	/** Unity's `UnityEngine.Random`, which lasts from one battle to the next (default: a new one). */
+	/** The game's random numbers, which last from one battle to the next (default: new ones). */
 	random?: Random
 	/**
-	 * Spawns the battle's units instead of `InitBattleState` (whose `SpawnTestUnits`, three heroes
-	 * and three enemies on random tiles, is temporary code in Unity too). For tests that need
-	 * particular units in particular places.
+	 * Spawns the battle's units in place of `InitBattleState`'s test units (three heroes and three
+	 * enemies on random tiles). For tests that need particular units in particular places.
 	 */
 	spawnTestUnits?: ((battle: BattleController) => void) | null
-	/** Unity's `Application.LoadLevel(0)`: starts the battle over, which `EndBattleState` does. */
+	/** Starts the battle over, from scratch. `EndBattleState` calls it. */
 	loadLevel?: (() => void) | null
 }
 
 /**
- * Port of `Controller/BattleController.cs`: the battle's state machine (Unity's `StateMachine`
- * base class is `runic-svelte-fsm`) and everything its states share, including the other
- * components on its GameObject.
+ * Port of `Controller/BattleController.cs` and its `StateMachine` base class: the battle's state
+ * machine (`runic-svelte-fsm`) and everything its states share.
  */
 export class BattleController {
-	/** Unity's `NotificationCenter.instance`, one per battle. */
+	/** What the battle's objects post and observe. */
 	readonly notifications = new NotificationCenter()
-	/** Unity's `UnityEngine.Random`. */
+	/** The game's random numbers (`BattleOptions.random`). */
 	readonly random: Random
 	readonly board = new Board()
 	readonly levelData: LevelData
@@ -96,13 +94,13 @@ export class BattleController {
 	units: Unit[] = $state([])
 	/** `TurnOrderController.round()`, which `SelectUnitState` steps through. */
 	round: Iterator<Unit> | null = null
-	/** Plans the turns of computer-driven units (a component of Unity's Battle Controller). */
+	/** Plans the turns of computer-driven units. */
 	readonly cpu: ComputerPlayer
-	/** Unity's static `ActionSelectionState.category`, which `CategorySelectionState` sets. */
+	/** The category picked in `CategorySelectionState`, for `ActionSelectionState`. */
 	actionSelectionCategory = 0
-	/** Knocks out units with no HP left (a component of Unity's Battle Controller). */
+	/** Knocks out units with no HP left. */
 	readonly autoStatusController: AutoStatusController
-	/** Unity's `GetComponent<BaseVictoryCondition>()`, which `InitBattleState` adds. */
+	/** How the battle is won or lost, which `InitBattleState` sets. */
 	victoryCondition: BaseVictoryCondition | null = null
 
 	/** Replaces `InitBattleState`'s own (`BattleOptions.spawnTestUnits`). */
@@ -137,23 +135,22 @@ export class BattleController {
 		this.machine.start()
 	}
 
-	/** Unity's `InputController.moveEvent`, which the current state listens to. */
+	/** A direction from the input, for the current state. */
 	move(direction: Point): void {
 		if (this.#listening()) this.machine.move(direction)
 	}
 
-	/** Unity's `InputController.fireEvent`, which the current state listens to. */
+	/** A released Fire button (0 confirm, 1 cancel), for the current state. */
 	fire(button: number): void {
 		if (this.#listening()) this.machine.fire(button)
 	}
 
 	/**
-	 * Unity's `BattleState.AddListeners`: a state listens to the input unless the computer drives
-	 * the turn's actor. (Unity decides when the state is entered; no driver changes mid-state.)
+	 * Whether the current state listens to the input: unless the computer drives the turn's actor.
+	 * No driver changes during a state.
 	 */
 	#listening(): boolean {
-		// PORT-FIX: Unity's cut scene doesn't listen either when a computer-driven unit's action
-		// ended the battle, so its outro could never be read past.
+		// The outro must be read past even when a computer-driven unit's action ended the battle.
 		if (this.machine.current === "CutSceneState") return true
 
 		const driver = this.turn.actor?.driver ?? null

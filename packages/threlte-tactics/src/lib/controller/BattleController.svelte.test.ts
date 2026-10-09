@@ -87,7 +87,7 @@ describe("BattleController", () => {
 		expect(() => battle.machine.jump()).not.toThrow()
 	})
 
-	test("starts with no state, like Unity's StateMachine", () => {
+	test("starts with no state", () => {
 		expect(new BattleController(plus).machine.current).toBe("None")
 	})
 })
@@ -342,7 +342,7 @@ describe("CategorySelectionState and ActionSelectionState", () => {
 		battle.fire(0)
 		expect(menu(battle).entries).toEqual(["(Cure: 6)", "(Raise: 22)", "(Holy: 32)", "(Esuna: 18)"])
 
-		// PORT-FIX: Unity would go on to aim Cure.
+		// Every entry is locked: confirming does nothing (`PORTING.md` › Divergences).
 		battle.fire(0)
 		expect(battle.machine.current).toBe("ActionSelectionState")
 		battle.fire(1)
@@ -428,7 +428,7 @@ describe("stat panel", () => {
 })
 
 /**
- * The blog's demo attack, which its heroes had until the unit factory: 3 tiles' range, and hits
+ * The blog's demo attack, before the unit factory: 3 tiles' range, and hits
  * 1 tile around where it's aimed (the real one only reaches the tile in front).
  */
 const demoAttack: AbilityPrefab = {

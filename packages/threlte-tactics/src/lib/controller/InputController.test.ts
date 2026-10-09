@@ -29,7 +29,7 @@ describe("InputController", () => {
 		return { input: new InputController({ move, fire }), move, fire }
 	}
 
-	test("moves along Unity's axes: arrows and WASD, up is +y", () => {
+	test("moves along the axes: arrows and WASD, up is +y", () => {
 		const { input, move } = setup()
 		const cases = [
 			["ArrowRight", Point.of(1, 0)],

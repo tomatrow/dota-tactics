@@ -18,7 +18,7 @@ describe("Point", () => {
 		expect(map.get(Point.of(3, 4))).toBe("tile")
 	})
 
-	test("formats like Unity", () => {
+	test("formats as (x,y)", () => {
 		expect(`${Point.of(-1, 7)}`).toBe("(-1,7)")
 	})
 })

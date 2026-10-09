@@ -19,7 +19,7 @@ import { Status } from "./Status.ts"
 const { CTR, HP, MHP, SPD } = StatTypes
 
 /** Lets the current code finish: removed effects and conditions are disabled by then. */
-const endOfFrame = () => new Promise<void>((resolve) => queueMicrotask(resolve))
+const disabledLater = () => new Promise<void>((resolve) => queueMicrotask(resolve))
 
 /** Units with these speeds, and a turn order over them. */
 function setup(...speeds: number[]) {
@@ -36,7 +36,7 @@ function setup(...speeds: number[]) {
 	/** Begins the next turn (the frame ends before the turn goes on); whose it is. */
 	const next = async () => {
 		const unit = round.next().value
-		await endOfFrame()
+		await disabledLater()
 		return units.indexOf(unit)
 	}
 	/** Plays turns until `unit`'s begins. */
@@ -88,7 +88,7 @@ describe("Status", () => {
 		unit.stats.set(CTR, 100)
 		expect(unit.stats.get(CTR)).toBe(200)
 
-		await endOfFrame()
+		await disabledLater()
 		unit.stats.set(CTR, 300)
 		expect(unit.stats.get(CTR)).toBe(300)
 	})
@@ -102,7 +102,7 @@ describe("Status", () => {
 		unit.stats.set(CTR, 100)
 		expect(unit.stats.get(CTR)).toBe(400)
 
-		await endOfFrame()
+		await disabledLater()
 		unit.stats.set(CTR, 500)
 		expect(unit.stats.get(CTR)).toBe(600)
 	})
@@ -145,7 +145,7 @@ describe("status effects", () => {
 		expect(counters()).toEqual([0, 210, 52, 50])
 	})
 
-	test("the blog's demo: effects that last 3 rounds, and the rest of their last frame", async () => {
+	test("the blog's demo: effects that last 3 rounds, and work until the next turn begins", async () => {
 		const { units, next, counters } = setup(100, 100, 100)
 		const [haste, slow, stop] = units as [Unit, Unit, Unit]
 		const effects: [Unit, StatusEffectType][] = [
@@ -157,7 +157,7 @@ describe("status effects", () => {
 			unit.status.add(effect, DurationStatusCondition).duration = 3
 
 		// The effects end as round 3 begins, but work through round 5, where the next turn begins
-		// (in the same frame).
+		// (in the same run of code).
 		expect(await next()).toBe(0)
 		expect(counters()).toEqual([5 * 200, 5 * 50, 0])
 		expect(units.map((u) => u.status.getEffect(StatusEffect))).toEqual([null, null, null])
@@ -194,7 +194,7 @@ describe("status effects", () => {
 
 		unit.equipment.unEquip(cursedItem)
 		expect(unit.status.getEffect(PoisonStatusEffect)).toBeNull()
-		await endOfFrame()
+		await disabledLater()
 		await turnOf(unit)
 		expect(unit.stats.get(HP)).toBe(95)
 	})

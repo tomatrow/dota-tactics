@@ -8,9 +8,8 @@ import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 /**
  * Port of `Controller/Battle States/BattleState.cs`, the base class of every battle state.
  *
- * Each Unity state is a module exporting a factory that takes the owner (`BattleController`) and
- * returns the state's `runic-svelte-fsm` handlers. Unity's virtual methods become actions; a
- * handler returns the name of the state to change to (Unity's `owner.ChangeState<T>()`), or
+ * Each state is a module exporting a factory that takes the owner (`BattleController`) and returns
+ * the state's `runic-svelte-fsm` handlers. A handler returns the name of the state to change to, or
  * nothing to stay. The base class's helpers are the functions below.
  */
 
@@ -31,35 +30,30 @@ export type BattleStateName =
 	| "SelectUnitState"
 
 /**
- * Unity's `BattleState` virtuals. The machine's action types come from the states that handle
- * them; this only keeps every state's handlers consistent (and their returns literal, which the
- * machine checks against its states).
+ * The actions a battle state may handle. The machine's action types come from the states that
+ * handle them; this only keeps every state's handlers consistent (and their returns literal,
+ * which the machine checks against its states).
  */
 export interface BattleActions {
 	/** `BattleController.start()`: leaves the initial `None` state. */
 	start(): BattleStateName | void
-	/** Unity's `OnMove`: a direction from the `InputController`. */
+	/** A direction from the `InputController`. */
 	move(direction: Point): BattleStateName | void
-	/** Unity's `OnFire`: the index of a released Fire button (0 confirm, 1 cancel). */
+	/** The index of a released Fire button (0 confirm, 1 cancel). */
 	fire(button: number): BattleStateName | void
-	/**
-	 * A state's own async work finished. Replaces `owner.ChangeState<T>()` calls at the end of
-	 * Unity coroutines.
-	 */
+	/** The state's own async work finished. */
 	done(): BattleStateName | void
 }
 
 /** What a battle state module's factory returns. Unhandled actions are no-ops. */
 export type BattleStateHandlers = Partial<BattleActions> & {
-	/** Unity's `Enter`. */
 	_enter?(event: TransitionEvent): void
-	/** Unity's `Exit`. */
 	_exit?(event: TransitionEvent): void
 }
 
 /**
- * Unity's `driver`: who drives the turn's actor (`null` before the first turn). `BattleState.Enter`
- * gets it; it doesn't change while a state is current.
+ * Who drives the turn's actor (`null` before the first turn). It doesn't change while a state is
+ * current.
  */
 export function driver(owner: BattleController): Driver | null {
 	return owner.turn.actor?.driver ?? null

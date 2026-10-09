@@ -83,7 +83,7 @@ export interface AbilityPrefabContext {
 	readonly random: Random
 }
 
-/** Unity's `Instantiate(prefab)`, parented to `unit`: a new ability for the unit. */
+/** A new ability for `unit`, built from `prefab`. */
 export function instantiateAbility(
 	prefab: AbilityPrefab,
 	unit: Unit,

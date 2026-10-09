@@ -1,6 +1,6 @@
 import type { SpriteName } from "#lib/assets/textures/ui/sprites.ts"
 
-/** Unity's `[Flags] enum States`. */
+/** The entry's states, as bit flags. */
 const States = {
 	None: 0,
 	Selected: 1 << 0,

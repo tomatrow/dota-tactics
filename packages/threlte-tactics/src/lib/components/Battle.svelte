@@ -23,11 +23,11 @@
 		audio,
 		onloadlevel
 	}: {
-		/** Unity's `UnityEngine.Random` (default: a new one). */
+		/** The game's random numbers (default: new ones). */
 		random?: Random
-		/** Unity's audio engine, to play the battle music on (default: no music). */
+		/** To play the battle music on (default: no music). */
 		audio?: BaseAudioContext
-		/** Unity's `Application.LoadLevel(0)`: start the battle over, from scratch. */
+		/** Start the battle over, from scratch. */
 		onloadlevel?: () => void
 	} = $props()
 
@@ -48,9 +48,9 @@
 
 <div>
 	<!--
-		The Unity project renders in Gamma color space with no tone mapping. Turning three's color
-		management off and writing the result untouched (linear output) reproduces that: colors and
-		textures are used as authored and lighting happens in gamma space.
+		The game's colors are authored for gamma-space lighting with no tone mapping. With three's
+		color management off and the result written untouched (linear output), colors and textures
+		are used as authored and lighting happens in gamma space.
 	-->
 	<Canvas
 		colorManagementEnabled={false}

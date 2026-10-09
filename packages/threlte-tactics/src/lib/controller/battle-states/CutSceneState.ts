@@ -19,7 +19,7 @@ export function cutSceneState(owner: BattleController) {
 				:	"IntroScene"
 			data = Resources.load(`Conversations/${name}`)
 			if (!data) throw new Error(`Missing Resources/Conversations/${name}`)
-			// Unity's `completeEvent`, which this state listens to while it is current.
+			// The cut scene ends when the conversation does.
 			void owner.conversationController.show(data).then(() => owner.machine.done())
 		},
 		_exit() {

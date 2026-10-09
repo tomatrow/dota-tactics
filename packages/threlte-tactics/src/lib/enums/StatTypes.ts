@@ -36,7 +36,7 @@ export const StatTypes = {
 	Count: 16
 } as const
 
-/** A stat (Unity's `Count` sentinel excluded). */
+/** A stat (`Count` excluded). */
 export type StatTypes = Exclude<(typeof StatTypes)[keyof typeof StatTypes], 16>
 
 export type StatTypeName = Exclude<keyof typeof StatTypes, "Count">
@@ -48,7 +48,7 @@ export type StatTypeNameOf<T extends StatTypes> = {
 
 const names = Object.keys(StatTypes) as StatTypeName[]
 
-/** Unity's `StatTypes.ToString()`. */
+/** A stat's name, e.g. `"HP"`. */
 export function statTypeName<T extends StatTypes>(type: T): StatTypeNameOf<T> {
 	return names[type] as StatTypeNameOf<T>
 }

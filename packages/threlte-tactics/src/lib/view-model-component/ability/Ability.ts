@@ -37,7 +37,7 @@ export interface AbilityContext {
 
 /**
  * Port of `View Model Component/Ability/Ability.cs`, and the GameObject it's on: an ability's
- * name, its components (typed fields, Unity's `GetComponent`) and its effects (child GameObjects),
+ * name, its components (typed fields) and its effects (its child GameObjects),
  * which it performs on targets if nothing prevents it (e.g. too little MP).
  */
 export class Ability {
@@ -81,7 +81,7 @@ export class Ability {
 		this.effects = effects
 		this.#notifications = notifications
 
-		// Unity's `Instantiate`: the components wake up once the hierarchy is complete.
+		// The components attach once the ability is complete: they find each other through it.
 		power?.attach(this)
 		magicCost?.attach(this)
 		for (const child of effects) child.effect.attach(this, child)

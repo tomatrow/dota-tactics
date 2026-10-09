@@ -1,4 +1,4 @@
-/** Port of `Enums/Directions.cs`: the way a unit faces. North is +Z (board +y). */
+/** Port of `Enums/Directions.cs`: the way a unit faces. North is board +y (world −Z). */
 export const Directions = {
 	North: 0,
 	East: 1,

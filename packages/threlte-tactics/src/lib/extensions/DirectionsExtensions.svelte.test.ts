@@ -20,7 +20,7 @@ describe("DirectionsExtensions", () => {
 		expect(getDirection(center, tile(-1, 0))).toBe(Directions.West)
 	})
 
-	test("getDirection of an offset prefers north/south... in Unity's order", () => {
+	test("getDirection of a diagonal offset prefers north, then east, south, west", () => {
 		expect(getDirection(Point.of(1, 1))).toBe(Directions.North)
 		expect(getDirection(Point.of(1, -1))).toBe(Directions.East)
 		expect(getDirection(Point.of(-1, -1))).toBe(Directions.South)

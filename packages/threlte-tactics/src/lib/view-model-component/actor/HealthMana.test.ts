@@ -55,7 +55,7 @@ describe("Health", () => {
 })
 
 describe("Mana", () => {
-	test("keeps MP between 0 and the max (PORT-FIX: Unity's max is the max HP)", () => {
+	test("keeps MP between 0 and the max MP", () => {
 		const { mana } = unit()
 		mana.mp -= 30
 		expect(mana.mp).toBe(0)
@@ -81,7 +81,7 @@ describe("Mana", () => {
 		expect(mana.mp).toBe(2)
 		mana.mp = 24
 		turnBegins()
-		// PORT-FIX: Unity clamps MP to the max HP, so it would be 26.
+		// Clamped to the max MP, not the max HP (`PORTING.md` › Divergences).
 		expect(mana.mp).toBe(25)
 		turnBegins()
 		expect(mana.mp).toBe(25)

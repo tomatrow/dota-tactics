@@ -169,13 +169,13 @@ describe("ComputerPlayer.evaluate", () => {
 		expect(evaluate(cpu)).toMatchObject({ ability: "First Aid", move: "(3,0)", fire: "(3,0)" })
 	})
 
-	test("an ability on itself, with nowhere to move: stays put (PORT-FIX: Unity throws)", () => {
+	test("an ability on itself, with nowhere to move: stays put", () => {
 		const { cpu, units, random } = setup(["0"], { recipe: "Enemy Warrior", at: [0, 0] })
 		only(units[0]!, "First Aid", Targets.Self, random)
 		expect(evaluate(cpu)).toMatchObject({ ability: "First Aid", move: "(0,0)", fire: "(0,0)" })
 	})
 
-	test("an angle score below zero still picks the option (PORT-FIX: Unity throws)", () => {
+	test("an angle score below zero still picks the option", () => {
 		// Earth Render's line from (1, 0) hits three heroes from the front (3 × 50) and two
 		// enemies from behind (2 × -90): a score of 1, and an angle score of -30.
 		const { cpu, units, random } = setup(

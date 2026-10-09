@@ -12,7 +12,7 @@ import { TurnOrderController } from "./TurnOrderController.ts"
 const { HP, MHP, CTR, SPD } = StatTypes
 
 /** Lets the current code finish: removed effects are disabled by then. */
-const endOfFrame = () => new Promise<void>((resolve) => queueMicrotask(resolve))
+const disabledLater = () => new Promise<void>((resolve) => queueMicrotask(resolve))
 
 /** Units with 100 max HP (and full), 100 speed, `Health`, and an auto status controller. */
 function setup(count = 1) {
@@ -55,7 +55,7 @@ describe("AutoStatusController and KnockOutStatusEffect", () => {
 		expect(ko(unit)).toBeNull()
 		expect(unit.status.getConditions(StatComparisonCondition)).toEqual([])
 		expect(unit.transform.scale).toEqual([0.75, 0.1, 0.75])
-		await endOfFrame()
+		await disabledLater()
 		expect(unit.transform.scale).toEqual([1, 1, 1])
 	})
 

@@ -1,6 +1,6 @@
 <!--
 	Keyboard input for the game: wires window key events into an `InputController` and runs its
-	per-frame `update` (Unity's `Update`) while a direction is held.
+	per-frame `update` while a direction is held.
 -->
 <script lang="ts">
 	import { onDestroy } from "svelte"
@@ -39,7 +39,7 @@
 		if (!input.keyDown(event.code)) return
 		event.preventDefault()
 		if (event.repeat) return
-		// Register a press right away instead of on the next frame, then keep polling.
+		// Register a press right away, then keep polling.
 		if (frame) input.update(now())
 		else tick()
 	}

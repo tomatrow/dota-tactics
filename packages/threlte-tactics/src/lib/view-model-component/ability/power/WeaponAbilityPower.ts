@@ -27,8 +27,7 @@ export class WeaponAbilityPower extends BaseAbilityPower {
 		let power = 0
 		const eq = this.owner.equipment
 		const item = eq.getItem(EquipSlots.Primary)
-		// PORT-FIX: Unity throws when nothing is equipped; the blog says it falls back to the job's
-		// attack (no ability in the game uses this power).
+		// No weapon: the job's attack (see `PORTING.md` › Divergences).
 		if (item === null) return power
 		const features = item.features.filter((f) => f instanceof StatModifierFeature)
 

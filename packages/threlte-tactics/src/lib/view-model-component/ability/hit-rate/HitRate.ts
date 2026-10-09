@@ -39,7 +39,7 @@ export abstract class HitRate {
 		return true
 	}
 
-	/** The unit whose ability this is (Unity: `GetComponentInParent<Unit>()`). */
+	/** The unit whose ability this is. */
 	protected readonly attacker: Unit
 	readonly #notifications: NotificationCenter
 	readonly #random: Random

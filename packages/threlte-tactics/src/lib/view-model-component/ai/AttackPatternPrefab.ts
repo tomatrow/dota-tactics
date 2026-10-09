@@ -24,7 +24,7 @@ export interface AttackPatternPrefab {
 	readonly children: readonly { readonly name: string; readonly picker: AbilityPickerPrefab }[]
 }
 
-/** Unity's `Instantiate(prefab)`, parented to `unit`: the unit's attack pattern. */
+/** The attack pattern for `unit`, built from `prefab`. */
 export function instantiateAttackPattern(
 	prefab: AttackPatternPrefab,
 	unit: Unit,

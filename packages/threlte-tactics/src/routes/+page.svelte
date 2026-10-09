@@ -3,19 +3,19 @@
 	import { Random } from "#lib/common/Random.ts"
 	import Battle from "#lib/components/Battle.svelte"
 
-	// Unity's `UnityEngine.Random`: one for the whole game, so `?seed=` replays it all.
+	// One for the whole game, so `?seed=` replays it all.
 	const seedParam = page.url.searchParams.get("seed")
 	const random = new Random(seedParam === null ? Random.randomSeed() : Number(seedParam))
 	console.info(`Battle seed: ${random.seed} (replay with ?seed=${random.seed})`)
 
-	// Unity's audio engine: one for the whole game. Browsers start it once the player has interacted
-	// with the page (the music waits until then).
+	// One for the whole game. Browsers start it once the player has interacted with the page (the
+	// music waits until then).
 	const audio = typeof window === "undefined" ? undefined : new AudioContext()
 	const unlock = () => {
 		if (audio?.state === "suspended") void audio.resume()
 	}
 
-	// Unity's `Application.LoadLevel(0)` reloads the battle scene: a new `<Battle>`.
+	// Starting the battle over makes a new `<Battle>`.
 	let level = $state(0)
 </script>
 

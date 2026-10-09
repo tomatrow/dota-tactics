@@ -12,7 +12,7 @@ export function performAbilityState(owner: BattleController) {
 	const { turn } = owner
 
 	async function animate(): Promise<void> {
-		// TODO play animations, etc
+		// No animations yet: the ability applies a frame later.
 		await nextFrame()
 		applyAbility()
 		owner.machine.done()

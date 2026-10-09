@@ -7,8 +7,8 @@ export interface AbilityCategory {
 }
 
 /**
- * Port of `View Model Component/Ability/AbilityCatalog.cs`: a unit's abilities, by category.
- * Unity's catalog is a GameObject whose children are the categories, and theirs the abilities.
+ * Port of `View Model Component/Ability/AbilityCatalog.cs`: a unit's abilities, by category
+ * (the catalog GameObject's children, and theirs).
  */
 export class AbilityCatalog {
 	readonly categories: readonly AbilityCategory[]

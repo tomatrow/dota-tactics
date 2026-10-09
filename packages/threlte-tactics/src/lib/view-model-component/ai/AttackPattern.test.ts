@@ -73,7 +73,7 @@ describe("AttackPattern", () => {
 		])
 	})
 
-	test("the enemy rogue's: Attack, Blind or Drain (PORT-FIX: Unity's lists itself, not Drain), Air Blast", () => {
+	test("the enemy rogue's: Attack, Blind or Drain, Air Blast", () => {
 		const { unit, random } = create("Enemy Rogue")
 		vi.spyOn(random, "int").mockReturnValueOnce(1).mockReturnValueOnce(0)
 		expect(picks(unit, 6)).toEqual([

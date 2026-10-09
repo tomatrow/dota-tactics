@@ -2,14 +2,14 @@ import type { Tween } from "svelte/motion"
 
 /**
  * Port of the parts of `Common/Animation` (`EasingControl`, `Tweener`, `Vector3Tweener`) that the
- * game uses, on top of `svelte/motion`'s `Tween`. Unity's `EasingEquations` match `svelte/easing`
+ * game uses, on top of `svelte/motion`'s `Tween`. `EasingEquations` are `svelte/easing`'s
  * (`EaseInOutQuad` → `quadInOut`, `EaseOutBack` → `backOut`…).
  */
 
 /** An easing curve: maps progress in [0, 1] to eased progress. */
 export type Easing = (t: number) => number
 
-/** Unity's `EasingControl.LoopType`. */
+/** How a looping tween plays again: from the start, or back the other way. */
 export type LoopType = "Repeat" | "PingPong"
 
 export interface LoopOptions {
@@ -24,8 +24,7 @@ export function reversed(easing: Easing): Easing {
 }
 
 /**
- * Tweens `target` from `start` to `end` like a Unity `Tweener`. The returned promise resolves when
- * the tween completes (Unity's `while (tweener != null) yield return null;`).
+ * Tweens `target` from `start` to `end`. The returned promise resolves when the tween completes.
  *
  * @param duration Seconds per play.
  */
@@ -38,8 +37,7 @@ export async function tween<T>(
 	{ loopCount = 0, loopType = "Repeat" }: LoopOptions = {}
 ): Promise<void> {
 	const ms = duration * 1000
-	// Snapping is synchronous, so a later snap or tween of the same target in this tick wins, as
-	// Unity's `Stop` would make it.
+	// Snapping is synchronous, so a later snap or tween of the same target in this tick wins.
 	void target.set(start, { duration: 0 })
 
 	let forward = true

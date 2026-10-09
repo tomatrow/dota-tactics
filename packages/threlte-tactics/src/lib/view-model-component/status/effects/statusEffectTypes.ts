@@ -6,7 +6,7 @@ import { SlowStatusEffect } from "./SlowStatusEffect.ts"
 import type { StatusEffectType } from "./StatusEffect.ts"
 import { StopStatusEffect } from "./StopStatusEffect.ts"
 
-/** The status effects by class name, for Unity's `Type.GetType(statusName)`. */
+/** The status effects by class name, which ability data refers to them by. */
 export const statusEffectTypes = {
 	BlindStatusEffect,
 	HasteStatusEffect,

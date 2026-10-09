@@ -31,7 +31,7 @@ export class Stats {
 
 	readonly #data: number[] = new Array<number>(StatTypes.Count).fill(0)
 	readonly #notifications: NotificationCenter
-	/** The unit whose stats these are (Unity: the GameObject they're on), if any. */
+	/** The unit whose stats these are, if any. */
 	readonly unit: Unit | null
 
 	constructor(notifications: NotificationCenter, unit: Unit | null = null) {
@@ -39,12 +39,12 @@ export class Stats {
 		this.unit = unit
 	}
 
-	/** Unity's indexer getter, `stats[type]`. */
+	/** The value of a stat. */
 	get(type: StatTypes): number {
 		return this.#data[type]!
 	}
 
-	/** Unity's indexer setter, `stats[type] = value`: a change that allows exceptions. */
+	/** Changes a stat, letting observers adjust or veto the change. */
 	set(type: StatTypes, value: number): void {
 		this.setValue(type, value, true)
 	}

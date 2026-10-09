@@ -31,7 +31,6 @@ export class InflictAbilityEffect extends BaseAbilityEffect {
 	}
 
 	protected onApply(target: Tile): number {
-		// Unity looks the class up by name (`Type.GetType`).
 		const statusType: StatusEffectType | null =
 			Object.hasOwn(statusEffectTypes, this.statusName) ?
 				statusEffectTypes[this.statusName as StatusEffectName]

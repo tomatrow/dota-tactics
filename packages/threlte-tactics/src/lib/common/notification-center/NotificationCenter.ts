@@ -1,7 +1,7 @@
 /**
- * Notification name → the arguments its handlers receive: `[sender, args]` (Unity's
- * `Action<object, object>`). Modules that post notifications add theirs by augmenting this
- * interface (`declare module "#lib/common/notification-center/NotificationCenter.ts"`).
+ * Notification name → the arguments its handlers receive: `[sender, args]`. Modules that post
+ * notifications add theirs by augmenting this interface
+ * (`declare module "#lib/common/notification-center/NotificationCenter.ts"`).
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- Filled in by augmentation.
 export interface Notifications {}
@@ -24,10 +24,8 @@ type SenderTable = Map<unknown, AnyHandler[]>
  * may add and remove observers while a notification is being posted; that takes effect from the
  * next post.
  *
- * Unity's singleton `NotificationCenter.instance` → one instance per battle
- * (`BattleController.notifications`), handed to the objects that post or observe.
- * `NotificationExtensions` (`this.PostNotification(…)`) → call the instance directly, passing the
- * sender.
+ * One instance per battle (`BattleController.notifications`), handed to the objects that post or
+ * observe. They call it directly, passing themselves as the sender.
  */
 export class NotificationCenter {
 	/**

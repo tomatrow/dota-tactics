@@ -19,7 +19,7 @@ const turnCost = 500
 const moveCost = 300
 const actionCost = 200
 
-/** What the turn order uses of its `BattleController` (Unity's `GetComponent<BattleController>()`). */
+/** What the turn order uses of its `BattleController`. */
 export type TurnOrderOwner = Pick<BattleController, "notifications" | "turn" | "units">
 
 /**
@@ -56,7 +56,7 @@ export class TurnOrderController {
 				s.set(StatTypes.CTR, s.get(StatTypes.CTR) + s.get(StatTypes.SPD))
 			}
 
-			// Stable, unlike .NET's sort: units with equal counters keep their order.
+			// Stable: units with equal counters keep their order.
 			units.sort((a, b) => this.#getCounter(a) - this.#getCounter(b))
 
 			for (let i = units.length - 1; i >= 0; --i) {

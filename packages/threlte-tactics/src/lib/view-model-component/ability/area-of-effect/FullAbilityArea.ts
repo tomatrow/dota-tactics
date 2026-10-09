@@ -6,7 +6,7 @@ import { AbilityArea } from "./AbilityArea.ts"
 
 /**
  * Port of `View Model Component/Ability/Area Of Effect/FullAbilityArea.cs`: every tile in the
- * ability's range. Unity's `GetComponent<AbilityRange>()` is the range it is created with.
+ * ability's range, which it is created with.
  */
 export class FullAbilityArea extends AbilityArea {
 	readonly #range: AbilityRange

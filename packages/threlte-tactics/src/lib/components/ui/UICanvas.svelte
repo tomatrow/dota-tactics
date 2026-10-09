@@ -1,6 +1,6 @@
 <!--
 	A UI layer laid out in reference pixels on a stage 480 pixels tall and as wide as the screen's
-	aspect ratio allows, then zoomed to fill the screen's height (the Unity project's 640×480
+	aspect ratio allows, then zoomed to fill the screen's height (the project's 640×480
 	`CanvasScaler`, matching height). Positions inside are CSS ones (top left origin, y down). Fills
 	the nearest positioned ancestor.
 -->
@@ -13,7 +13,7 @@
 		name,
 		children
 	}: {
-		/** The region's accessible name (the Unity prefab's). */
+		/** The region's accessible name (the prefab's). */
 		name: string
 		children: Snippet
 	} = $props()

@@ -11,7 +11,7 @@ import { Stats } from "./Stats.ts"
 const lvlDidChange = Stats.didChangeNotification(StatTypes.LVL)
 
 /**
- * A `Resources/Jobs/<name>.prefab`, which Unity's `JobParser` makes from `Settings/*.csv`: a `Job`
+ * A `Resources/Jobs/<name>.prefab`, which `JobParser.cs` makes from `Settings/*.csv`: a `Job`
  * plus the `StatModifierFeature`s it grants (EVD, RES, MOV, JMP). Generated into
  * `src/lib/resources/Jobs/` by `pnpm convert`.
  */
@@ -43,13 +43,12 @@ export class Job {
 	readonly name: string
 	baseStats: number[]
 	growStats: number[]
-	/** The job's features (Unity's `GetComponentsInChildren<Feature>()`). */
+	/** The features the job grants. */
 	readonly features: readonly Feature[]
 	#stats: Stats | null = null
 	readonly #notifications: NotificationCenter
 	readonly #random: Random
 
-	/** Unity's `Instantiate(jobPrefab)`. */
 	constructor(
 		prefab: JobPrefab,
 		{ notifications, random }: { notifications: NotificationCenter; random: Random }
@@ -67,7 +66,7 @@ export class Job {
 		this.#notifications.removeObserver(this.onLvlChangeNotification, lvlDidChange, this.#stats)
 	}
 
-	/** Starts working for `owner` (Unity: the unit the job is parented to). */
+	/** Starts working for `owner`, its unit. */
 	employ(owner: FeatureTarget): void {
 		this.#stats = owner.stats
 		this.#notifications.addObserver(this.onLvlChangeNotification, lvlDidChange, this.#stats)

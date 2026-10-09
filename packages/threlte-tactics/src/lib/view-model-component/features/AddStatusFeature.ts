@@ -10,7 +10,7 @@ import { Feature } from "./Feature.ts"
  * target for as long as the feature is active (a manual `StatusCondition`).
  */
 export abstract class AddStatusFeature<T extends StatusEffect> extends Feature {
-	/** Unity's type argument `T`. */
+	/** The status effect to add (`T`). */
 	protected abstract readonly effectType: StatusEffectType<T>
 
 	#statusCondition: StatusCondition | null = null

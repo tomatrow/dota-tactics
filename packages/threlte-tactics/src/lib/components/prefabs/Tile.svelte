@@ -1,6 +1,6 @@
 <!--
-	Port of `Prefabs/Tile.prefab`: a unit cube with the Dirt material. `color` tints it (Unity sets
-	the renderer's material `_Color` to highlight tiles).
+	Port of `Prefabs/Tile.prefab`: a unit cube with the Dirt material. `color` tints it, to highlight
+	tiles.
 -->
 <script lang="ts">
 	import { T, type Props } from "@threlte/core"

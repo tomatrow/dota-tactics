@@ -123,7 +123,7 @@ describe("UnitFactory", () => {
 		expect(error).toHaveBeenCalledWith("No Ability Catalog Recipe Found: Nothing")
 	})
 
-	test("a prefab that's missing throws (Unity goes on with an empty GameObject)", () => {
+	test("a prefab that's missing throws", () => {
 		const recipe = Resources.load("Unit Recipes/Kamau")!
 		expect(() => UnitFactory.create({ ...recipe, job: "Bard" }, 1, context())).toThrow(
 			"No Prefab for name: Jobs/Bard"

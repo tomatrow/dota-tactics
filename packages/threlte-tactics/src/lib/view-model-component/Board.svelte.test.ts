@@ -65,7 +65,7 @@ describe("Board", () => {
 	})
 
 	describe("search", () => {
-		test("returns the start, then tiles breadth first in Unity's direction order", () => {
+		test("returns the start, then tiles breadth first, each tile's north, south, east, west", () => {
 			const b = board("111", "111", "111")
 			const start = b.getTile(Point.of(1, 1))!
 			const found = b.search(start, () => true)

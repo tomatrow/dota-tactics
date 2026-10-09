@@ -3,7 +3,7 @@ import type { Feature, FeatureTarget } from "#lib/view-model-component/features/
 
 /** Port of `View Model Component/Item/Equippable.cs`: an item whose features last while worn. */
 export class Equippable {
-	/** The item's features (Unity's `GetComponentsInChildren<Feature>()`). */
+	/** The features the item grants while worn. */
 	readonly features: readonly Feature[]
 
 	/**
@@ -36,7 +36,7 @@ export class Equippable {
 		this.secondarySlots = secondarySlots
 	}
 
-	/** Activates the features on `owner` (Unity: the unit the item is parented to). */
+	/** Activates the features on `owner`, the unit wearing the item. */
 	onEquip(owner: FeatureTarget): void {
 		if (this.#isEquipped) return
 

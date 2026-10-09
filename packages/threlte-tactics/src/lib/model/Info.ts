@@ -1,6 +1,6 @@
 /**
- * Port of `Model/Info.cs`: a notification's arguments, which listeners may change. (Unity also
- * has one- and two-argument versions, which nothing uses.)
+ * Port of `Model/Info.cs` (the three-argument version, the one the game uses): a notification's
+ * arguments, which listeners may change.
  */
 export class Info<T0, T1, T2> {
 	arg0: T0

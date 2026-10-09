@@ -6,5 +6,5 @@ export const Alliances = {
 	Enemy: 1 << 2
 } as const
 
-/** One or more alliances (a bit mask, as Unity's enum is), e.g. `Alliances.Hero | Alliances.Neutral`. */
+/** One or more alliances (a bit mask), e.g. `Alliances.Hero | Alliances.Neutral`. */
 export type Alliances = number
