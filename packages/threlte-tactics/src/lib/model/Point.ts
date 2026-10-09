@@ -1,11 +1,9 @@
 const interned = new Map<string, Point>()
 
 /**
- * Port of `Model/Point.cs`: a board coordinate. `x` maps to world X and `y` to world Z.
- *
- * Unity's `Point` is a value-type struct. Here every point is interned (`Point.of` always returns
- * the same instance for the same coordinates), so `===` behaves like the struct's `==` and points
- * can key a `Map` directly.
+ * Port of `Model/Point.cs`: a board coordinate (see `Tile` for where it is in the world). Points
+ * are interned: `Point.of` always returns the same instance for the same coordinates, so `===`
+ * compares them and they can key a `Map`.
  */
 export class Point {
 	readonly x: number

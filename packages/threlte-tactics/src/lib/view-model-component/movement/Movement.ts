@@ -1,10 +1,9 @@
 import { quadInOut } from "svelte/easing"
-import { approximately } from "#lib/common/unity/mathf.ts"
-import type { Transform } from "#lib/common/unity/Transform.svelte.ts"
-import type { Vector3 } from "#lib/common/unity/vector3.ts"
+import { MathUtils } from "three"
+import type { Transform } from "#lib/common/Transform.svelte.ts"
 import type { Directions } from "#lib/enums/Directions.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
-import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import { toYaw } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Stats } from "../actor/Stats.ts"
 import type { Board } from "../Board.svelte.ts"
 import type { Tile } from "../Tile.svelte.ts"
@@ -51,17 +50,11 @@ export abstract class Movement {
 		for (let i = tiles.length - 1; i >= 0; --i) if (tiles[i]!.content !== null) tiles.splice(i, 1)
 	}
 
+	/** Turns the short way round to face `dir`. */
 	protected async turn(dir: Directions): Promise<void> {
-		let start: Vector3 = this.unit.transform.localEulerAngles
-		let end = toEuler(dir)
-
-		// When rotating between North and West, we must make an exception so it looks like the unit
-		// rotates the most efficient way (since 0 and 360 are treated the same)
-		if (approximately(start[1], 0) && approximately(end[1], 270)) start = [start[0], 360, start[2]]
-		else if (approximately(start[1], 270) && approximately(end[1], 0))
-			end = [start[0], 360, start[2]]
-
-		const t = this.unit.transform.rotateToLocal(end, 0.25, quadInOut, { start })
+		const start = this.unit.transform.yaw
+		const delta = MathUtils.euclideanModulo(toYaw(dir) - start + Math.PI, 2 * Math.PI) - Math.PI
+		const t = this.unit.transform.rotateTo(start + delta, 0.25, quadInOut)
 		this.unit.dir = dir
 		await t
 	}

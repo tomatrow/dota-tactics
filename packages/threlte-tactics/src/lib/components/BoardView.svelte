@@ -9,6 +9,6 @@
 
 <T.Group name="Board">
 	{#each board.tiles.values() as tile (tile)}
-		<Tile color={tile.color} position={tile.localPosition} scale={tile.localScale} />
+		<Tile color={tile.color} position={tile.position} scale={tile.scale} />
 	{/each}
 </T.Group>

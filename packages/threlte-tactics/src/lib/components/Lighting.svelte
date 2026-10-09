@@ -1,6 +1,6 @@
 <!--
-	The scene's lighting: the `Directional Light` from `Battle.unity` plus an approximation of the
-	ambient light Unity derives from its default skybox.
+	The scene's lighting: the `Directional Light` from `Battle.unity`, plus ambient light that
+	approximates what Unity derives from its default skybox.
 
 	Colors are raw gamma-space values (the canvas has color management off, like Unity's Gamma color
 	space). Intensities are multiplied by π because three's lights are physically based, while
@@ -8,14 +8,16 @@
 -->
 <script lang="ts">
 	import { T } from "@threlte/core"
-	import { Quaternion, Vector3 } from "three"
+	import { Euler, MathUtils, Vector3 } from "three"
 
-	/** The Directional Light's rotation in `Battle.unity` (Euler 50, -30, 0). */
-	const rotation = new Quaternion(0.40821794, -0.23456973, 0.109381676, 0.87542605)
-	/** Directional lights shine down their local +Z in Unity. */
-	const forward = new Vector3(0, 0, 1).applyQuaternion(rotation)
+	const { degToRad } = MathUtils
+
+	/** Where the sun shines: 50° downwards, towards the north-north-west. */
+	const direction = new Vector3(0, 0, -1).applyEuler(
+		new Euler(degToRad(-50), degToRad(30), 0, "YXZ")
+	)
 	/** three aims directional lights from their position at their target (the world origin). */
-	const position = forward.clone().multiplyScalar(-20).toArray()
+	const position = direction.clone().multiplyScalar(-20).toArray()
 
 	const shadowExtent = 15
 </script>
@@ -37,8 +39,8 @@
 />
 
 <!--
-	Ambient light, tuned against footage of the Unity build: bluish from above (the sky), brighter and
-	warmer from the sides (the horizon glow and the skybox's brown "ground").
+	Ambient light: bluish from above (the sky), brighter and warmer from the sides (the horizon glow
+	and the skybox's brown "ground").
 -->
 <T.AmbientLight color="#262626" intensity={Math.PI} />
 <T.HemisphereLight args={["#26457a", "#73664d", Math.PI]} />

@@ -49,14 +49,14 @@ describe("AutoStatusController and KnockOutStatusEffect", () => {
 	test("is squashed flat until revived (at the end of the frame, as Unity destroys it)", async () => {
 		const { unit, ko } = setup()
 		unit.stats.set(HP, 0)
-		expect(unit.transform.localScale).toEqual([0.75, 0.1, 0.75])
+		expect(unit.transform.scale).toEqual([0.75, 0.1, 0.75])
 
 		unit.stats.set(HP, 25)
 		expect(ko(unit)).toBeNull()
 		expect(unit.status.getConditions(StatComparisonCondition)).toEqual([])
-		expect(unit.transform.localScale).toEqual([0.75, 0.1, 0.75])
+		expect(unit.transform.scale).toEqual([0.75, 0.1, 0.75])
 		await endOfFrame()
-		expect(unit.transform.localScale).toEqual([1, 1, 1])
+		expect(unit.transform.scale).toEqual([1, 1, 1])
 	})
 
 	test("its counter can't grow, though it can drop", () => {

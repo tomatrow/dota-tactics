@@ -1,6 +1,5 @@
 <!-- Renders a `Unit`: its prefab model, posed by the unit's (and its jumper's) transform. -->
 <script lang="ts">
-	import { unityEuler } from "#lib/common/unity/euler.ts"
 	import type { Unit } from "#lib/view-model-component/Unit.svelte.ts"
 	import UnitModel from "./prefabs/UnitModel.svelte"
 
@@ -10,11 +9,11 @@
 <UnitModel
 	name={unit.name}
 	jumper={{
-		position: unit.jumper.localPosition,
-		rotation: unityEuler(...unit.jumper.localEulerAngles)
+		position: unit.jumper.position,
+		rotation: [0, unit.jumper.yaw, 0]
 	}}
 	model={unit.model}
-	position={unit.transform.localPosition}
-	rotation={unityEuler(...unit.transform.localEulerAngles)}
-	scale={unit.transform.localScale}
+	position={unit.transform.position}
+	rotation={[0, unit.transform.yaw, 0]}
+	scale={unit.transform.scale}
 />

@@ -20,7 +20,7 @@ export class KnockOutStatusEffect extends StatusEffect {
 	}
 
 	override onEnable(): void {
-		this.owner.transform.localScale = [0.75, 0.1, 0.75]
+		this.owner.transform.scale = [0.75, 0.1, 0.75]
 		this.notifications.addObserver(
 			this.#onTurnCheck,
 			TurnOrderController.turnCheckNotification,
@@ -34,7 +34,7 @@ export class KnockOutStatusEffect extends StatusEffect {
 	}
 
 	override onDisable(): void {
-		this.owner.transform.localScale = [1, 1, 1]
+		this.owner.transform.scale = [1, 1, 1]
 		this.notifications.removeObserver(
 			this.#onTurnCheck,
 			TurnOrderController.turnCheckNotification,

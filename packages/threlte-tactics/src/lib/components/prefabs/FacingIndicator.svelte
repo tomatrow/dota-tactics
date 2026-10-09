@@ -12,15 +12,15 @@
 		selected = null,
 		...props
 	}: Props<Group> & {
-		/** The highlighted sphere's direction (Unity: `FacingIndicator.SetDirection`). */
+		/** The highlighted sphere's direction. */
 		selected?: Directions | null
 	} = $props()
 
-	// By `Directions`: north (+z), east, south, west.
+	// By `Directions`: north (−Z), east (+X), south, west.
 	const spheres: [number, number, number][] = [
-		[0, 0.6, 0.3],
-		[0.3, 0.6, 0],
 		[0, 0.6, -0.3],
+		[0.3, 0.6, 0],
+		[0, 0.6, 0.3],
 		[-0.3, 0.6, 0]
 	]
 </script>

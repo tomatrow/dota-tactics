@@ -44,6 +44,8 @@ describe("UnitModel", () => {
 		const body = jumper?.children[0] as Mesh
 		expect((body.material as MeshStandardMaterial).color.getHexString()).toBe(bodyColor.slice(1))
 		expect(body.children).toHaveLength(2)
+		// The eyes are on the front, which faces north (−Z).
+		expect(body.children.every((eye) => eye.position.z < 0)).toBe(true)
 	})
 })
 
@@ -84,10 +86,11 @@ describe("TileSelectionIndicator", () => {
 		const [normal, selected] = [Materials.Default.color, Materials.Selection.color].map((c) =>
 			c.slice(1)
 		)
+		// North (−Z), east (+X), south, west.
 		expect(colors).toEqual([
-			[0, 0.3, normal],
-			[0.3, 0, selected],
 			[0, -0.3, normal],
+			[0.3, 0, selected],
+			[0, 0.3, normal],
 			[-0.3, 0, normal]
 		])
 	})

@@ -71,7 +71,7 @@ export function selectTile(owner: BattleController, p: Point): void {
 	if (owner.pos === p || !tile) return
 
 	owner.pos = p
-	owner.tileSelectionIndicator.localPosition = tile.center
+	owner.tileSelectionIndicator.position = tile.center
 }
 
 /** The unit on the tile at `p`, if any. */

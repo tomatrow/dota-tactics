@@ -2,8 +2,8 @@
 	Port of `Resources/Units/Hero.prefab` and `Resources/Units/Monster.prefab`, which only differ by
 	the body's material.
 
-	Hierarchy (as in Unity): root (placed on the board) → Jumper (animates the arc of a jump) →
-	body sphere → two eyes (so you can tell which way the unit faces).
+	Hierarchy: root (placed on the board) → Jumper (animates the arc of a jump) → body sphere → two
+	eyes on its front, −Z (so you can tell which way the unit faces).
 -->
 <script lang="ts" module>
 	import { Materials } from "#lib/materials/materials.ts"
@@ -28,8 +28,8 @@
 	} = $props()
 
 	const eyes: { name: string; position: [number, number, number] }[] = [
-		{ name: "Sphere", position: [0.17, 0.32, 0.3] },
-		{ name: "Sphere 1", position: [-0.17, 0.32, 0.3] }
+		{ name: "Sphere", position: [0.17, 0.32, -0.3] },
+		{ name: "Sphere 1", position: [-0.17, 0.32, -0.3] }
 	]
 </script>
 

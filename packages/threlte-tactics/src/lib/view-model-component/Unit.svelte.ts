@@ -1,8 +1,8 @@
 import type { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
-import { Transform } from "#lib/common/unity/Transform.svelte.ts"
+import { Transform } from "#lib/common/Transform.svelte.ts"
 import type { UnitModelName } from "#lib/components/prefabs/UnitModel.svelte"
 import { Directions } from "#lib/enums/Directions.ts"
-import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import { toYaw } from "#lib/extensions/DirectionsExtensions.ts"
 import type { Ability } from "./ability/Ability.ts"
 import type { AbilityCatalog } from "./ability/AbilityCatalog.ts"
 import type { AttackPattern } from "./ai/AttackPattern.ts"
@@ -21,7 +21,7 @@ import type { Tile } from "./Tile.svelte.ts"
 
 /**
  * Port of `View Model Component/Unit.cs`: a unit on the board. Holds the unit's other components
- * as typed fields (Unity's `GetComponent`).
+ * as typed fields.
  */
 export class Unit {
 	/** The GameObject's name. */
@@ -43,13 +43,13 @@ export class Unit {
 	health: Health | null = null
 	mana: Mana | null = null
 	undead: Undead | null = null
-	/** Unity's `GetComponentInChildren<Ability>()`: the unit's attack, its first child ability. */
+	/** The unit's attack. */
 	attack: Ability | null = null
-	/** Unity's `GetComponentInChildren<AbilityCatalog>()`. */
+	/** The unit's abilities, by category. */
 	abilityCatalog: AbilityCatalog | null = null
 	alliance: Alliance | null = null
 	driver: Driver | null = null
-	/** Unity's `GetComponentInChildren<AttackPattern>()`: a computer-driven unit's. */
+	/** How a computer-driven unit picks its abilities. */
 	attackPattern: AttackPattern | null = null
 
 	#tile: Tile | null = null
@@ -88,7 +88,7 @@ export class Unit {
 
 	/** Snaps the transform to the unit's tile and direction. */
 	match(): void {
-		this.transform.localPosition = this.#tile!.center
-		this.transform.localEulerAngles = toEuler(this.dir)
+		this.transform.position = this.#tile!.center
+		this.transform.yaw = toYaw(this.dir)
 	}
 }

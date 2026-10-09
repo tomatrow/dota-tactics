@@ -7,7 +7,6 @@
 	import { T, type Props } from "@threlte/core"
 	import type { ComponentProps } from "svelte"
 	import type { Group } from "three"
-	import { unityEuler } from "#lib/common/unity/euler.ts"
 	import { Materials } from "#lib/materials/materials.ts"
 	import FacingIndicator from "./FacingIndicator.svelte"
 
@@ -19,28 +18,20 @@
 		facingIndicator?: ComponentProps<typeof FacingIndicator>
 	} = $props()
 
-	const cubes: { position: [number, number, number]; rotationY: number }[] = [
-		{ position: [0.5, 0, 0.4], rotationY: 0 },
-		{ position: [0.4, 0, -0.5], rotationY: 90 },
-		{ position: [-0.5, 0, -0.4], rotationY: -180 },
-		{ position: [-0.4, 0, 0.5], rotationY: -90 },
-		{ position: [0.4, 0, 0.5], rotationY: 90 },
-		{ position: [0.5, 0, -0.4], rotationY: -180 },
-		{ position: [-0.4, 0, -0.5], rotationY: -90 },
-		{ position: [-0.5, 0, 0.4], rotationY: 0 }
-	]
+	type Vector3 = [number, number, number]
+
+	/** Two bars at each corner, one along X and one along Z, meeting near the corner. */
+	const bars: { position: Vector3; scale: Vector3 }[] = [-1, 1].flatMap((x) =>
+		[-1, 1].flatMap((z) => [
+			{ position: [0.4 * x, 0, 0.5 * z] as Vector3, scale: [0.3, 0.1, 0.1] as Vector3 },
+			{ position: [0.5 * x, 0, 0.4 * z] as Vector3, scale: [0.1, 0.1, 0.3] as Vector3 }
+		])
+	)
 </script>
 
 <T.Group name="Tile Selection Indicator" {...props}>
-	{#each cubes as cube, i (cube)}
-		<T.Mesh
-			name="Cube {i}"
-			castShadow
-			position={cube.position}
-			receiveShadow
-			rotation={unityEuler(0, cube.rotationY, 0)}
-			scale={[0.1, 0.1, 0.3]}
-		>
+	{#each bars as bar, i (bar)}
+		<T.Mesh name="Cube {i}" castShadow position={bar.position} receiveShadow scale={bar.scale}>
 			<T.BoxGeometry />
 			<T.MeshStandardMaterial {...Materials.Selection} />
 		</T.Mesh>

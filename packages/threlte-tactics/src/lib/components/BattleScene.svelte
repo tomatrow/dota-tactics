@@ -4,7 +4,6 @@
 -->
 <script lang="ts">
 	import { T } from "@threlte/core"
-	import UnityWorld from "#lib/common/unity/UnityWorld.svelte"
 	import { getBattleController } from "#lib/controller/BattleController.svelte.ts"
 	import BoardView from "./BoardView.svelte"
 	import CameraRig from "./CameraRig.svelte"
@@ -15,22 +14,20 @@
 	const battle = getBattleController()
 </script>
 
-<UnityWorld>
-	<Lighting />
-	<T.Group name="Battle Controller">
-		<CameraRig follow={battle.tileSelectionIndicator.localPosition} />
-		<BoardView board={battle.board} />
-		<TileSelectionIndicator
-			facingIndicator={{
-				visible: battle.facingIndicator.active,
-				selected: battle.facingIndicator.direction
-			}}
-			position={battle.tileSelectionIndicator.localPosition}
-		/>
-		<T.Group name="Units">
-			{#each battle.units as unit (unit)}
-				<UnitView {unit} />
-			{/each}
-		</T.Group>
+<Lighting />
+<T.Group name="Battle Controller">
+	<CameraRig follow={battle.tileSelectionIndicator.position} />
+	<BoardView board={battle.board} />
+	<TileSelectionIndicator
+		facingIndicator={{
+			visible: battle.facingIndicator.active,
+			selected: battle.facingIndicator.direction
+		}}
+		position={battle.tileSelectionIndicator.position}
+	/>
+	<T.Group name="Units">
+		{#each battle.units as unit (unit)}
+			<UnitView {unit} />
+		{/each}
 	</T.Group>
-</UnityWorld>
+</T.Group>

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest"
 import { NotificationCenter } from "#lib/common/notification-center/NotificationCenter.ts"
 import { Directions } from "#lib/enums/Directions.ts"
+import { toYaw } from "#lib/extensions/DirectionsExtensions.ts"
 import { StatTypes } from "#lib/enums/StatTypes.ts"
 import { Point } from "#lib/model/Point.ts"
 import { board, positions } from "#lib/testing/board.ts"
@@ -69,13 +70,12 @@ describe("traverse", () => {
 		expect(unit.tile).toBe(target)
 		expect(target.content).toBe(unit)
 		expect(b.getTile(Point.of(0, 0))!.content).toBeNull()
-		expect(unit.transform.localPosition).toEqual([1, 0.5, 1])
+		expect(unit.transform.position).toEqual([1, 0.5, -1])
 		// East, then north again.
 		expect(unit.dir).toBe(Directions.North)
-		expect(unit.transform.localEulerAngles).toEqual([0, 0, 0])
-		// Like Unity's `Jump`, `traverse` waits for the move, not the hop, which can land a frame
-		// later.
-		await expect.poll(() => unit.jumper.localPosition).toEqual([0, 0, 0])
+		expect(unit.transform.yaw).toBeCloseTo(toYaw(Directions.North))
+		// `traverse` waits for the move, not the hop, which can land a frame later.
+		await expect.poll(() => unit.jumper.position).toEqual([0, 0, 0])
 	})
 
 	test("teleporting shrinks away and grows back on the target", async () => {
@@ -86,9 +86,9 @@ describe("traverse", () => {
 
 		await movement.traverse(target)
 
-		expect(unit.transform.localPosition).toEqual([2, 0.25, 0])
-		expect(unit.transform.localScale).toEqual([1, 1, 1])
-		expect(unit.jumper.localEulerAngles).toEqual([0, 0, 0])
+		expect(unit.transform.position).toEqual([2, 0.25, -0])
+		expect(unit.transform.scale).toEqual([1, 1, 1])
+		expect(unit.jumper.yaw).toBe(0)
 	})
 })
 
@@ -100,11 +100,11 @@ test("turning from north to west goes the short way round", async () => {
 		Directions.West
 	)
 	expect(unit.dir).toBe(Directions.West)
-	const sample = setInterval(() => angles.push(unit.transform.localEulerAngles[1]), 20)
+	const sample = setInterval(() => angles.push(unit.transform.yaw), 20)
 	await turning
 	clearInterval(sample)
 
-	// 360 → 270 (counter-clockwise), never through 90 or 180.
-	expect(angles.every((y) => y === 0 || y >= 270)).toBe(true)
-	expect(unit.transform.localEulerAngles[1]).toBe(270)
+	// A quarter turn left (counter-clockwise from above), never round through east or south.
+	expect(angles.every((yaw) => yaw >= 0 && yaw <= Math.PI / 2)).toBe(true)
+	expect(unit.transform.yaw).toBeCloseTo(toYaw(Directions.West))
 })

@@ -13,9 +13,9 @@ describe("Tile", () => {
 
 		expect(tile.pos).toBe(Point.of(2, 5))
 		expect(tile.height).toBe(3)
-		expect(tile.center).toEqual([2, 0.75, 5])
-		expect(tile.localPosition).toEqual([2, 0.375, 5])
-		expect(tile.localScale).toEqual([1, 0.75, 1])
+		expect(tile.center).toEqual([2, 0.75, -5])
+		expect(tile.position).toEqual([2, 0.375, -5])
+		expect(tile.scale).toEqual([1, 0.75, 1])
 	})
 
 	test("grows and shrinks a step at a time", () => {

@@ -115,16 +115,17 @@ Deferred: Board Creator (`/dev/board-creator`). Dropped: the Anchored UI demo sc
   (`#lib/common/unity/time.ts`). Per-frame behaviour → Threlte `useTask` (with
   `autoInvalidate: false` + `invalidate()` when something moved, so on-demand rendering idles).
 - **Transforms** that game code moves (the tile selection indicator, units and their `Jumper`)
-  are `Transform` instances (`#lib/common/unity/Transform.svelte.ts`); views render them.
-  Assigning `localPosition`… snaps; `moveTo`/`moveToLocal`/`rotateToLocal`/`scaleTo` (Unity's
-  `TransformAnimationExtensions`) tween and return a promise that resolves on completion. Don't
+  are `Transform` instances (`#lib/common/Transform.svelte.ts`): `position`, `yaw` (radians about
+  Y; nothing else rotates) and `scale`, in world space; views render them. Assigning snaps;
+  `moveTo`/`rotateTo`/`scaleTo` tween and return a promise that resolves on completion. Don't
   overlap tweens on the same property: an interrupted `Tween`'s promise never resolves.
 - **Unused parameters** kept for Unity's signatures (base virtuals) get a `_` prefix.
 - **Randomness**: one injectable seeded PRNG for the whole game (it outlives a battle, like
   Unity's); `?seed=` overrides.
-- **Coordinates**: Unity is left-handed. Everything from Unity renders inside `<UnityWorld>` (a
-  Z-mirroring group), so Unity positions/rotations/meshes are used verbatim. Unity Euler degrees
-  → `unityEuler()`. Cameras inside it need their own `scale={[1, 1, -1]}`.
+- **Coordinates**: three's (right-handed, Y up). Board point `(x, y)` at height `h` is world
+  `(x, h × 0.25, −y)`: North is −Z, East +X. `Tile` is where board space becomes world space
+  (`center`, `position`); level data stays in board space. Unity's left-handed values convert once,
+  by hand: negate Z positions and Y rotations (a facing `d` is `toYaw(d)`).
 - **Enums**: `as const` numeric objects + derived union types. No TS `enum`.
 - **Layout**: mirror Unity folders in kebab-case under `src/lib/` (`controller/battle-states/`,
   `view-model-component/ability/range/`, `common/notification-center/`…); files keep Unity

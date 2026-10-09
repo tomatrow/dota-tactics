@@ -46,7 +46,7 @@ export class WalkMovement extends Movement {
 	async #jump(to: Tile): Promise<void> {
 		const duration = 0.5
 		const tweener = this.unit.transform.moveTo(to.center, duration, linear)
-		void this.jumper.moveToLocal([0, Tile.stepHeight * 2, 0], duration / 2, quadOut, {
+		void this.jumper.moveTo([0, Tile.stepHeight * 2, 0], duration / 2, quadOut, {
 			loopCount: 1,
 			loopType: "PingPong"
 		})

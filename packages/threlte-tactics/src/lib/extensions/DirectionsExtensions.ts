@@ -1,4 +1,3 @@
-import type { Vector3 } from "#lib/common/unity/vector3.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Point } from "#lib/model/Point.ts"
 import type { Tile } from "#lib/view-model-component/Tile.svelte.ts"
@@ -25,9 +24,9 @@ export function getDirection(...args: [t1: Tile, t2: Tile] | [p: Point]): Direct
 	return Directions.West
 }
 
-/** The `localEulerAngles` of something facing `d`. */
-export function toEuler(d: Directions): Vector3 {
-	return [0, d * 90, 0]
+/** The yaw (radians about Y, in [0, 2π)) of something facing `d`. North is −Z, East is +X. */
+export function toYaw(d: Directions): number {
+	return ((4 - d) % 4) * (Math.PI / 2)
 }
 
 /** The board offset of one step towards `dir`. */

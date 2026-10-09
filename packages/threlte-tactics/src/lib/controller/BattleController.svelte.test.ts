@@ -5,7 +5,7 @@ import { Point } from "#lib/model/Point.ts"
 import { Alliances } from "#lib/enums/Alliances.ts"
 import { Directions } from "#lib/enums/Directions.ts"
 import { Targets } from "#lib/enums/Targets.ts"
-import { toEuler } from "#lib/extensions/DirectionsExtensions.ts"
+import { toYaw } from "#lib/extensions/DirectionsExtensions.ts"
 import Attack from "#lib/resources/Abilities/Common/Attack.ts"
 import Level_0 from "#lib/resources/Levels/Level_0.ts"
 import { spawn } from "#lib/testing/spawn.ts"
@@ -102,7 +102,7 @@ describe("InitBattleState", () => {
 		expect(battle.board.tiles.size).toBe(140)
 		const { tile } = battle.units[0]!
 		expect(battle.pos).toBe(tile!.pos)
-		expect(battle.tileSelectionIndicator.localPosition).toEqual(tile!.center)
+		expect(battle.tileSelectionIndicator.position).toEqual(tile!.center)
 
 		await advance(0.1)
 		expect(battle.machine.current).toBe("CutSceneState")
@@ -124,8 +124,8 @@ describe("InitBattleState", () => {
 		for (const unit of battle.units) {
 			expect([9, 10, 11]).toContain(unit.stats.get(StatTypes.LVL))
 			expect(unit.tile?.content).toBe(unit)
-			expect(unit.transform.localPosition).toEqual(unit.tile!.center)
-			expect(unit.transform.localEulerAngles).toEqual(toEuler(unit.dir))
+			expect(unit.transform.position).toEqual(unit.tile!.center)
+			expect(unit.transform.yaw).toBe(toYaw(unit.dir))
 		}
 		expect(new Set(battle.units.map((u) => u.tile)).size).toBe(6)
 	})
@@ -249,7 +249,7 @@ describe("MoveTargetState and MoveSequenceState", () => {
 		await advance(1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(walker.tile?.pos).toBe(Point.of(1, 2))
-		expect(walker.transform.localPosition).toEqual([1, 0.5, 2])
+		expect(walker.transform.position).toEqual([1, 0.5, -2])
 		expect(battle.turn.hasUnitMoved).toBe(true)
 		expect(menu(battle)).toMatchObject({
 			entries: ["(Move)", "Action", "Wait"],
@@ -276,7 +276,7 @@ describe("MoveTargetState and MoveSequenceState", () => {
 		battle.fire(1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(walker.tile?.pos).toBe(Point.of(1, 1))
-		expect(walker.transform.localPosition).toEqual([1, 0.5, 1])
+		expect(walker.transform.position).toEqual([1, 0.5, -1])
 		expect(battle.pos).toBe(Point.of(1, 1))
 		expect(battle.turn.hasUnitMoved).toBe(false)
 		expect(menu(battle)).toMatchObject({ entries: ["Move", "Action", "Wait"], selected: "Action" })
@@ -514,7 +514,7 @@ describe("AbilityTargetState", () => {
 
 		battle.move(Point.of(-1, 0))
 		expect(rogue.dir).toBe(Directions.West)
-		expect(rogue.transform.localEulerAngles).toEqual([0, 270, 0])
+		expect(rogue.transform.yaw).toBe(toYaw(Directions.West))
 		expect(highlighted(battle)).toEqual(["(0,1)"])
 
 		// Confirms the direction: the area is the whole range.
@@ -672,12 +672,12 @@ describe("PerformAbilityState and EndFacingState", () => {
 		expect(battle.turn).toMatchObject({ hasUnitMoved: true, hasUnitActed: true, lockMove: true })
 		battle.move(Point.of(1, 0))
 		expect(rogue.dir).toBe(Directions.East)
-		expect(rogue.transform.localEulerAngles).toEqual([0, 90, 0])
+		expect(rogue.transform.yaw).toBe(toYaw(Directions.East))
 		// Cancelling turns back.
 		battle.fire(1)
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(rogue.dir).toBe(Directions.North)
-		expect(rogue.transform.localEulerAngles).toEqual([0, 0, 0])
+		expect(rogue.transform.yaw).toBe(toYaw(Directions.North))
 		expect(menu(battle)).toMatchObject({
 			entries: ["(Move)", "(Action)", "Wait"],
 			selected: "Wait"
@@ -704,7 +704,7 @@ describe("PerformAbilityState and EndFacingState", () => {
 		expect(battle.machine.current).toBe("SelectUnitState")
 		expect(battle.facingIndicator.active).toBe(false)
 		expect(rogue.dir).toBe(Directions.South)
-		expect(rogue.transform.localEulerAngles).toEqual([0, 180, 0])
+		expect(rogue.transform.yaw).toBe(toYaw(Directions.South))
 	})
 })
 
@@ -752,7 +752,7 @@ describe("knock outs and victory conditions", () => {
 
 		expect(rogue.stats.get(StatTypes.HP)).toBe(0)
 		expect(rogue.status.getEffect(KnockOutStatusEffect)).not.toBeNull()
-		expect(rogue.transform.localScale).toEqual([0.75, 0.1, 0.75])
+		expect(rogue.transform.scale).toEqual([0.75, 0.1, 0.75])
 		expect(battle.machine.current).toBe("CommandSelectionState")
 		expect(battle.turn.actor).not.toBe(rogue)
 	})
