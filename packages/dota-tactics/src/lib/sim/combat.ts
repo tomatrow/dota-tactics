@@ -36,3 +36,13 @@ export function physicalDamage(attacker: UnitStats, target: UnitStats, power = 1
 	const floor = Math.ceil((atk * TUNING.minDamage) / 100)
 	return Math.max(floor, Math.floor(atk - target.def / 2))
 }
+
+/**
+ * Magic damage (DESIGN.md §12): power × MATK/50 − RES/2, at least `minDamage`% of power × MATK/50,
+ * in whole points. Spells take no multipliers: they never hit structures.
+ */
+export function magicDamage(caster: UnitStats, target: UnitStats, power: number): number {
+	const base = (power * caster.matk) / 50
+	const floor = Math.ceil((base * TUNING.minDamage) / 100)
+	return Math.max(floor, Math.floor(base - target.res / 2))
+}

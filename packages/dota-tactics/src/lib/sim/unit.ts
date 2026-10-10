@@ -1,5 +1,6 @@
 import type { Ability } from "#lib/content/abilities.ts"
 import type { Job } from "#lib/content/heroes.ts"
+import type { StatusId } from "#lib/content/statuses.ts"
 import type { Team, UnitStats } from "#lib/content/units.ts"
 import type { Facing } from "./grid.ts"
 import type { LaneField } from "./lane-field.ts"
@@ -25,6 +26,24 @@ export interface Step {
 	progress: number
 }
 
+/** What an ability is aimed at. */
+export type Aim =
+	| { readonly kind: "self" }
+	/** Followed until the ability is used. */
+	| { readonly kind: "unit"; readonly unit: Unit }
+	| { readonly kind: "tile"; readonly col: number; readonly row: number }
+
+/** A charged ability on its way (DESIGN.md §3): the caster stands until it lands. */
+export interface Casting {
+	readonly ability: Ability
+	/** The tile it lands on, fixed when the cast started. */
+	readonly col: number
+	readonly row: number
+	/** The tick the cast started, and the tick it lands. */
+	readonly from: number
+	readonly lands: number
+}
+
 /** What a hero is doing, as its player last ordered it (DESIGN.md §3, §11). */
 export type Order =
 	| { readonly type: "idle" }
@@ -37,8 +56,7 @@ export type Order =
 	| {
 			readonly type: "ability"
 			readonly ability: Ability
-			/** Null for an ability used on the caster itself. */
-			readonly target: Unit | null
+			readonly aim: Aim
 			readonly then: Order
 	  }
 
@@ -106,8 +124,12 @@ export class Unit {
 	/** The tile index the unit last stepped off, so a sidestep doesn't go straight back. */
 	previous = -1
 	alive = true
-	/** The tick of its last attack; -1 before the first. */
+	/** The tick of its last attack or spell; -1 before the first. */
 	lastAttack = -1
+	/** A charged ability it's casting; null when none. */
+	casting: Casting | null = null
+	/** The tick each status wears off: it has the status while the tick is earlier. */
+	statuses: Record<StatusId, number> = { slow: 0, chill: 0 }
 
 	constructor(id: number, init: UnitInit) {
 		this.id = id

@@ -8,6 +8,7 @@ import {
 	run,
 	testWorld,
 	trace,
+	until,
 	waitingLane,
 	type Logged
 } from "#lib/testing/world.ts"
@@ -43,17 +44,6 @@ function setup(
 		seed
 	)
 	return { w, hero: w.heroes[0] }
-}
-
-/**
- * Steps at least once (so commands apply), then until `done` holds, at most `limit` ticks;
- * returns the events on the way.
- */
-function until(w: World, done: () => boolean, limit = 2000): Logged[] {
-	const log: Logged[] = [...run(w, 1)]
-	for (let i = 1; i < limit && !done(); i++) log.push(...run(w, 1))
-	if (!done()) throw new Error("ran out of ticks")
-	return log
 }
 
 const by = (unit: Unit, log: readonly Logged[]) => attacks(log).filter((a) => a.attacker === unit)

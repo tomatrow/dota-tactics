@@ -1,14 +1,15 @@
 <!--
 	A lane creep: a team-coloured body by kind (melee capsule, floating ranged sprite, siege box)
 	with a nose showing its facing, a blob shadow, its bars, a lunge when it strikes in melee, a
-	flash when it's hit, and a ring when it's selected or under the pointer.
+	flash when it's hit, ice blue while it's chilled, and a ring when it's selected or under the
+	pointer.
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core"
 	import type { Group, MeshStandardMaterial } from "three"
 	import { TEAM_COLOURS } from "dota-tactics-grid/scene/palette.ts"
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
-	import { facingYaw, lunge } from "#lib/game/units.ts"
+	import { facingYaw, lunge, tintBody } from "#lib/game/units.ts"
 	import { TICK_RATE } from "#lib/sim/constants.ts"
 	import type { Unit } from "#lib/sim/unit.ts"
 	import Bars from "./Bars.svelte"
@@ -31,7 +32,7 @@
 		group.rotation.y = facingYaw(unit.facing)
 		const time = game.time
 		body.position.z = melee && unit.lastAttack >= 0 ? -lunge(time - unit.lastAttack / TICK_RATE) : 0
-		if (material) material.emissiveIntensity = game.flashing(unit) ? 0.9 : 0
+		if (material) tintBody(material, game.flashing(unit), game.world.has(unit, "chill"))
 	})
 </script>
 

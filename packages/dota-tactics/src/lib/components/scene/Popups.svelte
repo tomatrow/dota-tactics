@@ -1,6 +1,7 @@
 <!--
-	Dota's last-hit feedback over creeps the hero killed: the gold earned, or "!" for a deny. They
-	rise and fade, under the HUD's windows.
+	Text over units, rising and fading under the HUD's windows: Dota's last-hit feedback (the gold
+	earned, or "!" for a deny), FFT's damage numbers and "Miss" for blows the player's hero deals or
+	takes, and statuses taking hold.
 -->
 <script lang="ts">
 	import { HTML } from "@threlte/extras"
@@ -35,6 +36,27 @@
 	.deny {
 		color: #f2f2f2;
 		font-size: 22px;
+	}
+	.dealt,
+	.taken,
+	.miss,
+	.status {
+		font-family: var(--mono);
+		font-size: 15px;
+	}
+	.dealt {
+		color: #f2f2f2;
+	}
+	.taken {
+		color: #ff6a5a;
+	}
+	.miss {
+		color: #b8bcc8;
+		font-style: italic;
+	}
+	.status {
+		color: #9fd8ff;
+		font-family: var(--display);
 	}
 	@keyframes rise {
 		from {

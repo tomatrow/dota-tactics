@@ -1,3 +1,4 @@
+import type { MeshStandardMaterial } from "three"
 import type { UnitStats } from "#lib/content/units.ts"
 import { Facing } from "#lib/sim/grid.ts"
 import type { Vec3 } from "./camera.ts"
@@ -66,4 +67,18 @@ export const pickRadius = (stats: UnitStats): number =>
 export function turnToward(from: number, to: number, t: number): number {
 	const turn = ((((to - from + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI
 	return from + turn * t
+}
+
+/** The glow of a body that's been hit, and of one that's chilled. */
+const FLASH_GLOW = { colour: 0xffffff, intensity: 0.9 }
+const CHILL_GLOW = { colour: 0x6cc4ff, intensity: 0.5 }
+
+/** Lights a unit's body (a material with emissive) white while a hit flashes, else ice blue while chilled. */
+export function tintBody(material: MeshStandardMaterial, flashing: boolean, chilled: boolean) {
+	const glow =
+		flashing ? FLASH_GLOW
+		: chilled ? CHILL_GLOW
+		: null
+	material.emissiveIntensity = glow?.intensity ?? 0
+	if (glow) material.emissive.setHex(glow.colour)
 }

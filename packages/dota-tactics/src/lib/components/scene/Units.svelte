@@ -1,6 +1,6 @@
 <!--
 	Everything the simulation has on the board: heroes, creeps, Sentinels' bars, attacks in flight,
-	order overlays and last-hit pop-ups.
+	spells landing, order and spell overlays, and pop-ups.
 -->
 <script lang="ts">
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
@@ -10,6 +10,7 @@
 	import Overlays from "./Overlays.svelte"
 	import Popups from "./Popups.svelte"
 	import SentinelView from "./SentinelView.svelte"
+	import SpellEffects from "./SpellEffects.svelte"
 
 	const game = getGameState()
 </script>
@@ -24,5 +25,6 @@
 	{/if}
 {/each}
 <Effects />
+<SpellEffects />
 <Overlays />
 <Popups />

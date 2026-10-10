@@ -476,8 +476,8 @@ Each is playable or testable on its own.
    bolts, lunges, hit flashes; click to select, the clock with speeds 0–8×.
 3. **One hero.** ✅ Warrior: click to move, attack orders, the gauge (charges only standing),
    facing, First Aid, Body Slam, gold on last hits, denies, death and respawn. Details below.
-4. **Black Mage.** MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
-   Rend Speed + Slow. Facing evasion, uphill miss.
+4. **Black Mage.** ✅ MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
+   Rend Speed + Slow. Facing evasion, uphill miss. Details below.
 5. **Opponent.** Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when it
    has MP, retreats at low HP. Respawn at the Clan Hall. Win on the enemy T1 mid.
 6. **Tuning.** Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
@@ -587,6 +587,64 @@ unloaded; milestone 2 measured 36 under load). Nobody has played it yet: the two
 are still open. One for the playtest: an attack-move that reaches its tile ends, and the idle
 hero then stands by the fight without joining it (idle heroes never pick targets, §3).
 
+### Milestone 4: Black Mage
+
+You can play either hero: `?job=blackMage`, or the "Play as" links in the controls window. The
+other side still has no hero (milestone 5). Built:
+
+- **Magic.** `UnitStats` gains MATK and RES (Warrior 20 / 14, Black Mage 60 / 32, creeps and
+  Sentinels 0). A spell does power × MATK/50 − RES/2 (at least 10%) to every enemy in its area
+  and never misses: facing and height only touch weapon blows (§12).
+- **Abilities as data** gain a target (self, enemy or tile), an area (Manhattan tiles round the
+  aimed tile) and a charge time. A tile ability can be aimed at an enemy instead: it follows the
+  enemy and lands where the enemy stands when it's cast. Commands: `ability` (on the caster or a
+  unit) and `abilityAt` (a tile), Dota's three kinds of cast.
+- **Fire** 8 MP, reach 10, area 1, power 150. **Blizzard** 8 MP, reach 10, one enemy, power 110
+  and Chill. **Fira** 16 MP, reach 10, area 3, power 250, 2 s charge (§13).
+- **Charged spells are committed**, as in FFT. The action (gauge and MP) is spent when the cast
+  starts and the tile is fixed then; the caster stands until it lands, and orders given
+  meanwhile wait for it. Only death stops it (Stun, when there is one). The gauge fills while
+  the caster stands, so the charge costs no tempo: it costs 2 s of standing still, and gives the
+  enemy 2 s of warning. A unit counts as on the tile it's stepping onto once it's half way.
+- **Statuses** (`content/statuses.ts`): Slow, speed −6, from Rend Speed; Chill, walk −40%, from
+  Blizzard. Inflicting one again restarts its time; structures are immune.
+- **Rend Speed** is a weapon blow that does no damage: it rolls to hit like an attack (facing,
+  uphill) and slows on a hit, for 15 s.
+- **After an ability on an enemy**, a weapon technique (Body Slam, Rend Speed) goes on attacking
+  it, as in milestone 3; a spell goes back to what the hero was doing. Otherwise a mage that
+  cast Fire from 10 tiles walked in to club with its rod.
+- **Facing and the uphill miss** were built with the creeps (milestone 2) and are now tested in
+  the world too: a blow takes the side it comes from, and blows uphill land 70% against 95%.
+
+Chosen here, to confirm in play (§14):
+
+- **Spells hurt only enemies.** FFTA's areas hit everyone in them, but in a lane your own creeps
+  are always mixed in with the enemy's: Fira would cost your wave as much as theirs, and Fire
+  would deny. Dota's spells hit enemies only.
+- **Spells don't touch structures**, as in Dota: Blizzard can't be aimed at a Sentinel, and Fire
+  or Fira doesn't hurt one in its area. Body Slam can. A mage pushes by killing creeps, not by
+  burning towers.
+
+View: the Nu Mou Black Mage (a robe in its team's colour, long ears, a straw hat, glowing eyes,
+and the Firewheel Rod, whose orb glows while it charges). While aiming: the reach as blue tiles,
+and the area under the pointer in orange. While any hero charges a spell, its area pulses red
+for everyone and an orange cast bar fills under its bars. Flames on every tile of Fire and Fira;
+ice falling for Blizzard. Chilled units glow ice blue; a slowed unit's CT bar turns purple.
+Damage numbers and "Miss" pop up over blows the player's hero deals or takes, and a status's
+name when it takes hold. The hero window shows statuses with their time left and "Casting Fira:
+1.1 s"; the unit window shows RES, and speed and walk as the unit's statuses leave them.
+
+**Measured.** A Fira into a wave fighting in the river killed 4 creeps (4 last hits, 171 gold)
+and hurt the rest; a Fire usually catches 2–3. Fire costs 8 of the 10 MP an action gives, so
+from the second action the mage can cast Fire every action, and it clears a wave far faster
+than the Warrior. With no enemy hero to punish it yet, that's the question for the playtest; the
+levers are Fire's cost (at 12 it banks nothing) and its power. 60 fps at retina with AO on
+through a Fira landing. A few creeps dying in one frame used to cost a 50 ms frame: Threlte
+mounts the scene's components inside the `<canvas>` element, where Chrome makes removing their
+~15,000 comment anchors slow, so the game mounts them beside it (`GameCanvas.svelte`). The
+spell effects compile their shaders as the board loads: on the first spell it took a 100 ms
+frame (measured under load; the rest of these numbers are on an idle machine).
+
 Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
 is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
 gameplay zoom AO's radius spans many pixels, so the game renders it at a quarter resolution
@@ -606,10 +664,12 @@ Kept deliberately simple; the prototype is for feel, not balance.
   one tile. Proposal: Jump ≥ 3 (Dragoon) or flight (Gria) can cross one-level cliffs the
   walkable layer marks impassable — a mobility tool Dota reserves for Blink.
 - **Status**: FFTA set. Slow / Haste modify gauge fill. Stop freezes it. Stun resets it to 0 and
-  interrupts a charge. Chill (new, Dota-ism) reduces walk speed.
+  interrupts a charge. Chill (new, Dota-ism) reduces walk speed. Built so far: Slow (speed −6)
+  and Chill (walk −40%), in `content/statuses.ts`.
 - **Charge-time spells**: FFTA spells are instant; FFT's are charged. We use a hybrid: tier 1
   instant, tier 2 charged 2s, tier 3 charged 4s. Charged spells are aimed at tiles, visible,
-  interruptible. This is where Dota's channel/dodge play comes from.
+  interruptible. This is where Dota's channel/dodge play comes from. The caster can't walk or
+  act until the spell lands (§11, milestone 4).
 - **Walking pauses the gauge, it does not reset it.** A 1-tile sidestep costs 0.2s; a 10-tile
   reposition costs ~2s, i.e. 40% of a turn. Tempo cost is proportional to distance.
 
@@ -646,8 +706,9 @@ innate count is a balance knob per job.
 Abilities (Battle Tech):
 
 - **First Aid** (mastered) — self heal 25% HP. 0 MP. The lane salve.
-- **Rend Speed** (mastered, A2's Speedbreak) — 10 MP, reach 2, −6 speed on target for 15s. The
-  anti-mage tool: the target's gauge fills ~30% slower.
+- **Rend Speed** (mastered, A2's Speedbreak) — 10 MP, reach 2, Slow (−6 speed) on target for
+  15s. A blow that rolls to hit and does no damage. The anti-mage tool: the target's gauge
+  fills ~30% slower.
 - **Body Slam** (taught by Shortsword, 100 AP) — 20 MP, reach 2, ATK × 1.6 (288 − DEF/2),
   caster takes 10% of damage dealt. The kill button. Its cost is more than an action's 10 MP, so
   it can't be used every action: from empty, two actions bank it, then every other action.
@@ -682,6 +743,8 @@ Abilities (Black Magic):
 - **Fira** (taught by Firewheel Rod, 150 AP) — 16 MP, range 10, **2s charge**, radius 3,
   power 250.
 
+Spells hurt enemies only, and never structures (§11, milestone 4).
+
 Reaction: none at start. Support: none. Starting gear: Firewheel Rod, Hempen Robe.
 
 MP curve: action 1 must be a rod attack or item (0 MP). From action 2, Fire or Blizzard every
@@ -710,3 +773,8 @@ In rough order of how much they shape the prototype:
 5. Judge Points / Scions / Combos in real time.
 6. Networking model (deterministic sim is the goal; fill-order rule in §3 is for this).
 7. ~~Hero damage vs creeps.~~ Heroes hit big and act rarely (§13).
+8. Friendly fire. Area spells hurt enemies only for now; FFTA's hit everyone (§11, milestone 4).
+9. Spells against structures: none for now, as in Dota (§11, milestone 4).
+10. Charged spells: committed for now, as in FFT; or cancelled by any order, as a Dota channel
+    (MP and gauge lost).
+11. The Black Mage's wave clear: Fire every action from the second (§11, milestone 4).

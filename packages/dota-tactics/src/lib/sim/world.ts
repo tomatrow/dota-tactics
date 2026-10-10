@@ -1,5 +1,6 @@
-import { ABILITIES, type Ability } from "#lib/content/abilities.ts"
+import { ABILITIES, followsUp, hitsStructures, type Ability } from "#lib/content/abilities.ts"
 import { JOBS, type JobId } from "#lib/content/heroes.ts"
+import { STATUS_IDS, STATUSES, type Infliction, type StatusId } from "#lib/content/statuses.ts"
 import { TUNING } from "#lib/content/tuning.ts"
 import {
 	CREEP_NAMES,
@@ -10,7 +11,7 @@ import {
 	type CreepKind,
 	type Team
 } from "#lib/content/units.ts"
-import { hitChance, physicalDamage } from "./combat.ts"
+import { hitChance, magicDamage, physicalDamage } from "./combat.ts"
 import type { Command } from "./commands.ts"
 import { GAUGE_FULL, STEP_FULL, TICK_RATE, ticks } from "./constants.ts"
 import type { SimEvent } from "./events.ts"
@@ -29,7 +30,16 @@ import { LaneField, UNREACHABLE, type TilePoint } from "./lane-field.ts"
 import { PathSearch, stepsLeft, type PathGoal } from "./path-search.ts"
 import { Random } from "./random.ts"
 import { LocalSearch } from "./search.ts"
-import { Hero, IDLE, Unit, type Lane, type LaneName, type Order, type UnitInit } from "./unit.ts"
+import {
+	Hero,
+	IDLE,
+	Unit,
+	type Aim,
+	type Lane,
+	type LaneName,
+	type Order,
+	type UnitInit
+} from "./unit.ts"
 
 /** A lane to run: whose creeps walk it, along what path, from where. */
 export interface LaneSetup {
@@ -269,6 +279,36 @@ export class World {
 		)
 	}
 
+	/** Whether a unit has a status now. */
+	has(unit: Unit, status: StatusId): boolean {
+		return this.tick < unit.statuses[status]
+	}
+
+	/** A unit's speed (gauge points per second) now, with its statuses: never below 1. */
+	speedOf(unit: Unit): number {
+		let speed = unit.stats.speed
+		for (const id of STATUS_IDS) if (this.has(unit, id)) speed += STATUSES[id].speed
+		return Math.max(1, speed)
+	}
+
+	/** A unit's walk speed (game units per second) now, with its statuses. */
+	walkOf(unit: Unit): number {
+		let walk = unit.stats.walk
+		for (const id of STATUS_IDS) {
+			if (this.has(unit, id)) walk = Math.floor((walk * STATUSES[id].walk) / 100)
+		}
+		return walk
+	}
+
+	/**
+	 * The tile a unit counts as on for an area: the one it's stepping onto once it's half way
+	 * there, else the one it stands on.
+	 */
+	tileOf(unit: Unit): [col: number, row: number] {
+		const step = unit.step
+		return step && step.progress * 2 >= STEP_FULL ? [step.col, step.row] : [unit.col, unit.row]
+	}
+
 	// Setup
 
 	#add(init: UnitInit): Unit {
@@ -405,19 +445,38 @@ export class World {
 				const tile = this.#reachableNear(unit, target.col, target.row)
 				return tile && { type: "move", col: tile[0], row: tile[1] }
 			}
-			case "ability": {
+			case "ability":
+			case "abilityAt": {
 				const ability = ABILITIES[command.ability]
 				if (!hero.job.abilities.includes(ability.id) || !ability.enabled) return null
 				if (unit.mp < ability.mp) return null
-				if (ability.target === "self") {
-					const then = hero.order.type === "ability" ? hero.order.then : hero.order
-					return { type: "ability", ability, target: null, then }
-				}
-				const target = command.target === null ? undefined : this.#byId.get(command.target)
-				if (!target?.alive || target.team === unit.team) return null
-				return { type: "ability", ability, target, then: { type: "attack", target } }
+				const aim = this.#aim(unit, ability, command)
+				if (!aim) return null
+				const then: Order =
+					aim.kind === "unit" && followsUp(ability) ? { type: "attack", target: aim.unit }
+					: hero.order.type === "ability" ? hero.order.then
+					: hero.order
+				return { type: "ability", ability, aim, then }
 			}
 		}
+	}
+
+	/** What an ability command aims at, or null when the ability can't be aimed there. */
+	#aim(
+		unit: Unit,
+		ability: Ability,
+		command: Extract<Command, { type: "ability" | "abilityAt" }>
+	): Aim | null {
+		if (ability.target === "self") return { kind: "self" }
+		if (command.type === "abilityAt") {
+			const { col, row } = command
+			if (ability.target !== "tile" || !inside(this.terrain, col, row)) return null
+			return { kind: "tile", col, row }
+		}
+		const target = command.target === null ? undefined : this.#byId.get(command.target)
+		if (!target?.alive || target.team === unit.team) return null
+		if (target.stats.structure && !hitsStructures(ability)) return null
+		return { kind: "unit", unit: target }
 	}
 
 	/**
@@ -452,6 +511,8 @@ export class World {
 			unit.target = null
 			unit.previous = -1
 			unit.facing = unit.team === "radiant" ? Facing.north : Facing.south
+			unit.casting = null
+			unit.statuses = { slow: 0, chill: 0 }
 			hero.order = IDLE
 			hero.respawnAt = -1
 			hero.retryAt = 0
@@ -507,22 +568,28 @@ export class World {
 				return
 			}
 			case "ability": {
-				const { ability, target } = order
-				if (!target) {
+				const { ability, aim } = order
+				if (aim.kind === "self") {
 					unit.target = null
-					if (!this.#hold(unit, carry) || unit.gauge < GAUGE_FULL) return
-					this.#cast(unit, ability, unit)
-					hero.order = order.then
+					if (this.#hold(unit, carry) && unit.gauge >= GAUGE_FULL) this.#use(unit, hero, order)
 					return
 				}
-				if (!target.alive) {
-					hero.order = IDLE
+				if (aim.kind === "unit" && !aim.unit.alive) {
+					hero.order = order.then
 					this.#heroDecide(unit, hero, carry)
 					return
 				}
-				if (!this.#ready(unit, hero, target, ability.reach, carry)) return
-				if (unit.mp >= ability.mp) this.#cast(unit, ability, target)
-				hero.order = order.then
+				const goal =
+					aim.kind === "unit" ?
+						{
+							col: aim.unit.col,
+							row: aim.unit.row,
+							radius: aim.unit.stats.radius,
+							slack: ability.reach
+						}
+					:	{ col: aim.col, row: aim.row, radius: 0, slack: ability.reach }
+				unit.target = aim.kind === "unit" ? aim.unit : null
+				if (this.#readyFor(unit, hero, goal, carry)) this.#use(unit, hero, order)
 				return
 			}
 		}
@@ -555,8 +622,13 @@ export class World {
 	#ready(unit: Unit, hero: Hero, target: Unit, reach: number, carry: number): boolean {
 		unit.target = target
 		const goal = { col: target.col, row: target.row, radius: target.stats.radius, slack: reach }
+		return this.#readyFor(unit, hero, goal, carry)
+	}
+
+	/** Walks into a goal and faces its centre, charging once there. True when it's time to act. */
+	#readyFor(unit: Unit, hero: Hero, goal: PathGoal, carry: number): boolean {
 		if (this.#pursue(unit, hero, goal, carry) !== "there") return false
-		unit.facing = facingToward(target.col - unit.col, target.row - unit.row, unit.facing)
+		unit.facing = facingToward(goal.col - unit.col, goal.row - unit.row, unit.facing)
 		this.#charge(unit, 100)
 		return unit.gauge >= GAUGE_FULL
 	}
@@ -638,12 +710,23 @@ export class World {
 		if (unit.target && unit.gauge >= GAUGE_FULL) this.#attack(unit, unit.target)
 	}
 
-	/** A creep's or hero's tick: a step under way goes on; a standing unit decides what to do. */
+	/**
+	 * A creep's or hero's tick: a charged ability goes on (the caster stands and charges until it
+	 * lands); a step under way goes on; a standing unit decides what to do.
+	 */
 	#walkerTurn(unit: Unit) {
+		const casting = unit.casting
+		if (casting) {
+			this.#charge(unit, 100)
+			if (this.tick < casting.lands) return
+			unit.casting = null
+			this.#resolve(unit, casting.ability, null, casting.col, casting.row)
+			return
+		}
 		const step = unit.step
 		let carry = 0
 		if (step) {
-			step.progress += unit.stats.walk
+			step.progress += this.walkOf(unit)
 			this.#charge(unit, TUNING.walkCharge)
 			if (step.progress < STEP_FULL) return
 			carry = step.progress - STEP_FULL
@@ -840,7 +923,8 @@ export class World {
 	// Combat
 
 	#charge(unit: Unit, percent: number) {
-		const gain = percent === 100 ? unit.stats.speed : Math.floor((unit.stats.speed * percent) / 100)
+		const speed = this.speedOf(unit)
+		const gain = percent === 100 ? speed : Math.floor((speed * percent) / 100)
 		unit.gauge = Math.min(GAUGE_FULL, unit.gauge + gain)
 	}
 
@@ -860,14 +944,22 @@ export class World {
 		this.#strike(attacker, target, null, 1)
 	}
 
-	/** A physical blow: rolls to hit, deals damage; returns the damage dealt. */
-	#strike(attacker: Unit, target: Unit, ability: Ability | null, power: number): number {
+	/**
+	 * A weapon blow: rolls to hit (facing and height, §12) and deals ATK × `power` (none for 0);
+	 * returns whether it hit and the damage dealt.
+	 */
+	#strike(
+		attacker: Unit,
+		target: Unit,
+		ability: Ability | null,
+		power: number
+	): { hit: boolean; damage: number } {
 		attacker.lastAttack = this.tick
 		const side = exposure(target.facing, attacker.col - target.col, attacker.row - target.row)
 		const uphill = this.#level(target) > this.#level(attacker)
 		const chance = hitChance(attacker.stats, target.stats, side, uphill)
 		const hit = this.random.percent(chance)
-		const damage = hit ? physicalDamage(attacker.stats, target.stats, power) : 0
+		const damage = hit && power > 0 ? physicalDamage(attacker.stats, target.stats, power) : 0
 		target.hp -= damage
 		this.#events.push({
 			type: "attack",
@@ -879,11 +971,38 @@ export class World {
 			side
 		})
 		if (target.hp <= 0) this.#kill(target, attacker)
-		return damage
+		return { hit, damage }
 	}
 
-	#cast(unit: Unit, ability: Ability, target: Unit) {
+	/**
+	 * Uses the ability of an order the hero is ready for (in reach, full gauge, MP permitting): at
+	 * once, or by starting its charge. Either way the hero goes on to the order's `then`.
+	 */
+	#use(unit: Unit, hero: Hero, order: Extract<Order, { type: "ability" }>) {
+		const { ability, aim } = order
+		hero.order = order.then
+		if (unit.mp < ability.mp) return
 		this.#act(unit, ability.mp)
+		const target =
+			aim.kind === "unit" ? aim.unit
+			: aim.kind === "self" ? unit
+			: null
+		const [col, row] = aim.kind === "tile" ? [aim.col, aim.row] : this.tileOf(target ?? unit)
+		if (ability.charge === 0) {
+			this.#resolve(unit, ability, target, col, row)
+			return
+		}
+		const lands = this.tick + ticks(ability.charge)
+		unit.casting = { ability, col, row, from: this.tick, lands }
+		unit.lastAttack = this.tick
+		this.#events.push({ type: "charge", unit, ability: ability.id, col, row, lands })
+	}
+
+	/**
+	 * An ability's effect, on its target unit, or on the units round its tile (col, row) when it has
+	 * an area or no target (a charged ability lands on its tile).
+	 */
+	#resolve(unit: Unit, ability: Ability, target: Unit | null, col: number, row: number) {
 		const { effect } = ability
 		switch (effect.kind) {
 			case "heal": {
@@ -896,23 +1015,64 @@ export class World {
 				return
 			}
 			case "strike": {
-				const dealt = this.#strike(unit, target, ability, effect.power)
-				const recoil = Math.floor((dealt * effect.recoil) / 100)
+				if (!target) return
+				const { damage } = this.#strike(unit, target, ability, effect.power)
+				const recoil = Math.floor((damage * effect.recoil) / 100)
 				if (recoil === 0 || !unit.alive) return
 				unit.hp -= recoil
 				this.#events.push({ type: "recoil", unit, damage: recoil })
 				if (unit.hp <= 0) this.#kill(unit, unit)
 				return
 			}
-			case "slow":
+			case "debuff": {
+				if (!target) return
+				if (this.#strike(unit, target, ability, 0).hit) this.#afflict(target, effect.inflicts)
 				return
+			}
+			case "magic": {
+				if (ability.charge === 0) unit.lastAttack = this.tick
+				this.#events.push({ type: "spell", unit, ability: ability.id, col, row })
+				const victims =
+					target && ability.area === 0 ?
+						[target]
+					:	this.units.filter((other) => {
+							if (!other.alive || other.team === unit.team || other.stats.structure) return false
+							const [c, r] = this.tileOf(other)
+							return Math.abs(c - col) + Math.abs(r - row) <= ability.area
+						})
+				for (const victim of victims) {
+					if (!victim.alive) continue
+					const damage = magicDamage(unit.stats, victim.stats, effect.power)
+					victim.hp -= damage
+					this.#events.push({
+						type: "magic",
+						attacker: unit,
+						target: victim,
+						ability: ability.id,
+						damage
+					})
+					if (victim.hp <= 0) this.#kill(victim, unit)
+					else if (effect.inflicts) this.#afflict(victim, effect.inflicts)
+				}
+				return
+			}
 		}
+	}
+
+	/** A status takes hold of a unit, or starts again; structures are immune. */
+	#afflict(unit: Unit, { status, seconds }: Infliction) {
+		if (unit.stats.structure || !unit.alive) return
+		const until = this.tick + ticks(seconds)
+		unit.statuses[status] = until
+		this.#events.push({ type: "status", unit, status, until })
 	}
 
 	#kill(unit: Unit, killer: Unit | null) {
 		unit.alive = false
 		unit.hp = 0
 		unit.target = null
+		// A charged ability dies with its caster.
+		unit.casting = null
 		this.#release(unit.col, unit.row, unit)
 		if (unit.step) this.#release(unit.step.col, unit.step.row, unit)
 		if (unit.stats.structure) {

@@ -45,6 +45,17 @@ export function run(w: World, count: number): Logged[] {
 	return log
 }
 
+/**
+ * Steps at least once (so commands apply), then until `done` holds, at most `limit` ticks;
+ * returns the events on the way.
+ */
+export function until(w: World, done: () => boolean, limit = 2000): Logged[] {
+	const log: Logged[] = [...run(w, 1)]
+	for (let i = 1; i < limit && !done(); i++) log.push(...run(w, 1))
+	if (!done()) throw new Error("ran out of ticks")
+	return log
+}
+
 export const attacks = (log: readonly Logged[]) =>
 	log.flatMap(({ tick, event }) => (event.type === "attack" ? [{ tick, ...event }] : []))
 
@@ -62,7 +73,7 @@ export function cadence(speed: number, count: number): number[] {
 export const trace = (log: readonly Logged[]) =>
 	log
 		.map(({ tick, event }) =>
-			event.type === "attack" ?
+			event.type === "attack" || event.type === "magic" ?
 				`${String(tick)}:${String(event.attacker.id)}>${String(event.target.id)}:${String(event.damage)}`
 			:	`${String(tick)}:${event.type}:${String(event.unit.id)}`
 		)

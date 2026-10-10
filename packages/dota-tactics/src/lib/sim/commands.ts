@@ -10,4 +10,12 @@ export type Command =
 	/** On an enemy, attacks it; on an own creep under the deny threshold, denies it; else moves to it. */
 	| { readonly type: "attack"; readonly target: number }
 	| { readonly type: "attackMove"; readonly col: number; readonly row: number }
+	/** An ability on the hero itself (`target` null) or on a unit. */
 	| { readonly type: "ability"; readonly ability: AbilityId; readonly target: number | null }
+	/** An ability aimed at a tile. */
+	| {
+			readonly type: "abilityAt"
+			readonly ability: AbilityId
+			readonly col: number
+			readonly row: number
+	  }

@@ -1,8 +1,10 @@
 <!--
 	The selected unit (not the player's hero: the hero window shows that): who it is, its HP and
-	gauge, its stats, and what it's doing. Refreshed every tick.
+	gauge, its stats (speed with its statuses), its statuses, and what it's doing. Refreshed every
+	tick.
 -->
 <script lang="ts">
+	import { STATUS_IDS, STATUSES } from "#lib/content/statuses.ts"
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
 	import { GAUGE_FULL } from "#lib/sim/constants.ts"
 
@@ -13,8 +15,10 @@
 		const unit = game.selected
 		if (!unit || unit === game.hero) return null
 		const { stats } = unit
+		const { world } = game
 		const doing =
-			unit.step ? "Walking"
+			unit.casting ? `Casting ${unit.casting.ability.name}`
+			: unit.step ? "Walking"
 			: unit.target ? `Fighting ${unit.target.name}`
 			: "Waiting"
 		return {
@@ -26,9 +30,12 @@
 			stats: [
 				["ATK", stats.atk],
 				["DEF", stats.def],
-				["Speed", stats.speed],
-				["Reach", stats.reach]
+				["RES", stats.res],
+				["Reach", stats.reach],
+				["Speed", world.speedOf(unit)],
+				["Walk", world.walkOf(unit)]
 			] as const,
+			statuses: STATUS_IDS.filter((id) => world.has(unit, id)).map((id) => STATUSES[id].name),
 			doing
 		}
 	})
@@ -56,6 +63,9 @@
 				<dd>{value}</dd>
 			{/each}
 		</dl>
+		{#if info.statuses.length > 0}
+			<p class="statuses">{info.statuses.join(" · ")}</p>
+		{/if}
 		<p>{info.doing}</p>
 	</section>
 {/if}
@@ -101,7 +111,7 @@
 	}
 	dl {
 		display: grid;
-		grid-template-columns: auto auto auto auto;
+		grid-template-columns: auto auto auto auto auto auto;
 		gap: 0 10px;
 		margin: 8px 0 4px;
 	}
@@ -115,5 +125,8 @@
 	p {
 		margin: 0;
 		color: var(--cursor);
+	}
+	.statuses {
+		color: #9fd8ff;
 	}
 </style>

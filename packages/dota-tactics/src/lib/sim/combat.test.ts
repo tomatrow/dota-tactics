@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { JOBS } from "#lib/content/heroes.ts"
 import { CREEPS, SENTINELS, type UnitStats } from "#lib/content/units.ts"
-import { hitChance, physicalDamage } from "./combat.ts"
+import { hitChance, magicDamage, physicalDamage } from "./combat.ts"
 
 const dodgy: UnitStats = { ...CREEPS.melee, evasion: 20 }
 
@@ -54,5 +54,19 @@ describe("physicalDamage", () => {
 		expect(physicalDamage(CREEPS.siege, SENTINELS[1])).toBe(185)
 		// No bonus against units.
 		expect(physicalDamage(CREEPS.siege, CREEPS.ranged)).toBe(100)
+	})
+})
+
+describe("magicDamage", () => {
+	const mage = JOBS.blackMage.stats
+
+	it("is power × MATK/50 − RES/2", () => {
+		expect(magicDamage(mage, CREEPS.melee, 150)).toBe(180)
+		expect(magicDamage(mage, JOBS.warrior.stats, 150)).toBe(173)
+		expect(magicDamage(mage, JOBS.warrior.stats, 250)).toBe(293)
+	})
+
+	it("is at least 10% of power × MATK/50", () => {
+		expect(magicDamage(mage, { ...CREEPS.melee, res: 1000 }, 150)).toBe(18)
 	})
 })

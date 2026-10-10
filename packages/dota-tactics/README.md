@@ -6,10 +6,12 @@ per player, real-time with an ATB gauge.
 
 The design is in [DESIGN.md](./DESIGN.md); conventions are in [AGENTS.md](./AGENTS.md).
 
-**Status:** milestone 3 of the prototype slice (`DESIGN.md` §11). You play a Bangaa Warrior in
-the mid lane: walk from the Clan Hall, last-hit and deny the creep waves, use First Aid and Body
-Slam, push the Dire T1, die to it and respawn. Everything runs on a deterministic 20 Hz
-simulation; `?seed=123` replays a game's creeps and rolls. No enemy hero yet.
+**Status:** milestone 4 of the prototype slice (`DESIGN.md` §11). You play a Bangaa Warrior or a
+Nu Mou Black Mage in the mid lane: walk from the Clan Hall, last-hit and deny the creep waves,
+fight with the Warrior's techniques or the mage's Fire, Blizzard and Fira, push the Dire T1, die
+to it and respawn. Everything runs on a deterministic 20 Hz simulation; `?seed=123` replays a
+game's creeps and rolls, and `?job=blackMage` (or the controls window's "Play as") picks the
+hero. No enemy hero yet.
 
 ## Usage
 
@@ -34,25 +36,28 @@ pnpm dev                     # http://localhost:5173
 
 Dota 2's default layout. Commands always go to your hero.
 
-| Input                    | Does                                           |
-| ------------------------ | ---------------------------------------------- |
-| Right-click ground       | Move                                           |
-| Right-click enemy        | Attack; repeats until it dies                  |
-| Right-click own creep    | Deny, under 50% HP (otherwise walk to it)      |
-| Q / W / E                | First Aid / Rend Speed (not yet) / Body Slam   |
-| Left-click (after E)     | Body Slam's target; right-click or Esc cancels |
-| A, then left-click       | Attack-move                                    |
-| S / H                    | Stop                                           |
-| Left-click a unit        | Inspect it                                     |
-| F1                       | Select and centre on your hero                 |
-| Space (hold)             | Keep the camera on your hero                   |
-| F9                       | Pause                                          |
-| Screen edge, middle-drag | Pan                                            |
-| Wheel                    | Zoom                                           |
-| `[` / `]`                | Turn the view 90°                              |
+| Input                    | Does                                                        |
+| ------------------------ | ----------------------------------------------------------- |
+| Right-click ground       | Move                                                        |
+| Right-click enemy        | Attack; repeats until it dies                               |
+| Right-click own creep    | Deny, under 50% HP (otherwise walk to it)                   |
+| Q / W / E                | Warrior: First Aid / Rend Speed / Body Slam                 |
+| Q / W / E                | Black Mage: Fire / Blizzard / Fira                          |
+| Left-click (after Q W E) | The target: an enemy; for Fire and Fira, a tile or an enemy |
+| Right-click, Esc         | Cancel the target                                           |
+| A, then left-click       | Attack-move                                                 |
+| S / H                    | Stop                                                        |
+| Left-click a unit        | Inspect it                                                  |
+| F1                       | Select and centre on your hero                              |
+| Space (hold)             | Keep the camera on your hero                                |
+| F9                       | Pause                                                       |
+| Screen edge, middle-drag | Pan                                                         |
+| Wheel                    | Zoom                                                        |
+| `[` / `]`                | Turn the view 90°                                           |
 
-The gauge (CT) fills only while you stand still; every action empties it. Items (ZXCVBN) come
-later.
+The gauge (CT) fills only while you stand still; every action empties it and gives 10 MP. Fira
+charges for 2 s: the mage stands until it lands, and its area shows red to everyone. Items
+(ZXCVBN) come later.
 
 ## Built on
 

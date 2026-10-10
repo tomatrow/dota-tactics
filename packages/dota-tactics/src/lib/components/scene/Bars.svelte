@@ -1,14 +1,16 @@
 <!--
 	A unit's bars, facing the camera and drawn over the board: HP (team-coloured), MP for units that
-	have it, and the ATB gauge. Updated each frame without touching Svelte state. Every part is
+	have it, and the ATB gauge (purple while it's slowed); under them, while a charged ability is on
+	its way, how far it's charged. Updated each frame without touching Svelte state. Every part is
 	transparent so all of them draw in three's transparent pass, in render order: backing, then
 	fills.
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core"
 	import { Billboard } from "@threlte/extras"
-	import type { Mesh } from "three"
+	import type { Group, Mesh, MeshBasicMaterial } from "three"
 	import { TEAM_COLOURS } from "dota-tactics-grid/scene/palette.ts"
+	import { getGameState } from "#lib/game/GameState.svelte.ts"
 	import { GAUGE_FULL } from "#lib/sim/constants.ts"
 	import type { Unit } from "#lib/sim/unit.ts"
 
@@ -29,6 +31,11 @@
 	const GAUGE_HEIGHT = 0.06
 	const GAP = 0.02
 	const PADDING = 0.04
+	const GAUGE = 0xffe39a
+	const SLOWED = 0xb98bff
+	const CAST_HEIGHT = 0.09
+
+	const game = getGameState()
 
 	const rows = $derived(
 		unit.stats.mp > 0 ?
@@ -54,6 +61,9 @@
 	})
 
 	const meshes: Record<string, Mesh | undefined> = $state({})
+	const materials: Record<string, MeshBasicMaterial | undefined> = $state({})
+	let cast = $state.raw<Group>()
+	let castFill = $state.raw<Mesh>()
 
 	/** Scales a fill bar from its left end. */
 	function fill(mesh: Mesh | undefined, ratio: number) {
@@ -67,6 +77,13 @@
 		fill(meshes.hp, unit.hp / unit.stats.hp)
 		fill(meshes.mp, unit.mp / Math.max(1, unit.stats.mp))
 		fill(meshes.gauge, unit.gauge / GAUGE_FULL)
+		materials.gauge?.color.setHex(game.world.has(unit, "slow") ? SLOWED : GAUGE)
+		const casting = unit.casting
+		if (cast) cast.visible = casting !== null
+		if (casting) {
+			const ticks = game.world.tick - casting.from + game.alpha
+			fill(castFill, ticks / (casting.lands - casting.from))
+		}
 	})
 </script>
 
@@ -84,7 +101,33 @@
 	{#each rows as row, i (row.key)}
 		<T.Mesh position.y={centres[i]} renderOrder={21} bind:ref={meshes[row.key]}>
 			<T.PlaneGeometry args={[width, row.height]} />
-			<T.MeshBasicMaterial color={row.colour} depthTest={false} toneMapped={false} transparent />
+			<T.MeshBasicMaterial
+				color={row.colour}
+				depthTest={false}
+				toneMapped={false}
+				transparent
+				bind:ref={materials[row.key]}
+			/>
 		</T.Mesh>
 	{/each}
+	<T.Group
+		position.y={-total / 2 - PADDING - 0.03 - CAST_HEIGHT / 2}
+		visible={false}
+		bind:ref={cast}
+	>
+		<T.Mesh renderOrder={20}>
+			<T.PlaneGeometry args={[width + 0.06, CAST_HEIGHT + 0.06]} />
+			<T.MeshBasicMaterial
+				color={0x0b101c}
+				depthTest={false}
+				opacity={0.8}
+				toneMapped={false}
+				transparent
+			/>
+		</T.Mesh>
+		<T.Mesh renderOrder={21} bind:ref={castFill}>
+			<T.PlaneGeometry args={[width, CAST_HEIGHT]} />
+			<T.MeshBasicMaterial color={0xff8a3d} depthTest={false} toneMapped={false} transparent />
+		</T.Mesh>
+	</T.Group>
 </Billboard>

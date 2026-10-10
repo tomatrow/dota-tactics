@@ -13,7 +13,11 @@ export interface UnitStats {
 	/** Most MP; MP starts at 0 and grows 10 per action (§3). 0 for units without abilities. */
 	readonly mp: number
 	readonly atk: number
+	/** Magic attack: a spell does its power × MATK/50 (§12). */
+	readonly matk: number
 	readonly def: number
+	/** Magic defence: a spell does RES/2 less. */
+	readonly res: number
 	/** Percent, before facing (DESIGN.md §12). */
 	readonly evasion: number
 	/** Gauge points per second: 100 / speed seconds per action. */
@@ -42,7 +46,9 @@ export const isHero = (stats: UnitStats): boolean => stats.kind === "hero"
 
 const creep = {
 	mp: 0,
+	matk: 0,
 	def: 0,
+	res: 0,
 	evasion: 0,
 	speed: 33, // ~3 s per attack (§6)
 	walk: 325, // Dota's creep speed
@@ -91,8 +97,11 @@ function sentinel(hp: number, atk: number): UnitStats {
 		hp,
 		mp: 0,
 		atk,
+		matk: 0,
 		// High: a melee creep (80) chips 15 a hit.
 		def: 130,
+		// Spells don't hurt structures (Dota), so RES never comes into it.
+		res: 0,
 		evasion: 0,
 		speed: 25, // one hit every 4 s
 		reach: 11, // 700 u

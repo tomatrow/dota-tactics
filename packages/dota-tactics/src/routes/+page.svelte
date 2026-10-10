@@ -2,12 +2,16 @@
 	import { page } from "$app/state"
 	import { loadMap } from "dota-tactics-grid/map/load.ts"
 	import Game from "#lib/components/Game.svelte"
+	import { isJobId } from "#lib/content/heroes.ts"
 	import { Random } from "#lib/sim/random.ts"
 
 	const loading = loadMap()
 	// `?seed=` replays a game; otherwise each load is a new one.
 	const param = page.url.searchParams.get("seed")
 	const seed = param !== null && /^\d+$/.test(param) ? Number(param) : Random.randomSeed()
+	// `?job=` picks the player's hero (DESIGN.md §13); the Warrior otherwise.
+	const jobParam = page.url.searchParams.get("job") ?? ""
+	const job = isJobId(jobParam) ? jobParam : "warrior"
 </script>
 
 <svelte:head>
@@ -17,7 +21,7 @@
 {#await loading}
 	<div class="win" role="status">Loading the map…</div>
 {:then model}
-	<Game {model} {seed} />
+	<Game {job} {model} {seed} />
 {:catch error}
 	<div class="win" role="alert">
 		<strong>Couldn't load dota_map.json</strong>

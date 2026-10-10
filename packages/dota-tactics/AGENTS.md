@@ -31,8 +31,10 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   a fixed 20 ticks per second and is deterministic: time is an integer tick count, randomness
   comes from one seeded PRNG, units update in id order. No `Math.random`, `Date.now` or
   `performance.now` in the sim. It runs in Node tests and the headless scripts.
-- **Content** (jobs, abilities, items, creeps, towers, tuning) is typed data in
-  `src/lib/content/`, the one place the doc's numbers live in code.
+- **Content** (jobs, abilities, statuses, items, creeps, towers, tuning) is typed data in
+  `src/lib/content/`, the one place the doc's numbers live in code. An ability is its target
+  (self, enemy, tile), reach, area, charge time and an effect kind; the world resolves effects by
+  kind (`World#resolve`), so a new ability of an existing kind is only data.
 - **Players steer heroes with commands**: `world.command(heroId, command)`, plain data with units
   by id (`#lib/sim/commands.ts`), applied at the start of the next tick in the order given. A
   game replays from its seed and its (tick, hero, command) log; nothing else may reach into the
@@ -44,6 +46,10 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
 - **Components render; they don't own rules.** DOM HUD in `src/lib/components/`, the 3D scene in
   `src/lib/components/scene/`. Pure helpers worth a Node test (camera maths, paths) are plain TS
   in `src/lib/game/`.
+- **The scene mounts beside the `<canvas>`, not in it** (`GameCanvas.svelte`, in place of
+  Threlte's `Canvas`). Svelte keeps comment anchors for every component and block, some 15,000;
+  as children of a `<canvas>` Chrome makes each removal cost in proportion to their number, and
+  a unit's view unmounting took ~25 ms.
 - **Moving things don't cast shadows.** The board's shadow map is only re-rendered when the board
   changes; units get blob shadows. `<Renderer dynamic>` re-renders the AO G-buffer every frame,
   at a quarter resolution with 8 samples, and the canvas caps the pixel ratio at 1.5: AO at
@@ -68,7 +74,7 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   expectations derived from the formulas in `DESIGN.md`; components get visual checks.
 - Sim tests draw small boards as text (`#lib/testing/terrain.ts`) and turn waves off to place
   creeps by hand (`world.spawnCreep`; `waitingLane` keeps a creep where it's put). Heroes start
-  at a Clan Hall tile the scenario gives. `#lib/testing/world.ts` has the world, run and trace
-  helpers; `#lib/testing/map.ts` loads the real map in Node.
+  at a Clan Hall tile the scenario gives. `#lib/testing/world.ts` has the world, run, until and
+  trace helpers; `#lib/testing/map.ts` loads the real map in Node.
 - Tuning numbers come from `pnpm lane-sim` (`scripts/lane-sim.ts`: the real map, many seeds,
   headless). Record what it measured in `DESIGN.md` next to the numbers it justified.

@@ -1,7 +1,7 @@
 <!--
 	The mouse on the board: what's under the pointer (a unit by where its body is on screen, else a
-	Sentinel's tower from the board's picker), right-clicks (commands) and left-clicks (targets,
-	selection). A click finds its tile itself, as the board's picker does: the picker only looks
+	Sentinel's tower from the board's picker) and, while a tile ability waits for its target, where
+	it would land; right-clicks (commands) and left-clicks (targets, selection). A click finds its tile itself, as the board's picker does: the picker only looks
 	once a frame, and a click can come in the same frame as the move before it.
 -->
 <script lang="ts">
@@ -124,6 +124,11 @@
 		() => {
 			const unit = under()
 			if (unit !== game.hovered) game.hovered = unit
+			const targeting = game.targeting
+			if (targeting?.kind === "ability" && targeting.ability.target === "tile") {
+				const enemy = unit && game.canTarget(targeting.ability, unit)
+				game.aim = enemy ? game.world.tileOf(unit) : tile()
+			}
 		},
 		{ stage: inputStage, autoInvalidate: false }
 	)

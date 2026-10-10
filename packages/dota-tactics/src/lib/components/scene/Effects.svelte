@@ -1,7 +1,7 @@
 <!--
 	Ranged attacks in flight: one instanced mesh of glowing bolts, from attacker to target over
 	ATTACK_EFFECT game seconds. Siege shots lob; Sentinel bolts are bigger. Melee attacks have no
-	projectile (the attacker lunges instead).
+	projectile (the attacker lunges instead), nor do spells (they appear where they land).
 -->
 <script lang="ts">
 	import { T, useTask } from "@threlte/core"
@@ -28,7 +28,7 @@
 		let count = 0
 		for (const effect of game.effects) {
 			const { attacker, target } = effect
-			if (attacker.stats.reach <= 2 || count >= MAX) continue
+			if (effect.magic || attacker.stats.reach <= 2 || count >= MAX) continue
 			const t = (time - effect.at) / ATTACK_EFFECT
 			if (t < 0 || t > 1) continue
 			const [ax, ay, az] = game.position(attacker)

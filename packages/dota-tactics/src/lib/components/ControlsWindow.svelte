@@ -1,6 +1,15 @@
 <!--
-	The controls that work so far (Dota 2's defaults), in an FFT-style window.
+	The controls that work so far (Dota 2's defaults), in an FFT-style window, and which hero to play:
+	a link reloads the page as another game.
 -->
+<script lang="ts">
+	import { JOB_IDS, JOBS } from "#lib/content/heroes.ts"
+	import { getGameState } from "#lib/game/GameState.svelte.ts"
+
+	const game = getGameState()
+	const current = $derived(game.hero.hero?.job.id)
+</script>
+
 <dl class="win">
 	<dt>Right-click</dt>
 	<dd>Move, attack; deny own creep under 50%</dd>
@@ -22,6 +31,15 @@
 	<dd>Pan · zoom</dd>
 	<dt>[ &nbsp;]</dt>
 	<dd>Turn 90°</dd>
+	<dt>Play as</dt>
+	<dd class="jobs">
+		{#each JOB_IDS as id (id)}
+			<a aria-current={id === current} data-sveltekit-reload href="?job={id}">
+				{JOBS[id].race}
+				{JOBS[id].name}
+			</a>
+		{/each}
+	</dd>
 </dl>
 
 <style>
@@ -40,5 +58,16 @@
 	}
 	dd {
 		margin: 0;
+	}
+	.jobs {
+		display: flex;
+		gap: 10px;
+	}
+	a {
+		color: var(--fg);
+	}
+	a[aria-current="true"] {
+		color: var(--cursor);
+		text-decoration: none;
 	}
 </style>

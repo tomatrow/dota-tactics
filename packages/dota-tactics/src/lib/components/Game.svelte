@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
 	import type { MapModel } from "dota-tactics-grid/map/model.ts"
+	import type { JobId } from "#lib/content/heroes.ts"
 	import { setViewerState, ViewerState } from "dota-tactics-grid/state.svelte.ts"
 	import { GameState, setGameState } from "#lib/game/GameState.svelte.ts"
 	import ClockWindow from "./ClockWindow.svelte"
@@ -12,14 +13,14 @@
 	import Stage from "./Stage.svelte"
 	import UnitWindow from "./UnitWindow.svelte"
 
-	let { model, seed }: { model: MapModel; seed: number } = $props()
+	let { model, seed, job }: { model: MapModel; seed: number; job: JobId } = $props()
 
-	// One map and seed per game: `{#key}` it to start another.
+	// One map, seed and hero per game: `{#key}` it to start another.
 	// svelte-ignore state_referenced_locally
 	const view = setViewerState(new ViewerState(model))
 	view.visibility.lanes = false
 	// svelte-ignore state_referenced_locally
-	const game = setGameState(new GameState(view, seed))
+	const game = setGameState(new GameState(view, seed, job))
 	// For poking at from the console and headless checks, in development only.
 	$effect(() => {
 		if (import.meta.env.DEV) Object.assign(window, { game })

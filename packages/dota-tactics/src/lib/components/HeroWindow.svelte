@@ -1,9 +1,11 @@
 <!--
-	The player's hero, bottom centre: HP, MP and CT, its abilities on Q W E (click or press; greyed
-	when it can't use them), what it's doing, its gold, last hits and denies, and the respawn
-	countdown while it's dead. Refreshed every tick.
+	The player's hero, bottom centre: HP, MP and CT, its statuses, its abilities on Q W E (click or
+	press; greyed when it can't use them), what it's doing, its gold, last hits and denies, and the
+	respawn countdown while it's dead. Refreshed every tick.
 -->
 <script lang="ts">
+	import type { Ability } from "#lib/content/abilities.ts"
+	import { STATUS_IDS, STATUSES } from "#lib/content/statuses.ts"
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
 	import { GAUGE_FULL, TICK_RATE } from "#lib/sim/constants.ts"
 	import type { Order } from "#lib/sim/unit.ts"
@@ -22,10 +24,17 @@
 				return `Attacking ${order.target.name}`
 			case "attackMove":
 				return target ? `Attack-moving: ${target}` : "Attack-moving"
-			case "ability":
-				return order.target ? `${order.ability.name} → ${order.target.name}` : order.ability.name
+			case "ability": {
+				const { ability, aim } = order
+				if (aim.kind === "unit") return `${ability.name} → ${aim.unit.name}`
+				return aim.kind === "tile" ? `${ability.name} → ground` : ability.name
+			}
 		}
 	}
+
+	/** What a left-click picks for an ability. */
+	const prompt = (ability: Ability) =>
+		`${ability.name}: left-click ${ability.target === "tile" ? "a tile or an enemy" : "an enemy"}`
 
 	const info = $derived.by(() => {
 		void game.tick
@@ -33,6 +42,8 @@
 		const hero = unit.hero
 		if (!hero) return null
 		const targeting = game.targeting
+		const { world } = game
+		const casting = unit.casting
 		return {
 			name: unit.name,
 			alive: unit.alive,
@@ -45,7 +56,15 @@
 			gold: hero.gold,
 			lastHits: hero.lastHits,
 			denies: hero.denies,
-			doing: doing(hero.order, unit.target?.name ?? null),
+			doing:
+				casting ?
+					`Casting ${casting.ability.name}: ${((casting.lands - game.tick) / TICK_RATE).toFixed(1)} s`
+				:	doing(hero.order, unit.target?.name ?? null),
+			statuses: STATUS_IDS.filter((id) => world.has(unit, id)).map((id) => ({
+				id,
+				name: STATUSES[id].name,
+				left: Math.ceil((unit.statuses[id] - game.tick) / TICK_RATE)
+			})),
 			abilities: KEYS.flatMap((key, slot) => {
 				const ability = game.ability(slot)
 				if (!ability) return []
@@ -61,7 +80,7 @@
 			}),
 			prompt:
 				targeting?.kind === "attackMove" ? "Attack-move: left-click where"
-				: targeting?.kind === "ability" ? `${targeting.ability.name}: left-click an enemy`
+				: targeting?.kind === "ability" ? prompt(targeting.ability)
 				: null
 		}
 	})
@@ -92,6 +111,13 @@
 					{info.gauge === 100 ? "Ready" : info.gauge}
 				</span>
 			</div>
+			{#if info.statuses.length > 0}
+				<ul class="statuses">
+					{#each info.statuses as status (status.id)}
+						<li class={status.id}>{status.name} {status.left} s</li>
+					{/each}
+				</ul>
+			{/if}
 			<div class="abilities">
 				{#each info.abilities as { key, slot, ability, usable, aiming } (key)}
 					<button
@@ -106,7 +132,9 @@
 					>
 						<kbd>{key}</kbd>
 						<span>{ability.name}</span>
-						<span class="cost">{ability.mp} MP</span>
+						<span class="cost">
+							{ability.mp} MP{ability.charge > 0 ? ` · ${String(ability.charge)} s` : ""}
+						</span>
 					</button>
 				{/each}
 			</div>
@@ -169,6 +197,25 @@
 	}
 	.ready {
 		color: var(--cursor);
+	}
+	.statuses {
+		display: flex;
+		gap: 6px;
+		margin: 6px 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 12px;
+	}
+	.statuses li {
+		padding: 0 6px;
+		border-radius: 3px;
+		background: rgb(0 0 0 / 0.3);
+	}
+	.slow {
+		color: #c79bff;
+	}
+	.chill {
+		color: #9fd8ff;
 	}
 	.abilities {
 		display: grid;

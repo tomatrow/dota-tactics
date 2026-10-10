@@ -4,15 +4,18 @@ import type { MapModel } from "dota-tactics-grid/map/model.ts"
 import { sceneY, tileX, tileZ } from "dota-tactics-grid/scene/coords.ts"
 import { WATER_DEPTH } from "dota-tactics-grid/scene/water.ts"
 import type { ViewerState } from "dota-tactics-grid/state.svelte.ts"
-import { ABILITIES, type Ability, type AbilityId } from "#lib/content/abilities.ts"
+import { ABILITIES, hitsStructures, type Ability, type AbilityId } from "#lib/content/abilities.ts"
+import type { JobId } from "#lib/content/heroes.ts"
+import { STATUSES } from "#lib/content/statuses.ts"
 import { TUNING } from "#lib/content/tuning.ts"
 import type { Command } from "#lib/sim/commands.ts"
 import { STEP_FULL, TICK_RATE, TICK_SECONDS } from "#lib/sim/constants.ts"
 import type { SimEvent } from "#lib/sim/events.ts"
-import { mapScenario } from "#lib/sim/scenario.ts"
+import { mapScenario, SLICE } from "#lib/sim/scenario.ts"
 import type { Unit } from "#lib/sim/unit.ts"
 import { World } from "#lib/sim/world.ts"
 import type { Vec3 } from "./camera.ts"
+import { bodyHeight } from "./units.ts"
 
 /** The longest frame the game catches up on; a longer one (a background tab) is dropped. */
 const MAX_FRAME = 0.25
@@ -23,18 +26,23 @@ export const ATTACK_EFFECT = 0.3
 /** How long (game seconds) a heal's burst lasts. */
 export const HEAL_EFFECT = 0.6
 
-/** How long (game seconds) a last-hit or deny pop-up lasts. */
+/** How long (game seconds) a pop-up lasts. */
 export const POPUP_TIME = 1.2
+
+/** How long (game seconds) a spell's flames or ice last. */
+export const SPELL_EFFECT = 0.8
 
 /** How long (game seconds) a hit flashes. */
 const FLASH = 0.12
 
-/** An attack the view is still showing. */
+/** An attack, or a spell's damage to one unit, the view is still showing. */
 export interface AttackEffect {
 	readonly attacker: Unit
 	readonly target: Unit
 	readonly hit: boolean
 	readonly ability: AbilityId | null
+	/** Magic lands at once, with no projectile. */
+	readonly magic: boolean
 	/** Game time (seconds) it happened. */
 	readonly at: number
 }
@@ -45,10 +53,21 @@ export interface HealEffect {
 	readonly at: number
 }
 
-/** Gold or a deny over a creep the player's hero killed. */
+/** A spell landing: flames or ice on its tiles. */
+export interface SpellEffect {
+	readonly ability: Ability
+	readonly col: number
+	readonly row: number
+	readonly at: number
+}
+
+/**
+ * Text rising over a unit: gold or "!" over a creep the player's hero killed; damage the hero deals
+ * or takes, or "Miss"; a status taking hold.
+ */
 export interface Popup {
 	readonly id: number
-	readonly kind: "gold" | "deny"
+	readonly kind: "gold" | "deny" | "dealt" | "taken" | "miss" | "status"
 	readonly text: string
 	readonly position: Vec3
 	readonly at: number
@@ -108,13 +127,21 @@ export class GameState {
 	effects: AttackEffect[] = []
 	/** Heals still being drawn, oldest first. */
 	heals: HealEffect[] = []
+	/** Spells still being drawn, oldest first. */
+	spells: SpellEffect[] = []
+	/**
+	 * Where a tile ability would land, while one waits for its target: the tile or enemy under the
+	 * pointer. Set by the input each frame.
+	 */
+	aim: readonly [col: number, row: number] | null = null
 	#accumulator = 0
 	#popupId = 0
 
-	constructor(view: ViewerState, seed: number) {
+	constructor(view: ViewerState, seed: number, job: JobId = "warrior") {
 		this.view = view
 		this.model = view.model
-		this.world = new World(mapScenario(this.model), seed)
+		const scenario = mapScenario(this.model, { ...SLICE, heroes: [{ team: "radiant", job }] })
+		this.world = new World(scenario, seed)
 		const hero = this.world.heroes.find((u) => u.team === "radiant")
 		if (!hero) throw new Error("the scenario has no Radiant hero")
 		this.hero = hero
@@ -150,6 +177,7 @@ export class GameState {
 		while (this.effects.length > 0 && this.effects[0].at < time - ATTACK_EFFECT)
 			this.effects.shift()
 		while (this.heals.length > 0 && this.heals[0].at < time - HEAL_EFFECT) this.heals.shift()
+		while (this.spells.length > 0 && this.spells[0].at < time - SPELL_EFFECT) this.spells.shift()
 		if (this.popups.length > 0 && this.popups[0].at < time - POPUP_TIME) {
 			this.popups = this.popups.filter((p) => p.at >= time - POPUP_TIME)
 		}
@@ -172,12 +200,32 @@ export class GameState {
 					target: event.target,
 					hit: event.hit,
 					ability: event.ability,
+					magic: false,
 					at
 				})
+				this.#hitPopup(event.attacker, event.target, event.hit, event.damage, at)
+				return false
+			case "magic":
+				this.effects.push({
+					attacker: event.attacker,
+					target: event.target,
+					hit: true,
+					ability: event.ability,
+					magic: true,
+					at
+				})
+				this.#hitPopup(event.attacker, event.target, true, event.damage, at)
+				return false
+			case "spell":
+				this.spells.push({ ability: ABILITIES[event.ability], col: event.col, row: event.row, at })
+				return false
+			case "status":
+				this.#popup(event.unit, "status", STATUSES[event.status].name, at, 0.35)
 				return false
 			case "heal":
 				this.heals.push({ unit: event.unit, at })
 				return false
+			case "charge":
 			case "recoil":
 				return false
 			case "death": {
@@ -186,21 +234,34 @@ export class GameState {
 				if (this.selected === unit) this.selected = null
 				if (this.hovered === unit) this.hovered = null
 				if (event.killer === this.hero && (event.bounty > 0 || event.denied)) {
-					const [x, y, z] = this.position(unit)
-					this.popups = [
-						...this.popups,
-						{
-							id: ++this.#popupId,
-							kind: event.denied ? "deny" : "gold",
-							text: event.denied ? "!" : `+${String(event.bounty)}`,
-							position: [x, y + 1.6, z],
-							at
-						}
-					]
+					const text = event.denied ? "!" : `+${String(event.bounty)}`
+					this.#popup(unit, event.denied ? "deny" : "gold", text, at, 1)
 				}
 				return true
 			}
 		}
+	}
+
+	/** Damage or a miss over a blow's target, when the player's hero dealt it or took it. */
+	#hitPopup(attacker: Unit, target: Unit, hit: boolean, damage: number, at: number) {
+		if (attacker !== this.hero && target !== this.hero) return
+		if (!hit) this.#popup(target, "miss", "Miss", at, 0.7)
+		else if (damage > 0) {
+			this.#popup(target, target === this.hero ? "taken" : "dealt", String(damage), at, 0.7)
+		}
+	}
+
+	/** A pop-up `above` tiles over a unit's body. */
+	#popup(unit: Unit, kind: Popup["kind"], text: string, at: number, above: number) {
+		const [x, y, z] = this.position(unit)
+		const popup: Popup = {
+			id: ++this.#popupId,
+			kind,
+			text,
+			position: [x, y + bodyHeight(unit.stats) + above, z],
+			at
+		}
+		this.popups = [...this.popups, popup]
 	}
 
 	// Input: commands always go to the hero (DESIGN.md §11).
@@ -226,13 +287,24 @@ export class GameState {
 		}
 	}
 
-	/** A left-click: picks the target of an ability or an attack-move; else selects a unit. */
+	/**
+	 * A left-click: picks the target of an ability (an enemy; for a tile ability, an enemy or the
+	 * tile) or an attack-move; else selects a unit.
+	 */
 	leftClick(unit: Unit | null, tile: readonly [number, number] | null) {
 		const { hero, targeting } = this
 		if (targeting?.kind === "ability") {
-			if (!unit || unit.team === hero.team || !hero.alive) return
-			this.#command({ type: "ability", ability: targeting.ability.id, target: unit.id })
-			this.#mark("attack", unit.col, unit.row, unit)
+			const { ability } = targeting
+			if (!hero.alive) return
+			if (unit && this.canTarget(ability, unit)) {
+				this.#command({ type: "ability", ability: ability.id, target: unit.id })
+				this.#mark("attack", unit.col, unit.row, unit)
+			} else if (ability.target === "tile" && tile) {
+				this.#command({ type: "abilityAt", ability: ability.id, col: tile[0], row: tile[1] })
+				this.#mark("attack", tile[0], tile[1], null)
+			} else {
+				return
+			}
 			this.targeting = null
 			return
 		}
@@ -257,6 +329,15 @@ export class GameState {
 		return id ? ABILITIES[id] : null
 	}
 
+	/** Whether an ability of the hero's can be aimed at a unit: an enemy it works on. */
+	canTarget(ability: Ability, unit: Unit): boolean {
+		return (
+			ability.target !== "self" &&
+			unit.team !== this.hero.team &&
+			(!unit.stats.structure || hitsStructures(ability))
+		)
+	}
+
 	/** Whether the hero can use an ability now (or as soon as its gauge is full). */
 	usable(ability: Ability): boolean {
 		return this.hero.alive && ability.enabled && this.hero.mp >= ability.mp
@@ -271,6 +352,7 @@ export class GameState {
 			this.#command({ type: "ability", ability: ability.id, target: null })
 		} else {
 			this.targeting = { kind: "ability", ability }
+			this.aim = null
 		}
 	}
 
@@ -310,7 +392,7 @@ export class GameState {
 	position(unit: Unit): Vec3 {
 		const step = unit.step
 		if (!step) return this.toScene(unit.col, unit.row)
-		const t = Math.min(1, (step.progress + unit.stats.walk * this.alpha) / STEP_FULL)
+		const t = Math.min(1, (step.progress + this.world.walkOf(unit) * this.alpha) / STEP_FULL)
 		const [x, , z] = this.toScene(
 			unit.col + (step.col - unit.col) * t,
 			unit.row + (step.row - unit.row) * t
@@ -351,7 +433,11 @@ export class GameState {
 		const time = this.time
 		for (const e of this.effects) {
 			if (e.target !== unit || !e.hit) continue
-			const lands = e.at + (e.attacker.stats.reach <= 2 ? 0.08 : ATTACK_EFFECT)
+			const lands =
+				e.at +
+				(e.magic ? 0.05
+				: e.attacker.stats.reach <= 2 ? 0.08
+				: ATTACK_EFFECT)
 			if (time >= lands && time < lands + FLASH) return true
 		}
 		return false
