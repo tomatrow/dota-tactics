@@ -24,20 +24,24 @@ Related packages: [`dota-cartographer`](../dota-cartographer) (map extraction),
 
 ## 2. Decided
 
-| Area | Decision |
-| --- | --- |
-| Players | One hero per player. 5v5 is the target; single-player and 1v1 first. |
-| Match length | ~30 minutes. |
-| Map | Full Dota map, 64u cells, 296×296. FFTA ranges scaled ~2.5× to fit. |
-| Clock | Real-time. Each unit has an ATB gauge (§3). |
-| Movement | Continuous, click-to-move, Dota-ish speed. **The gauge does not charge while walking.** |
-| Rules base | FFTA / FFTA2. Facing as evasion, equipment teaches abilities, A2 MP regen. |
-| Jobs | Race + job fixed at draft. No mid-match job changes. |
-| Laws / Judges | **Not** included. Judge Points as a team resource may stay (§9). |
-| Creeps | Full units, same rules as heroes, no abilities. Denies in. (§6) |
-| Vision | Dota fog of war, 360°, Dota radii. Trees and height block line of sight. Team-shared. (§10) |
-| Structures | Dota rules, FF names: Crystal, Sentinels, Camps, Clan Hall. Glyph = Wall, 15s. (§9) |
-| Win | Destroy the enemy Crystal (Ancient). |
+| Area          | Decision                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Players       | One hero per player. 5v5 is the target; single-player and 1v1 first.                        |
+| Match length  | ~30 minutes.                                                                                |
+| Map           | Full Dota map, 64u cells, 296×296. FFTA ranges scaled ~2.5× to fit.                         |
+| Clock         | Real-time. Each unit has an ATB gauge (§3).                                                 |
+| Movement      | Continuous, click-to-move, Dota-ish speed. **The gauge does not charge while walking.**     |
+| Rules base    | FFTA / FFTA2. Facing as evasion, equipment teaches abilities, A2 MP regen.                  |
+| Grid          | 4-way movement, no diagonals (for now). Facing is 4-way. (§4)                               |
+| Ranges        | FFTA shapes: ranges are Manhattan diamonds, AoE uses FFTA patterns. (§5)                    |
+| Orders        | An attack order repeats; abilities are always explicit; no auto-acquire when idle. (§3)     |
+| Controls      | Dota 2 default layout. (§11)                                                                |
+| Jobs          | Race + job fixed at draft. No mid-match job changes.                                        |
+| Laws / Judges | **Not** included. Judge Points as a team resource may stay (§9).                            |
+| Creeps        | Full units, same rules as heroes, no abilities. Denies in. (§6)                             |
+| Vision        | Dota fog of war, 360°, Dota radii. Trees and height block line of sight. Team-shared. (§10) |
+| Structures    | Dota rules, FF names: Crystal, Sentinels, Camps, Clan Hall. Glyph = Wall, 15s. (§9)         |
+| Win           | Destroy the enemy Crystal (Ancient).                                                        |
 
 ## 3. Clock: ATB
 
@@ -62,6 +66,11 @@ aimed at tiles punishes standing still; facing punishes it from behind.
 
 One action = attack, ability, item, or a free re-face. There is no "move" action.
 
+**Orders** (decided). An attack order repeats, as in Dota: walk into reach, stop, charge, hit,
+charge, hit, until the target dies or the order changes. Abilities and items are always explicit.
+An idle unit never picks its own target: auto-acquiring would spend the full gauge a player was
+holding for a spell. (Creeps and towers do acquire; they have no spells to hold for.)
+
 - **Instant abilities** resolve on use.
 - **Charge-time abilities** (FFTA spells) enter the world with their own timer and a visible bar
   over the caster, resolving on target tiles when it fills. Stun interrupts. This is Dota
@@ -85,25 +94,44 @@ Firaga. Ethers for burst mana.
 
 ## 4. Scale
 
-Gameplay cell = render cell = 64 Dota units. FFTA's numbers are treated as *ratios*
+Gameplay cell = render cell = 64 Dota units. FFTA's numbers are treated as _ratios_
 (melee 1 : bow 4 : tower 6 : move 4) and scaled ~2.5×.
 
 ![tile size](docs/tile-size.png)
 
 Measured on the extracted map (straight line; real paths ~20–30% longer):
 
-| Distance | Units | Tiles | Hero @300u/s |
-| --- | ---: | ---: | ---: |
-| Fountain → own T1 mid | 8,095 | 126 | 27s |
-| Fountain → own T1 safe lane | 12,329 | 193 | 41s |
-| T1 → enemy T1, mid | 2,919 | 46 | 10s |
-| T1 → enemy T1, side lane | ~4,350 | ~68 | ~15s |
-| Fountain → map centre | 10,185 | 159 | 34s |
-| Fountain → enemy Ancient | 17,638 | 276 | 59s |
-| T1 top → T1 bot (rotation) | 13,898 | 217 | 46s |
-| Fountain → Roshan | 11,111 | 174 | 37s |
-| Full creep lane path, mid | 13,500 | 211 | 42s @325 |
-| Full creep lane path, side | ~21,000 | ~330 | ~65s @325 |
+| Distance                    |   Units | Tiles | Hero @300u/s |
+| --------------------------- | ------: | ----: | -----------: |
+| Fountain → own T1 mid       |   8,095 |   126 |          27s |
+| Fountain → own T1 safe lane |  12,329 |   193 |          41s |
+| T1 → enemy T1, mid          |   2,919 |    46 |          10s |
+| T1 → enemy T1, side lane    |  ~4,350 |   ~68 |         ~15s |
+| Fountain → map centre       |  10,185 |   159 |          34s |
+| Fountain → enemy Ancient    |  17,638 |   276 |          59s |
+| T1 top → T1 bot (rotation)  |  13,898 |   217 |          46s |
+| Fountain → Roshan           |  11,111 |   174 |          37s |
+| Full creep lane path, mid   |  13,500 |   211 |     42s @325 |
+| Full creep lane path, side  | ~21,000 |  ~330 |    ~65s @325 |
+
+### 4-way movement
+
+Movement is 4-way, no diagonals (decided, for now). Routes along the grid axes barely change;
+diagonal routes get up to √2 longer. Shortest walkable paths from the Radiant fountain at
+4.7 tiles/s:
+
+| To            | 8-way | 4-way | Ratio |
+| ------------- | ----: | ----: | ----: |
+| Own T1 top    |   31s |   32s |  1.06 |
+| Own T1 mid    |   26s |   37s |  1.41 |
+| Own T1 bot    |   41s |   43s |  1.04 |
+| Enemy T1 top  |   46s |   50s |  1.08 |
+| Enemy T1 mid  |   36s |   51s |  1.41 |
+| Enemy T1 bot  |   51s |   60s |  1.18 |
+| Enemy Crystal |   59s |   82s |  1.40 |
+
+Mid runs diagonally, so it stops being the short lane. Accepted for the slice; if mid feels
+long, the fixes are a faster walk or letting diagonal steps back in.
 
 Rejected alternatives, for the record:
 
@@ -117,25 +145,27 @@ Rejected alternatives, for the record:
 
 ## 5. Number sheet, v0
 
-All tiles are 64u. Speeds in gauge points/sec.
+All tiles are 64u. Speeds in gauge points/sec. Every range is **Manhattan** (tile steps, drawn
+as a diamond), as in FFTA (decided). With 4-way movement that is exactly the walking distance,
+so "in range" and "this many steps away" always agree.
 
-| Thing | Dota units | Tiles | Notes |
-| --- | ---: | ---: | --- |
-| Melee reach | 150 | 2 | adjacent + 1, diagonals reachable |
-| Ranged attack, base | 600 | 9 | Sniper / Archer +2–3 |
-| Tower range | 700 | 11 | |
-| Tower aggro / backdoor radius | 900 | 14 | |
-| Creep aggro | 500 | 8 | |
-| Spell range | 600–900 | 9–14 | Fire 10, Cure 8, Haste 8 |
-| AoE radius | 250–400 | 4–6 | Firaga r4, Quake r6 |
-| XP share radius | 1,300 | 20 | |
-| Hero walk, Move 3 / 4 / 5 | 225 / 300 / 385 u/s | 3.5 / 4.7 / 6 tiles/s | |
-| Creep walk | 325 u/s | 5 tiles/s | |
-| Gauge fill, speed 20 | — | 5s | |
-| Charge-time spells | — | 2–6s | |
-| Creep wave | every 30s | — | |
-| Respawn | 10 + 3×level s | — | buyback for gold |
-| Day / night | 5 min | — | |
+| Thing                         |          Dota units |                 Tiles | Notes                             |
+| ----------------------------- | ------------------: | --------------------: | --------------------------------- |
+| Melee reach                   |                 150 |                     2 | adjacent + 1, diagonals reachable |
+| Ranged attack, base           |                 600 |                     9 | Sniper / Archer +2–3              |
+| Tower range                   |                 700 |                    11 |                                   |
+| Tower aggro / backdoor radius |                 900 |                    14 |                                   |
+| Creep aggro                   |                 500 |                     8 |                                   |
+| Spell range                   |             600–900 |                  9–14 | Fire 10, Cure 8, Haste 8          |
+| AoE radius                    |             250–400 |                   4–6 | Firaga r4, Quake r6               |
+| XP share radius               |               1,300 |                    20 |                                   |
+| Hero walk, Move 3 / 4 / 5     | 225 / 300 / 385 u/s | 3.5 / 4.7 / 6 tiles/s |                                   |
+| Creep walk                    |             325 u/s |             5 tiles/s |                                   |
+| Gauge fill, speed 20          |                   — |                    5s |                                   |
+| Charge-time spells            |                   — |                  2–6s |                                   |
+| Creep wave                    |           every 30s |                     — |                                   |
+| Respawn                       |      10 + 3×level s |                     — | buyback for gold                  |
+| Day / night                   |               5 min |                     — |                                   |
 
 ## 6. Creeps
 
@@ -159,7 +189,8 @@ Hitting an enemy hero near creeps pulls their aggro — Dota's main laning tool,
 - Every 30s per lane: 3 melee, 1 ranged. Siege every 5th wave (every 2nd late).
 - Stat growth every 7.5 min, as Dota.
 - Barracks down → super creeps in that lane; all six → megas.
-- Waves meet in the river at ~0:35 mid, ~0:55 side lanes.
+- Waves meet in the river at ~0:35 mid, ~0:55 side lanes in Dota. With 4-way movement mid is
+  ~40% longer (§4); measure it in the headless lane sim before tuning.
 - Tuning target: equal waves with no heroes resolve in ~30s, so the next wave arrives into a
   finishing fight and lane equilibrium works. Creep attack cadence ~3s.
 
@@ -181,7 +212,7 @@ the Blue Mage lane.
 - **Deny** (decided): attack own creep under 50%. Enemy gets reduced XP, no gold. Costs a full
   action — a real sacrifice.
 
-Last-hit reading: creep HP falls on *other* creeps' gauges; the skill is "will it still be alive
+Last-hit reading: creep HP falls on _other_ creeps' gauges; the skill is "will it still be alive
 when my gauge fills."
 
 ### Collision
@@ -201,15 +232,15 @@ Hunter bonuses. Roshan is a boss family; drops an Angel Ring (Auto-Life). Tormen
 
 Race-locked jobs give a draft roster for free. "Pick a hero" = pick race + job.
 
-| Race | Dota shape | Jobs of note |
-| --- | --- | --- |
-| Bangaa | Strength cores | Warrior, Defender, Dragoon, Gladiator, Templar (Omniknight) |
-| Viera | Agility carries, burst | Assassin (Riki), Sniper, Red Mage, Summoner (scion ults) |
-| Nu Mou | Intelligence | Black / Time Mage, Sage, Alchemist (support items), Beastmaster / Morpher (Chen, Enchantress) |
-| Moogle | Utility, odd | Gunner, Gadgeteer (Chaos Knight), Juggler, Animist, Mog Knight, Thief (gold-steal ganker) |
-| Hume | Flex | Soldier, Paladin, Fighter, Hunter (monster-family damage), Blue Mage (learns from neutrals) |
-| Seeq (A2) | Greedy brawlers | Viking, Berserker, Ranger (traps = wards / mines) |
-| Gria (A2) | Fliers | Raptor, Ravager, Geomancer (terrain, trees) |
+| Race      | Dota shape             | Jobs of note                                                                                  |
+| --------- | ---------------------- | --------------------------------------------------------------------------------------------- |
+| Bangaa    | Strength cores         | Warrior, Defender, Dragoon, Gladiator, Templar (Omniknight)                                   |
+| Viera     | Agility carries, burst | Assassin (Riki), Sniper, Red Mage, Summoner (scion ults)                                      |
+| Nu Mou    | Intelligence           | Black / Time Mage, Sage, Alchemist (support items), Beastmaster / Morpher (Chen, Enchantress) |
+| Moogle    | Utility, odd           | Gunner, Gadgeteer (Chaos Knight), Juggler, Animist, Mog Knight, Thief (gold-steal ganker)     |
+| Hume      | Flex                   | Soldier, Paladin, Fighter, Hunter (monster-family damage), Blue Mage (learns from neutrals)   |
+| Seeq (A2) | Greedy brawlers        | Viking, Berserker, Ranger (traps = wards / mines)                                             |
+| Gria (A2) | Fliers                 | Raptor, Ravager, Geomancer (terrain, trees)                                                   |
 
 Clan titles / privileges → per-match talent tree at levels 10/15/20/25.
 
@@ -236,22 +267,22 @@ items do not exist, which keeps the game from being Dota with a skin.
 
 ### Dota item roles → FF answers
 
-| Dota | Answer |
-| --- | --- |
-| Boots | Spiked / Feather / Dash Boots, Move +1 / +2. Accessory. |
-| Blink Dagger | **A job, not an item.** Dragoon Jump, Gria flight, Time Mage, Assassin. Mobility is drafted. |
-| BKB | Ribbon / Star Armlet — status immunity, passive. |
-| Force Staff, Eul's | Time Magic. |
-| Aghanim's | None. Mastery is the upgrade. |
-| Stat items | Gear is stat items. |
-| Tango, Salve, Clarity | Potion, Hi-Potion, Ether. |
-| Bottle / runes | Lotus pools and rune spots stay as map features. |
-| **TP scroll** | **Warp Stone.** Consumable, 3s channel to a friendly structure, cooldown. Prototype: everyone starts with one. |
-| Wards, Smoke, Dust | See §10. |
-| Aegis | Roshan drops an **Angel Ring** (Auto-Life). Lost on death. |
-| Buyback | **Phoenix Down**, priced like buyback. Alchemist can throw one on an ally's corpse. |
-| Courier | Dispatch. |
-| Neutral items | Bazaar. |
+| Dota                  | Answer                                                                                                         |
+| --------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Boots                 | Spiked / Feather / Dash Boots, Move +1 / +2. Accessory.                                                        |
+| Blink Dagger          | **A job, not an item.** Dragoon Jump, Gria flight, Time Mage, Assassin. Mobility is drafted.                   |
+| BKB                   | Ribbon / Star Armlet — status immunity, passive.                                                               |
+| Force Staff, Eul's    | Time Magic.                                                                                                    |
+| Aghanim's             | None. Mastery is the upgrade.                                                                                  |
+| Stat items            | Gear is stat items.                                                                                            |
+| Tango, Salve, Clarity | Potion, Hi-Potion, Ether.                                                                                      |
+| Bottle / runes        | Lotus pools and rune spots stay as map features.                                                               |
+| **TP scroll**         | **Warp Stone.** Consumable, 3s channel to a friendly structure, cooldown. Prototype: everyone starts with one. |
+| Wards, Smoke, Dust    | See §10.                                                                                                       |
+| Aegis                 | Roshan drops an **Angel Ring** (Auto-Life). Lost on death.                                                     |
+| Buyback               | **Phoenix Down**, priced like buyback. Alchemist can throw one on an ally's corpse.                            |
+| Courier               | Dispatch.                                                                                                      |
+| Neutral items         | Bazaar.                                                                                                        |
 
 Open: the curated item list, what teaches what, AP costs.
 
@@ -264,11 +295,11 @@ barracks → **Camps**, fountain → **Clan Hall**. The Dota names are used belo
 
 Units with HP and a gauge; never move, so they're always charging. Speed 25 → one hit every 4s.
 
-| Tier | Damage | Note |
-| --- | ---: | --- |
-| T1 | 180 | ≈30% of a level-1 hero; a dive buys ~2 actions. 3 hits on a melee creep. |
-| T2 | 220 | |
-| T3 / T4 | 260 | |
+| Tier    | Damage | Note                                                                     |
+| ------- | -----: | ------------------------------------------------------------------------ |
+| T1      |    180 | ≈30% of a level-1 hero; a dive buys ~2 actions. 3 hits on a melee creep. |
+| T2      |    220 |                                                                          |
+| T3 / T4 |    260 |                                                                          |
 
 - Range 11, aggro radius 14, vision 30 / 12, true sight 11.
 - Hit chance 100%; evasion does not apply. Attackers below the tower still take the 25% uphill
@@ -329,15 +360,15 @@ and nothing for Ninja / Illusionist / Ranger to do.
 
 ### Dota vision items → FF answers
 
-| Dota | Answer |
-| --- | --- |
-| Observer ward | **Watcher's Lantern** — consumable, tile-placed, 25-tile vision, 6 min, 2 per team. The one invented item. |
-| Sentry ward | **Sentry Lantern** — consumable, true sight in 15 tiles, 6 min. (Decided: consumable, so a draft without detection isn't lost.) |
-| True sight abilities | Ranger's Sight trap, Sage's *Sight*. |
-| Smoke of Deceit | **Smoke Bomb** — real FF item. Team-wide Transparent until near enemies. |
-| Dust, Gem | None. |
-| Invisibility | Ninja / Assassin / Illusionist. Transparent status, broken by acting. |
-| Scan | The map's watchers. |
+| Dota                 | Answer                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Observer ward        | **Watcher's Lantern** — consumable, tile-placed, 25-tile vision, 6 min, 2 per team. The one invented item.                      |
+| Sentry ward          | **Sentry Lantern** — consumable, true sight in 15 tiles, 6 min. (Decided: consumable, so a draft without detection isn't lost.) |
+| True sight abilities | Ranger's Sight trap, Sage's _Sight_.                                                                                            |
+| Smoke of Deceit      | **Smoke Bomb** — real FF item. Team-wide Transparent until near enemies.                                                        |
+| Dust, Gem            | None.                                                                                                                           |
+| Invisibility         | Ninja / Assassin / Illusionist. Transparent status, broken by acting.                                                           |
+| Scan                 | The map's watchers.                                                                                                             |
 
 Prototype: slice 1 is fog-free to test the ATB feel in isolation; slice 2 adds fog, a jungle
 entrance and a third hero to test ganks.
@@ -347,7 +378,8 @@ Netcode: fog means the server must own visibility eventually. Prototype trusts t
 ## 11. Prototype slice
 
 One lane (mid). Two T1 towers. Waves. Two heroes: **Bangaa Warrior** vs **Nu Mou Black Mage**,
-mage starts at 0 MP, each with one piece of gear teaching one ability. Win = kill the far tower.
+mage starts at 0 MP, each with one piece of gear teaching one ability. You pick a side; a
+scripted AI plays the other hero (decided). No fog. Win = kill the far tower.
 
 It answers the only two questions that need play to answer:
 
@@ -355,6 +387,73 @@ It answers the only two questions that need play to answer:
 2. Does "walking stops your gauge" produce kiting, or statues?
 
 Levers if it's laggy: higher base speed, larger walk speed, partial charge while walking.
+
+### Architecture
+
+- **The board comes from [`dota-tactics-grid`](../dota-tactics-grid)**: `MapModel`, terrain,
+  water, trees, entity models, picking, lighting and the renderer, imported as a workspace
+  package. `dota-tactics` provides the `ViewerState` its components read. If the coupling hurts,
+  a shared board package gets extracted later.
+- **Ideas, not code, from [`threlte-tactics`](../threlte-tactics)**: the ability pipeline
+  (range → area → effect target → hit rate → power → effect), stat modifiers via value-change
+  exceptions, status effects with durations (in ticks). Its turn state machine, turn order,
+  board and keyboard UI are built for turns and stay behind. The seeded PRNG is lifted as is.
+- **The sim is plain TypeScript, not runes classes** (a deliberate break from
+  `threlte-tactics`). Fixed 20 ticks/s, integer ticks, a seeded PRNG, units updated in id order:
+  deterministic, runs in Node tests, and can move to a worker or server for networking. ~200
+  units ticking through Svelte proxies would be slow and couldn't run headless.
+- A thin runes `GameState` owns the sim: steps it each frame, turns input into commands, and
+  exposes a snapshot for the HUD and scene. The renderer interpolates positions between ticks.
+
+```
+src/lib/sim/         world, tick, units, gauge, movement (A* for heroes, a flow field per lane
+                     for creeps, tile occupancy), combat (hit / facing / damage), abilities,
+                     status, ai (creep, tower, hero), spawner, win
+src/lib/content/     jobs, abilities, items, creeps, towers, tuning: the numbers in this doc
+src/lib/game/        GameState (runes): loop, input → commands, snapshot
+src/lib/components/  HUD, scene (units, range diamonds, AoE preview, charge bars)
+scripts/lane-sim.ts  headless: mid lane with no heroes, prints the numbers
+```
+
+### Controls
+
+Dota 2 default layout (decided):
+
+| Input                             | Does                                                          |
+| --------------------------------- | ------------------------------------------------------------- |
+| Right-click ground                | Move                                                          |
+| Right-click enemy                 | Attack order (repeats)                                        |
+| Right-click own creep under 50%   | Deny                                                          |
+| A, then left-click                | Attack-move                                                   |
+| S / H                             | Stop / hold                                                   |
+| Q W E R D F                       | Abilities; left-click to target, right-click or Esc to cancel |
+| Z X C V B N                       | Items (consumables bag)                                       |
+| F1, Space                         | Centre on hero; Space held keeps it centred                   |
+| Mouse at screen edge, middle-drag | Pan                                                           |
+| Wheel                             | Zoom                                                          |
+| `[` / `]`                         | Turn the view 90° (FFT style; Dota has no rotation)           |
+
+### Milestones
+
+Each is playable or testable on its own.
+
+1. **Scaffold.** ✅ SvelteKit package with the grid's config; the real map renders through the
+   grid's scene; game camera with the Dota controls, following a point.
+2. **Creeps and towers, no heroes.** Mid waves, flow field, aggro, attacks, deaths, the two T1s.
+   `lane-sim.ts` checks §6 headless: when waves meet, and that equal waves resolve in ~30s.
+3. **One hero.** Warrior: click to move, attack orders, the gauge (charges only standing),
+   facing, First Aid, Body Slam, gold on last hits, denies.
+4. **Black Mage.** MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
+   Rend Speed + Slow. Facing evasion, uphill miss.
+5. **Opponent.** Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when it
+   has MP, retreats at low HP. Respawn at the Clan Hall. Win on the enemy T1 mid.
+6. **Tuning.** Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
+   questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
+   if players always act the instant the gauge fills, the cadence is too slow.
+
+Known render issue for milestone 2: the grid's renderer caches the shadow map and the AO
+G-buffer because its board is static. Moving units need either a per-frame refresh or to be
+drawn after the AO pass.
 
 ## 12. Combat resolution, v0
 
@@ -387,19 +486,19 @@ innate count is a balance knob per job.
 
 ### Bangaa Warrior
 
-| Stat | Value | Note |
-| --- | ---: | --- |
-| HP | 620 | ~Dota strength hero at 1 |
-| MP | 0, +10/action | |
-| ATK | 58 | includes Shortsword |
-| MATK | 20 | |
-| DEF | 30 | |
-| RES | 14 | |
-| Speed | 20 | one action / 5s |
-| Move | 4 | 4.7 tiles/s |
-| Jump | 2 | |
-| Evasion | 10 | |
-| Reach | 2 | melee |
+| Stat    |         Value | Note                     |
+| ------- | ------------: | ------------------------ |
+| HP      |           620 | ~Dota strength hero at 1 |
+| MP      | 0, +10/action |                          |
+| ATK     |            58 | includes Shortsword      |
+| MATK    |            20 |                          |
+| DEF     |            30 |                          |
+| RES     |            14 |                          |
+| Speed   |            20 | one action / 5s          |
+| Move    |             4 | 4.7 tiles/s              |
+| Jump    |             2 |                          |
+| Evasion |            10 |                          |
+| Reach   |             2 | melee                    |
 
 Abilities (Battle Tech):
 
@@ -416,19 +515,19 @@ the mage's 3.5, so the mage cannot simply run — it needs Chill.
 
 ### Nu Mou Black Mage
 
-| Stat | Value | Note |
-| --- | ---: | --- |
-| HP | 420 | |
-| MP | 0, +10/action | |
-| ATK | 30 | Rod |
-| MATK | 60 | |
-| DEF | 16 | |
-| RES | 32 | |
-| Speed | 18 | one action / 5.6s |
-| Move | 3 | 3.5 tiles/s |
-| Jump | 2 | |
-| Evasion | 5 | |
-| Reach | 2 | rod bonk |
+| Stat    |         Value | Note              |
+| ------- | ------------: | ----------------- |
+| HP      |           420 |                   |
+| MP      | 0, +10/action |                   |
+| ATK     |            30 | Rod               |
+| MATK    |            60 |                   |
+| DEF     |            16 |                   |
+| RES     |            32 |                   |
+| Speed   |            18 | one action / 5.6s |
+| Move    |             3 | 3.5 tiles/s       |
+| Jump    |             2 |                   |
+| Evasion |             5 |                   |
+| Reach   |             2 | rod bonk          |
 
 Abilities (Black Magic):
 
