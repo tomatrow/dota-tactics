@@ -5,8 +5,8 @@ A 3D tactics-board view of the real Dota 2 map, in the style of Final Fantasy Ta
 creep lanes. It reads the data that [`dota-cartographer`](../dota-cartographer) extracts from
 the game, so nothing is hand-placed.
 
-It's a single-page SvelteKit app, client-rendered and built as a static site, drawing with plain
-three.js.
+It's a single-page SvelteKit app, client-rendered and built as a static site. The 3D view is a
+[Threlte](https://threlte.xyz) scene: three.js written as Svelte components.
 
 ## Usage
 
@@ -96,23 +96,33 @@ it doesn't tint the colours.
 ## How it's built
 
 ```
-src/lib/map/     the data: schema + parser, MapModel (typed arrays + derived sides and lane
-                 tiles), layer colouring and legends, info-panel text
-src/lib/scene/   three.js: tile columns, terrain, water, trees, entity models, lanes, cursor,
-                 column picking, and the Viewer that owns renderer, camera and frame loop
-src/lib/components/  the FFT windows (header, legend, info, controls) and the stage
+src/lib/map/               the data: schema + parser, MapModel (typed arrays + derived sides and
+                           lane tiles), layer colouring and legends, info-panel text
+src/lib/scene/             three.js builders: tile columns, the terrain's colours and grid shader,
+                           water, tree placement and species, lane paths, palette, column
+                           picking, camera maths
+src/lib/state.svelte.ts    ViewerState: what the windows and the scene share, through context
+src/lib/components/        the viewer, the FFT windows (header, legend, info, controls), the stage
+src/lib/components/scene/  the Threlte scene: renderer, camera rig, lighting, terrain, water,
+                           trees, entities (a component per kind), lanes, cursors, picker
 ```
+
+- **Components:** the scene is Svelte components inside Threlte's `<Canvas>`, and they read the
+  shared `ViewerState`. The heavy geometry comes from plain TypeScript builders, tested in Node.
+  `AGENTS.md` has the conventions.
 
 - **Terrain:** one mesh. It only draws tile tops and the walls you can see, with per-vertex colours,
   so switching layers just rewrites colours. Tile edges are drawn in the shader.
 - **Picking:** walks the grid along the mouse ray, column by column, rather than ray-casting the
   terrain mesh's million triangles.
+- **Camera:** an orthographic camera with `CameraControls` from `@threlte/extras`. Its transitions
+  drive the Q / E quarter turns and the R reset.
 - **Lighting:**
   - One sun with soft shadows, a sky fill light and a dim room environment for highlights.
   - Ground-truth ambient occlusion (`GTAOPass`) at half resolution.
   - SMAA anti-aliasing and AgX tone mapping.
 - **Performance:** the board is static, so the shadow map and the AO's normal/depth buffer are only
-  re-rendered when the camera or the scene changes. With AO on it holds 60 fps on Apple Silicon
+  re-rendered when the camera or the scene changes. The trees are one instanced mesh per species. With AO on it holds 60 fps on Apple Silicon
   at retina size, still or orbiting.
 - **SMAA instead of MSAA:** with MSAA, GTAO's full-screen passes into multisampled buffers cost
   about 15 ms a frame.
