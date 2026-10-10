@@ -36,7 +36,11 @@ growing into a playable board, so the scene is built from components that read s
 - **Rendering** is `Renderer.svelte`'s task on the render stage: three's `EffectComposer` with a
   cached GTAO pass, then SMAA. The board is static, so the shadow map and the AO's G-buffer are
   only re-rendered when the camera moves or shapes change. State that changes shapes goes in
-  `Renderer.svelte`'s "shapes changed" effect.
+  `Renderer.svelte`'s "shapes changed" effect. `<Renderer dynamic>` re-renders the AO G-buffer
+  every frame, for a board with things moving on it (the game in `dota-tactics`).
+- **Other packages import the board** through `exports` (`dota-tactics-grid/<path under
+src/lib>`), providing their own `ViewerState`. Keep components working for both: what another
+  package needs goes behind a prop whose default keeps the viewer as it is.
 - **Picking** walks the grid along the pointer's ray (`pickColumn`) and ray-casts only the entity
   groups, in its own stage after the camera controls and before drawing. Never ray-cast the
   terrain (a million triangles) or turn on `interactivity()`.

@@ -16,6 +16,16 @@
 	/** Ambient occlusion is soft and low-frequency: computing it at half resolution halves its cost. */
 	const AO_SCALE = 0.5
 
+	let {
+		dynamic = false
+	}: {
+		/**
+		 * Something on the board moves on its own (units in a game): the AO G-buffer is re-rendered
+		 * every frame. The shadow map still isn't, so moving things mustn't cast shadows.
+		 */
+		dynamic?: boolean
+	} = $props()
+
 	const view = getViewerState()
 	const { renderer, scene, camera, size, dpr, autoRender, renderStage } = useThrelte()
 
@@ -97,7 +107,7 @@
 				lastView.copy(matrixWorld)
 				lastProjection.copy(projectionMatrix)
 			}
-			if (moved || shapesChanged) gtao.refresh = true
+			if (moved || shapesChanged || dynamic) gtao.refresh = true
 			if (shapesChanged) renderer.shadowMap.needsUpdate = true
 			shapesChanged = false
 			composer.render(delta)
