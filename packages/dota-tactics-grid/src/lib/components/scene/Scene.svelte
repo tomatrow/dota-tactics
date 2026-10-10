@@ -7,10 +7,10 @@
 	import { Color } from "three"
 	import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js"
 	import { Entities } from "#lib/scene/entities.ts"
-	import { Lanes } from "#lib/scene/lanes.ts"
 	import { Trees } from "#lib/scene/trees.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 	import CameraRig from "./CameraRig.svelte"
+	import Lanes from "./Lanes.svelte"
 	import Lighting from "./Lighting.svelte"
 	import Picker from "./Picker.svelte"
 	import Renderer from "./Renderer.svelte"
@@ -31,13 +31,11 @@
 	const initialScale = view.verticalScale
 	const trees = new Trees(model, initialScale)
 	const entities = new Entities(model, initialScale)
-	const lanes = new Lanes(model, initialScale)
 
 	$effect(() => {
 		const scale = view.verticalScale
 		trees.setVerticalScale(scale)
 		entities.setVerticalScale(scale)
-		lanes.setVerticalScale(scale)
 	})
 
 	const labelRenderer = new CSS2DRenderer()
@@ -46,7 +44,6 @@
 
 	$effect(() => {
 		const { width, height } = $size
-		lanes.setResolution(width, height)
 		labelRenderer.setSize(width, height)
 	})
 
@@ -68,7 +65,6 @@
 	onDestroy(() => {
 		trees.dispose()
 		entities.dispose()
-		lanes.dispose()
 		labelRenderer.domElement.remove()
 	})
 </script>
@@ -88,7 +84,7 @@
 <T is={entities.major} visible={view.visibility.entities} />
 <T is={entities.minor} visible={view.visibility.entities && view.visibility.allMarkers} />
 <T is={entities.labels} />
-<T is={lanes.group} visible={view.visibility.lanes} />
+<Lanes />
 
 <TileCursor colour={0xffe39a} opacity={0.4} selection={view.hover} />
 <TileCursor colour={0x9fe3ff} opacity={0.3} selection={view.pinned} />

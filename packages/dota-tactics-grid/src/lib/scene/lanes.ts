@@ -1,11 +1,7 @@
-import { Group } from "three"
-import { Line2 } from "three/addons/lines/Line2.js"
-import { LineGeometry } from "three/addons/lines/LineGeometry.js"
-import { LineMaterial } from "three/addons/lines/LineMaterial.js"
+import { Vector3 } from "three"
 import type { MapModel } from "#lib/map/model.ts"
 import type { MapLane } from "#lib/map/schema.ts"
 import { sceneX, sceneY, sceneZ } from "./coords.ts"
-import { TEAM_COLOURS } from "./models.ts"
 
 /** Each team's path keeps to its own right (tiles), so both directions of a lane show. */
 const KEEP_RIGHT = 0.35
@@ -15,11 +11,11 @@ const LIFT = 0.12
 const STEP = 24
 
 /**
- * Lane paths as screen-width lines that follow the ground, sampled along each path so they step
- * up and down with the tiles under them.
+ * Points along a lane path that follow the ground, sampled closely enough that a line through them
+ * steps up and down with the tiles under it.
  */
-export function laneSamples(model: MapModel, lane: MapLane, verticalScale: number): number[] {
-	const out: number[] = []
+export function laneSamples(model: MapModel, lane: MapLane, verticalScale: number): Vector3[] {
+	const out: Vector3[] = []
 	const { points } = lane
 	for (let s = 0; s + 1 < points.length; s++) {
 		const [ax, ay, az] = points[s]
@@ -36,58 +32,13 @@ export function laneSamples(model: MapModel, lane: MapLane, verticalScale: numbe
 			const cell = model.cellOf(x, y)
 			const ground = cell ? model.height[model.index(...cell)] : Number.NaN
 			out.push(
-				sceneX(model, x),
-				sceneY(model, Number.isNaN(ground) ? az : ground, verticalScale) + LIFT,
-				sceneZ(model, y)
+				new Vector3(
+					sceneX(model, x),
+					sceneY(model, Number.isNaN(ground) ? az : ground, verticalScale) + LIFT,
+					sceneZ(model, y)
+				)
 			)
 		}
 	}
 	return out
-}
-
-export class Lanes {
-	readonly group = new Group()
-	private readonly lines: { lane: MapLane; line: Line2 }[] = []
-
-	private readonly model: MapModel
-
-	constructor(model: MapModel, verticalScale: number) {
-		this.model = model
-		this.group.name = "lanes"
-		for (const lane of model.data.lanes) {
-			const material = new LineMaterial({
-				color: TEAM_COLOURS[lane.team],
-				linewidth: 3,
-				transparent: true,
-				opacity: 0.9,
-				worldUnits: false
-			})
-			const line = new Line2(new LineGeometry(), material)
-			line.name = `${lane.team}-${lane.lane}`
-			this.lines.push({ lane, line })
-			this.group.add(line)
-		}
-		this.setVerticalScale(verticalScale)
-	}
-
-	setVerticalScale(verticalScale: number) {
-		for (const { lane, line } of this.lines) {
-			line.geometry.dispose()
-			const geometry = new LineGeometry()
-			geometry.setPositions(laneSamples(this.model, lane, verticalScale))
-			line.geometry = geometry
-			line.computeLineDistances()
-		}
-	}
-
-	setResolution(width: number, height: number) {
-		for (const { line } of this.lines) line.material.resolution.set(width, height)
-	}
-
-	dispose() {
-		for (const { line } of this.lines) {
-			line.geometry.dispose()
-			line.material.dispose()
-		}
-	}
 }
