@@ -13,17 +13,23 @@
 	import { CachedGTAOPass } from "#lib/scene/ao.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 
-	/** Ambient occlusion is soft and low-frequency: computing it at half resolution halves its cost. */
-	const AO_SCALE = 0.5
-
 	let {
-		dynamic = false
+		dynamic = false,
+		aoScale = 0.5,
+		aoSamples = 16
 	}: {
 		/**
 		 * Something on the board moves on its own (units in a game): the AO G-buffer is re-rendered
 		 * every frame. The shadow map still isn't, so moving things mustn't cast shadows.
 		 */
 		dynamic?: boolean
+		/**
+		 * The AO's resolution, as a share of the canvas's. AO is soft and low-frequency: half
+		 * resolution halves its cost and looks the same.
+		 */
+		aoScale?: number
+		/** AO samples per pixel. Close up, its radius spans many pixels and samples cost more. */
+		aoSamples?: number
 	} = $props()
 
 	const view = getViewerState()
@@ -52,7 +58,7 @@
 			distanceExponent: 1.5,
 			thickness: 4,
 			scale: 1.1,
-			samples: 16
+			samples: aoSamples
 		})
 		gtao.blendIntensity = 0.9
 		composer.addPass(gtao)
@@ -74,7 +80,7 @@
 		const { width, height } = $size
 		composer.setPixelRatio($dpr)
 		composer.setSize(width, height)
-		gtao.setSize(Math.round(width * $dpr * AO_SCALE), Math.round(height * $dpr * AO_SCALE))
+		gtao.setSize(Math.round(width * $dpr * aoScale), Math.round(height * $dpr * aoScale))
 		shapesChanged = true
 	})
 

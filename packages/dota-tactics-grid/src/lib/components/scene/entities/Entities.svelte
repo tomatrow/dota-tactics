@@ -12,22 +12,26 @@
 
 	let {
 		major = $bindable(),
-		minor = $bindable()
+		minor = $bindable(),
+		hidden = new Set()
 	}: {
 		/** The major entities' group, for picking. */
 		major?: Group
 		/** The minor markers' group, for picking. */
 		minor?: Group
+		/** Names of entities not to draw (a game's destroyed buildings). */
+		hidden?: ReadonlySet<string>
 	} = $props()
 
 	const view = getViewerState()
-	const { entities } = view.model.data
+	// Keyed by their index in the map, so hiding one doesn't rebuild the others.
+	const entities = view.model.data.entities.map((entity, i) => ({ entity, i }))
 
 	setMaterials(new Materials())
 </script>
 
 <T.Group name="entities" visible={view.visibility.entities} bind:ref={major}>
-	{#each entities.filter((e) => !isMinor(e)) as entity, i (i)}
+	{#each entities.filter(({ entity: e }) => !isMinor(e) && !hidden.has(e.name)) as { entity, i } (i)}
 		<Entity {entity} />
 	{/each}
 </T.Group>
@@ -36,7 +40,7 @@
 	visible={view.visibility.entities && view.visibility.allMarkers}
 	bind:ref={minor}
 >
-	{#each entities.filter(isMinor) as entity, i (i)}
+	{#each entities.filter(({ entity: e }) => isMinor(e) && !hidden.has(e.name)) as { entity, i } (i)}
 		<Entity {entity} />
 	{/each}
 </T.Group>
