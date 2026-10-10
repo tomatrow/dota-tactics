@@ -5,18 +5,12 @@ import {
 	ConeGeometry,
 	CylinderGeometry,
 	DodecahedronGeometry,
-	Group,
-	IcosahedronGeometry,
-	InstancedMesh,
-	Matrix4,
-	MeshStandardMaterial,
-	Quaternion,
-	Vector3
+	IcosahedronGeometry
 } from "three"
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js"
 import { hash2 } from "#lib/map/hash.ts"
 import type { MapModel } from "#lib/map/model.ts"
-import { sceneX, sceneY, sceneZ } from "./coords.ts"
+import { sceneX, sceneZ } from "./coords.ts"
 
 /** A primitive, flat-shaded, with one vertex colour, moved into place. */
 function part(
@@ -46,8 +40,8 @@ function merge(parts: BufferGeometry[]): BufferGeometry {
 	return merged
 }
 
-// Sizes in tiles (64 game units). A tree covers its 2×2 tiles.
-const SPECIES = {
+/** Each species' model, merged into one flat-shaded geometry with vertex colours. Sizes in tiles (64 game units): a tree covers its 2×2 tiles. */
+export const SPECIES = {
 	radiantPine: () =>
 		merge([
 			part(new CylinderGeometry(0.14, 0.2, 0.9, 6), 0x5a4030, [0, 0.45, 0]),
@@ -80,16 +74,7 @@ const SPECIES = {
 			part(new DodecahedronGeometry(0.7, 0), 0x56302e, [0, 2.6, -0.1])
 		])
 }
-type Species = keyof typeof SPECIES
-
-interface Placement {
-	x: number
-	z: number
-	ground: number
-	yaw: number
-	width: number
-	height: number
-}
+export type Species = keyof typeof SPECIES
 
 /** Ground under a tree on a tile corner: the median of the four tiles around it. */
 export function treeGround(model: MapModel, x: number, y: number): number {
@@ -112,87 +97,49 @@ export function treeGround(model: MapModel, x: number, y: number): number {
 	return heights.length % 2 ? heights[mid] : (heights[mid - 1] + heights[mid]) / 2
 }
 
-/** Every tree from the tree map as an instanced low-poly model, styled by side. */
-export class Trees {
-	readonly group = new Group()
-	private readonly meshes: { mesh: InstancedMesh; places: Placement[] }[] = []
+/** One tree: its species, where it stands (scene X/Z, ground in game units) and its look. */
+export interface TreePlacement {
+	species: Species
+	x: number
+	z: number
+	/** The ground under it, in game units. */
+	ground: number
+	yaw: number
+	width: number
+	height: number
+	/** A brightness to multiply its colours by. */
+	tint: number
+}
 
-	private readonly model: MapModel
-
-	constructor(model: MapModel, verticalScale: number) {
-		this.model = model
-		this.group.name = "trees"
-		const bySpecies = new Map<Species, { places: Placement[]; tints: number[] }>()
-		for (const [x, y] of model.data.trees) {
-			const ground = treeGround(model, x, y)
-			if (Number.isNaN(ground)) continue
-			const dire = hash2(x, y, 3) < model.sideAt(x, y)
-			const broad = hash2(x, y, 5) < 0.45
-			const species: Species =
-				dire ?
-					broad ? "direGnarled"
-					:	"direPine"
-				: broad ? "radiantOak"
-				: "radiantPine"
-			const size = 0.85 + hash2(x, y, 7) * 0.3
-			const place = {
-				x: sceneX(model, x),
-				z: sceneZ(model, y),
-				ground,
-				yaw: hash2(x, y, 9) * Math.PI * 2,
-				width: size,
-				height: size * (0.9 + hash2(x, y, 13) * 0.3)
-			}
-			let group = bySpecies.get(species)
-			if (!group) bySpecies.set(species, (group = { places: [], tints: [] }))
-			group.places.push(place)
-			group.tints.push(0.82 + hash2(x, y, 17) * 0.3)
-		}
-
-		const material = new MeshStandardMaterial({
-			vertexColors: true,
-			roughness: 0.85,
-			flatShading: true
+/**
+ * Every tree from the tree map that stands on ground, styled by side: green pines and oaks for
+ * Radiant, dead or autumn trees for Dire. Size, turn and tint come from a hash of the position, so
+ * every load looks the same.
+ */
+export function placeTrees(model: MapModel): TreePlacement[] {
+	const trees: TreePlacement[] = []
+	for (const [x, y] of model.data.trees) {
+		const ground = treeGround(model, x, y)
+		if (Number.isNaN(ground)) continue
+		const dire = hash2(x, y, 3) < model.sideAt(x, y)
+		const broad = hash2(x, y, 5) < 0.45
+		const species: Species =
+			dire ?
+				broad ? "direGnarled"
+				:	"direPine"
+			: broad ? "radiantOak"
+			: "radiantPine"
+		const size = 0.85 + hash2(x, y, 7) * 0.3
+		trees.push({
+			species,
+			x: sceneX(model, x),
+			z: sceneZ(model, y),
+			ground,
+			yaw: hash2(x, y, 9) * Math.PI * 2,
+			width: size,
+			height: size * (0.9 + hash2(x, y, 13) * 0.3),
+			tint: 0.82 + hash2(x, y, 17) * 0.3
 		})
-		const colour = new Color()
-		for (const [species, { places, tints }] of bySpecies) {
-			const mesh = new InstancedMesh(SPECIES[species](), material, places.length)
-			mesh.name = species
-			mesh.castShadow = true
-			mesh.receiveShadow = true
-			tints.forEach((tint, k) => mesh.setColorAt(k, colour.setScalar(tint)))
-			this.meshes.push({ mesh, places })
-			this.group.add(mesh)
-		}
-		this.setVerticalScale(verticalScale)
 	}
-
-	get count(): number {
-		return this.meshes.reduce((n, m) => n + m.places.length, 0)
-	}
-
-	/** Trees keep their size; only the ground they stand on moves. */
-	setVerticalScale(verticalScale: number) {
-		const m = new Matrix4()
-		const q = new Quaternion()
-		const up = new Vector3(0, 1, 0)
-		const p = new Vector3()
-		const s = new Vector3()
-		for (const { mesh, places } of this.meshes) {
-			places.forEach((t, k) => {
-				p.set(t.x, sceneY(this.model, t.ground, verticalScale), t.z)
-				q.setFromAxisAngle(up, t.yaw)
-				s.set(t.width, t.height, t.width)
-				mesh.setMatrixAt(k, m.compose(p, q, s))
-			})
-			mesh.instanceMatrix.needsUpdate = true
-			mesh.computeBoundingSphere()
-		}
-	}
-
-	dispose() {
-		for (const { mesh } of this.meshes) mesh.geometry.dispose()
-		const material = this.meshes[0]?.mesh.material
-		if (material && !Array.isArray(material)) material.dispose()
-	}
+	return trees
 }

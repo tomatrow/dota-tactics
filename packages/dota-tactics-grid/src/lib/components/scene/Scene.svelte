@@ -3,9 +3,7 @@
 -->
 <script lang="ts">
 	import { T } from "@threlte/core"
-	import { onDestroy } from "svelte"
 	import { Color, type Group } from "three"
-	import { Trees } from "#lib/scene/trees.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 	import CameraRig from "./CameraRig.svelte"
 	import Entities from "./entities/Entities.svelte"
@@ -15,6 +13,7 @@
 	import Renderer from "./Renderer.svelte"
 	import Terrain from "./Terrain.svelte"
 	import TileCursor from "./TileCursor.svelte"
+	import Trees from "./Trees.svelte"
 	import Water from "./Water.svelte"
 
 	/**
@@ -24,10 +23,6 @@
 	const background = new Color(0x0b101c)
 
 	const view = getViewerState()
-	const { model } = view
-	const trees = new Trees(model, view.verticalScale)
-	$effect(() => trees.setVerticalScale(view.verticalScale))
-	onDestroy(() => trees.dispose())
 
 	let entities = $state.raw<Group>()
 	let markers = $state.raw<Group>()
@@ -44,7 +39,7 @@
 	<Terrain />
 	<Water />
 </T.Group>
-<T is={trees.group} visible={view.visibility.trees} />
+<Trees />
 <Entities bind:major={entities} bind:minor={markers} />
 <Lanes />
 

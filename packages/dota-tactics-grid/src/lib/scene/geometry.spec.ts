@@ -3,7 +3,7 @@ import { MapModel } from "#lib/map/model.ts"
 import { fixtureMap } from "#lib/testing/fixture.ts"
 import { buildColumns, PART_CLIFF, PART_STEP, PART_TOP } from "./columns.ts"
 import { pickColumn } from "./picking.ts"
-import { treeGround } from "./trees.ts"
+import { placeTrees, treeGround } from "./trees.ts"
 
 describe("buildColumns", () => {
 	// Two tiles side by side: west at 0, east at 128; the floor 64 below the lowest.
@@ -122,5 +122,26 @@ describe("treeGround", () => {
 		expect(treeGround(model, 64, 64)).toBe(70)
 		expect(treeGround(model, 0, 0)).toBe(0) // corner of the board: only one tile
 		expect(treeGround(model, 640, 640)).toBeNaN()
+	})
+})
+
+describe("placeTrees", () => {
+	const model = new MapModel(
+		fixtureMap({
+			cols: 2,
+			rows: 2,
+			origin: [0, 0],
+			trees: [
+				[64, 64, 0],
+				[640, 640, 0]
+			]
+		})
+	)
+
+	it("places trees that stand on ground, the same way every time", () => {
+		const trees = placeTrees(model)
+		expect(trees).toHaveLength(1) // the second is off the board
+		expect(trees[0]).toMatchObject({ x: 0, z: 0, ground: 128 })
+		expect(placeTrees(model)).toEqual(trees)
 	})
 })
