@@ -25,9 +25,4 @@
 		touch-action: none;
 		overflow: hidden;
 	}
-	div :global(.labels) {
-		position: absolute;
-		inset: 0;
-		pointer-events: none;
-	}
 </style>

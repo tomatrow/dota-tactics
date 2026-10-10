@@ -6,7 +6,7 @@
 	import { T } from "@threlte/core"
 	import { MeshLineGeometry, MeshLineMaterial } from "@threlte/extras"
 	import { laneSamples } from "#lib/scene/lanes.ts"
-	import { TEAM_COLOURS } from "#lib/scene/models.ts"
+	import { TEAM_COLOURS } from "#lib/scene/palette.ts"
 	import { getViewerState } from "#lib/state.svelte.ts"
 
 	const view = getViewerState()
