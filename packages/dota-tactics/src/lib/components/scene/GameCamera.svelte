@@ -85,6 +85,7 @@
 	bind:ref={camera}
 >
 	<CameraControls
+		dollySpeed={0.15}
 		draggingSmoothTime={0.08}
 		maxPolarAngle={CAMERA_POLAR}
 		maxZoom={45}

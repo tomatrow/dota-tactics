@@ -2,10 +2,14 @@
 	The controls that work so far, in an FFT-style window.
 -->
 <dl class="win">
+	<dt>Left-click</dt>
+	<dd>Select</dd>
 	<dt>Space (hold)</dt>
-	<dd>Follow</dd>
+	<dd>Follow selected</dd>
 	<dt>F1</dt>
 	<dd>Centre</dd>
+	<dt>F9</dt>
+	<dd>Pause</dd>
 	<dt>Screen edge, middle-drag</dt>
 	<dd>Pan</dd>
 	<dt>Wheel</dt>

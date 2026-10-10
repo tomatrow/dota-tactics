@@ -40,7 +40,15 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   `src/lib/components/scene/`. Pure helpers worth a Node test (camera maths, paths) are plain TS
   in `src/lib/game/`.
 - **Moving things don't cast shadows.** The board's shadow map is only re-rendered when the board
-  changes; units get blob shadows. `<Renderer dynamic>` re-renders the AO G-buffer every frame.
+  changes; units get blob shadows. `<Renderer dynamic>` re-renders the AO G-buffer every frame,
+  at a quarter resolution with 8 samples, and the canvas caps the pixel ratio at 1.5: AO at
+  gameplay zoom is the frame's biggest cost.
+- **Unit views read the sim directly** in a `useTask` each frame (positions, bars, flashes), not
+  through Svelte state: `GameState` only makes the roster, selection, fallen buildings and the
+  tick reactive. Overlays on top of the water (bars, rings, shadows) are transparent with a
+  render order above the water's, or the water draws over them.
+- **In development, `window.game`** is the `GameState`, for the console and headless checks
+  (`game.speed = 0`, `game.selected = …`).
 - **Input** follows Dota 2's default layout (`DESIGN.md` §11). The camera leaves the left and
   right mouse buttons to the game: wheel zooms, middle-drag pans, the view turns only in quarter
   turns.
@@ -51,3 +59,7 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
 
 - Vitest in Node: `src/**/*.test.ts` and `scripts/**/*.test.ts`. Rules get thorough tests with
   expectations derived from the formulas in `DESIGN.md`; components get visual checks.
+- Sim tests draw small boards as text (`#lib/testing/terrain.ts`) and turn waves off to place
+  creeps by hand (`world.spawnCreep`). `#lib/testing/map.ts` loads the real map in Node.
+- Tuning numbers come from `pnpm lane-sim` (`scripts/lane-sim.ts`: the real map, many seeds,
+  headless). Record what it measured in `DESIGN.md` next to the numbers it justified.

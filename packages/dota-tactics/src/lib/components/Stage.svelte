@@ -12,9 +12,11 @@
 	oncontextmenu={(event) => event.preventDefault()}
 	role="application"
 >
+	<!-- At most 1.5 device pixels per CSS pixel: SMAA keeps edges clean, and full retina costs too much
+		fill rate with AO on. -->
 	<Canvas
 		createRenderer={(canvas) => new WebGLRenderer({ canvas, powerPreference: "high-performance" })}
-		dpr={[1, 2]}
+		dpr={[1, 1.5]}
 		renderMode="always"
 		shadows={PCFShadowMap}
 	>

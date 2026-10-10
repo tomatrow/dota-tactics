@@ -52,7 +52,8 @@ still**. At 100 the unit may act. Acting resets the gauge to 0.
 - A full gauge holds; nothing is lost by thinking except time. No overflow / banked turns.
 - Walking charges at 0–25% rate (tune in prototype; start at 0).
 - Non-player units (creeps, towers, neutrals) act the instant they fill.
-- Simultaneous fills resolve by fill timestamp, then speed, then team. Deterministic for netcode.
+- The sim runs at 20 ticks/s. Within a tick, units act in id order (spawn order): units that
+  fill on the same tick act in that order. Deterministic for netcode.
 
 Why "no charge while walking": it reproduces FFT's move-or-wait trade-off continuously.
 Every tile stepped is time not charging. The chaser arrives with an empty gauge; the person who
@@ -193,6 +194,25 @@ Hitting an enemy hero near creeps pulls their aggro — Dota's main laning tool,
   ~40% longer (§4); measure it in the headless lane sim before tuning.
 - Tuning target: equal waves with no heroes resolve in ~30s, so the next wave arrives into a
   finishing fight and lane equilibrium works. Creep attack cadence ~3s.
+- Creeps walk a per-lane flow field: cheapest along the lane's centre line, routed round
+  structures' footprints, so waves keep to the road; off it (chasing), they head back.
+
+v0 creep stats (`src/lib/content/units.ts`):
+
+| Creep  |  HP | ATK | DEF | Speed | Reach | Note                   |
+| ------ | --: | --: | --: | ----: | ----: | ---------------------- |
+| Melee  | 550 |  80 |   4 |    33 |     2 |                        |
+| Ranged | 300 |  70 |   0 |    33 |     8 |                        |
+| Siege  | 900 | 100 |   0 |    15 |    10 | ×2.5 against buildings |
+
+Measured (`pnpm lane-sim`, mid lane, T1s only, no heroes, 12 seeds × 30 min):
+
+- First contact at **0:29**, 58% of the way from the Radiant T1 to the Dire T1. 4-way
+  movement didn't make mid late after all: the spawners are closer than Dota's timing implied.
+- Wave fights last a median **30 s** (from a wave's first blow to its last creep's death). On
+  target.
+- The front swings between the T1s over ~4–5 minutes, as unattended Dota lanes do.
+- Creeps alone took a T1 in 3 of 12 seeds, earliest at 16:15 (siege waves add up).
 
 ### Identity
 
@@ -295,16 +315,20 @@ barracks → **Camps**, fountain → **Clan Hall**. The Dota names are used belo
 
 Units with HP and a gauge; never move, so they're always charging. Speed 25 → one hit every 4s.
 
-| Tier    | Damage | Note                                                                     |
-| ------- | -----: | ------------------------------------------------------------------------ |
-| T1      |    180 | ≈30% of a level-1 hero; a dive buys ~2 actions. 3 hits on a melee creep. |
-| T2      |    220 |                                                                          |
-| T3 / T4 |    260 |                                                                          |
+| Tier    | Damage | Note                                            |
+| ------- | -----: | ----------------------------------------------- |
+| T1      |    180 | ≈30% of a level-1 hero; a dive buys ~2 actions. |
+| T2      |    220 |                                                 |
+| T3 / T4 |    260 |                                                 |
 
 - Range 11, aggro radius 14, vision 30 / 12, true sight 11.
 - Hit chance 100%; evasion does not apply. Attackers below the tower still take the 25% uphill
   miss, so diving high ground is punished.
-- DEF very high: creeps chip, heroes dent (Dota's rule).
+- DEF 130: creeps chip (a melee creep does 15 a hit), heroes dent (Dota's rule).
+- **×2.5 against creeps** (448 a hit: 2 hits a melee or siege creep, 1 a ranged). At plain
+  damage a T1 needed a minute to clear a wave that comes every 30 s, and creeps alone took a T1
+  in 6 of 8 seeds within 15 minutes (earliest 8:29). Against heroes it hits for its plain 180.
+- Footprint 3×3 tiles; reach and aggro are measured to its nearest tile.
 - **Aggro** (Dota's): target the closest enemy, except an enemy hero who attacks an allied hero in
   range becomes the target immediately. Aggro drops if you attack your own creep — **which costs
   an action here**, so dropping tower aggro is a real trade.
@@ -439,8 +463,9 @@ Each is playable or testable on its own.
 
 1. **Scaffold.** ✅ SvelteKit package with the grid's config; the real map renders through the
    grid's scene; game camera with the Dota controls, following a point.
-2. **Creeps and towers, no heroes.** Mid waves, flow field, aggro, attacks, deaths, the two T1s.
-   `lane-sim.ts` checks §6 headless: when waves meet, and that equal waves resolve in ~30s.
+2. **Creeps and towers, no heroes.** ✅ Mid waves, flow field, aggro, attacks, deaths, the two
+   T1s. `pnpm lane-sim` checks §6 headless (results in §6, §9). In the browser: HP and CT bars,
+   bolts, lunges, hit flashes; click to select, the clock with speeds 0–8×.
 3. **One hero.** Warrior: click to move, attack orders, the gauge (charges only standing),
    facing, First Aid, Body Slam, gold on last hits, denies.
 4. **Black Mage.** MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
@@ -451,9 +476,11 @@ Each is playable or testable on its own.
    questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
    if players always act the instant the gauge fills, the cadence is too slow.
 
-Known render issue for milestone 2: the grid's renderer caches the shadow map and the AO
-G-buffer because its board is static. Moving units need either a per-frame refresh or to be
-drawn after the AO pass.
+Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
+is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
+gameplay zoom AO's radius spans many pixels, so the game renders it at a quarter resolution
+with 8 samples, and caps the pixel ratio at 1.5. That took a base M2 (under load) from 16 to
+36 fps at retina; without AO it holds 60.
 
 ## 12. Combat resolution, v0
 
@@ -554,6 +581,20 @@ Plan: Blizzard the approaching Warrior, step back, Fire, step back. The Warrior 
 - Is a 5s action cadence tense at these HP pools (~8–9 trades to kill), or do fights need to
   be ~30% shorter?
 
+**Problem found in milestone 2, to settle before milestone 3: heroes hit softer than creeps.**
+A melee creep deals 80 every ~3 s (26/s); the Warrior's 58 every 5 s is 12/s, and only 56 a
+hit on a creep. In Dota a level-1 hero out-damages a creep about 2:1. Here:
+
+- A Warrior alone needs 10 hits (50 s) to kill a melee creep.
+- Last hits are a coin flip: creep HP falls in steps of 78 (a creep's hit), and the Warrior
+  only kills from ≤ 56, so the window between "killable" and "dead" is usually one enemy creep's
+  hit away, about a second.
+
+Proposal: heroes hit big and act rarely. Hero ATK ~2–3× a creep's per hit (Warrior ~180,
+Black Mage spells to match), so a hero's action is worth ~2 creep actions and the last-hit
+window is "under ~180 HP": a couple of creep hits wide, readable from the HP bar. Hero HP and
+the Sentinel's 180 would scale with it.
+
 ## 14. Open
 
 In rough order of how much they shape the prototype:
@@ -564,3 +605,5 @@ In rough order of how much they shape the prototype:
 4. ~~Vision.~~ See §10.
 5. Judge Points / Scions / Combos in real time.
 6. Networking model (deterministic sim is the goal; fill-order rule in §3 is for this).
+7. **Hero damage vs creeps** (§13): heroes currently hit softer than creeps. Settle before
+   milestone 3.

@@ -6,9 +6,9 @@ per player, real-time with an ATB gauge.
 
 The design is in [DESIGN.md](./DESIGN.md); conventions are in [AGENTS.md](./AGENTS.md).
 
-**Status:** milestone 1 of the prototype slice (`DESIGN.md` §11). The real map renders with the
-game camera; a stand-in pawn walks Radiant's mid lane for the camera to follow. No simulation
-yet.
+**Status:** milestone 2 of the prototype slice (`DESIGN.md` §11). The mid lane runs on its own:
+creep waves every 30 s walk the real map, fight in the river and push into the T1 Sentinels,
+on a deterministic 20 Hz simulation. No heroes yet. `?seed=123` replays a game.
 
 ## Usage
 

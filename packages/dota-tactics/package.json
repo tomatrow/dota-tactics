@@ -13,7 +13,8 @@
 		"lint": "prettier --cache --cache-strategy content --check . && eslint --cache --cache-location node_modules/.cache/eslint .",
 		"format": "prettier --cache --cache-strategy content --write .",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"lane-sim": "node scripts/lane-sim.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",

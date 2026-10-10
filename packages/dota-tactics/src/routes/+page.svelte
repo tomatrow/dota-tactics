@@ -1,8 +1,13 @@
 <script lang="ts">
+	import { page } from "$app/state"
 	import { loadMap } from "dota-tactics-grid/map/load.ts"
 	import Game from "#lib/components/Game.svelte"
+	import { Random } from "#lib/sim/random.ts"
 
 	const loading = loadMap()
+	// `?seed=` replays a game; otherwise each load is a new one.
+	const param = page.url.searchParams.get("seed")
+	const seed = param !== null && /^\d+$/.test(param) ? Number(param) : Random.randomSeed()
 </script>
 
 <svelte:head>
@@ -12,7 +17,7 @@
 {#await loading}
 	<div class="win" role="status">Loading the map…</div>
 {:then model}
-	<Game {model} />
+	<Game {model} {seed} />
 {:catch error}
 	<div class="win" role="alert">
 		<strong>Couldn't load dota_map.json</strong>
