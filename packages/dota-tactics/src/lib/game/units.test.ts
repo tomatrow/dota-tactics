@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { Facing } from "#lib/sim/grid.ts"
-import { facingYaw, lunge, LUNGE_TIME, projectileAt } from "./units.ts"
+import { facingYaw, lunge, LUNGE_TIME, projectileAt, turnToward } from "./units.ts"
 
 /** Where a model's front (−Z) points after turning by `yaw` about +Y. */
 const front = (yaw: number) => [-Math.sin(yaw), -Math.cos(yaw)]
@@ -38,5 +38,19 @@ describe("projectileAt", () => {
 		const [x, y] = projectileAt([0, 1, 0], [4, 1, 0], 0.5, 2)
 		expect(x).toBe(2)
 		expect(y).toBeCloseTo(3)
+	})
+})
+
+describe("turnToward", () => {
+	it("turns the short way round", () => {
+		expect(turnToward(0, Math.PI / 2, 0.5)).toBeCloseTo(Math.PI / 4)
+		// From just under a full turn to just over zero: forwards across 2π, not back.
+		expect(turnToward(1.9 * Math.PI, 0.1 * Math.PI, 0.5)).toBeCloseTo(2 * Math.PI)
+		expect(turnToward(0.1 * Math.PI, -0.1 * Math.PI, 1)).toBeCloseTo(-0.1 * Math.PI)
+	})
+
+	it("arrives at t = 1 and stays put at t = 0", () => {
+		expect(turnToward(1, 2, 1)).toBeCloseTo(2)
+		expect(turnToward(1, 2, 0)).toBe(1)
 	})
 })

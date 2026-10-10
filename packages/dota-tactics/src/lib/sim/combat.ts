@@ -24,15 +24,15 @@ export function hitChance(
 
 /**
  * Physical damage (DESIGN.md §12): ATK − DEF/2, at least `minDamage`% of ATK, in whole points.
- * ATK is first multiplied by the attacker's `vsStructures` against a structure, `vsCreeps` against
- * a lane creep.
+ * ATK is first multiplied by an ability's `power`, and by the attacker's `vsStructures` against a
+ * structure, `vsCreeps` against a lane creep.
  */
-export function physicalDamage(attacker: UnitStats, target: UnitStats): number {
+export function physicalDamage(attacker: UnitStats, target: UnitStats, power = 1): number {
 	const multiplier =
 		target.structure ? attacker.vsStructures
 		: isCreep(target) ? attacker.vsCreeps
 		: 1
-	const atk = attacker.atk * multiplier
+	const atk = attacker.atk * multiplier * power
 	const floor = Math.ceil((atk * TUNING.minDamage) / 100)
 	return Math.max(floor, Math.floor(atk - target.def / 2))
 }

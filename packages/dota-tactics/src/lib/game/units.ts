@@ -1,3 +1,4 @@
+import type { UnitStats } from "#lib/content/units.ts"
 import { Facing } from "#lib/sim/grid.ts"
 import type { Vec3 } from "./camera.ts"
 
@@ -41,4 +42,28 @@ export function projectileAt(from: Vec3, to: Vec3, t: number, arc: number): Vec3
 		from[1] + (to[1] - from[1]) * k + Math.sin(Math.PI * k) * arc,
 		from[2] + (to[2] - from[2]) * k
 	]
+}
+
+/** How high (tiles) above its feet a unit's body centre is: where it's picked, and hit. */
+export function bodyHeight(stats: UnitStats): number {
+	switch (stats.kind) {
+		case "hero":
+			return 0.95
+		case "ranged":
+			return 1
+		case "sentinel":
+			return 3.2
+		default:
+			return 0.6
+	}
+}
+
+/** How far (tiles) from its body's centre on screen a unit can be picked. */
+export const pickRadius = (stats: UnitStats): number =>
+	stats.kind === "hero" || stats.kind === "siege" ? 0.65 : 0.45
+
+/** An angle (radians) turned `t` (0–1) of the way to another, the short way round. */
+export function turnToward(from: number, to: number, t: number): number {
+	const turn = ((((to - from + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI
+	return from + turn * t
 }

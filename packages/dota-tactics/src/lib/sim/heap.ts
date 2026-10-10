@@ -7,6 +7,11 @@ export class MinHeap {
 		return this.#items.length
 	}
 
+	clear() {
+		this.#items.length = 0
+		this.#priorities.length = 0
+	}
+
 	push(item: number, priority: number) {
 		const items = this.#items
 		const priorities = this.#priorities

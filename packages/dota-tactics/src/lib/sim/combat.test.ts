@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { JOBS } from "#lib/content/heroes.ts"
 import { CREEPS, SENTINELS, type UnitStats } from "#lib/content/units.ts"
 import { hitChance, physicalDamage } from "./combat.ts"
 
@@ -37,11 +38,15 @@ describe("physicalDamage", () => {
 	})
 
 	it("multiplies a Sentinel's ATK against creeps only", () => {
-		// 180 × 2.5 − 4/2
+		// 300 × 1.5 − 4/2
 		expect(physicalDamage(SENTINELS[1], CREEPS.melee)).toBe(448)
-		// Anything else (a hero, later) takes the plain 180 − 30/2.
-		const hero: UnitStats = { ...CREEPS.melee, kind: "sentinel", structure: false, def: 30 }
-		expect(physicalDamage(SENTINELS[1], hero)).toBe(165)
+		// A hero takes the plain 300 − 30/2.
+		expect(physicalDamage(SENTINELS[1], JOBS.warrior.stats)).toBe(285)
+	})
+
+	it("multiplies ATK by an ability's power", () => {
+		// 180 × 1.6 − 4/2
+		expect(physicalDamage(JOBS.warrior.stats, CREEPS.melee, 1.6)).toBe(286)
 	})
 
 	it("multiplies ATK against structures for siege", () => {

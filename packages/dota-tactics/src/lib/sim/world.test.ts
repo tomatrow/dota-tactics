@@ -1,51 +1,18 @@
 import { describe, expect, it } from "vitest"
 import { CREEPS, SENTINELS } from "#lib/content/units.ts"
 import { openTerrain } from "#lib/testing/terrain.ts"
-import { GAUGE_FULL, STEP_FULL, TICK_RATE } from "./constants.ts"
-import type { SimEvent } from "./events.ts"
-import { Facing, type Terrain } from "./grid.ts"
-import { World, type LaneSetup, type Scenario, type StructureSetup } from "./world.ts"
-
-/** Both teams' lanes along the middle row, Radiant going east. */
-function lanes(board: Terrain): LaneSetup[] {
-	const row = Math.floor(board.rows / 2)
-	const west = [0.5, row + 0.5] as const
-	const east = [board.cols - 0.5, row + 0.5] as const
-	return [
-		{ team: "radiant", lane: "mid", path: [west, east], spawner: [1, row] },
-		{ team: "dire", lane: "mid", path: [east, west], spawner: [board.cols - 2, row] }
-	]
-}
-
-function world(board: Terrain, options: Partial<Scenario> = {}, seed = 1): World {
-	return new World(
-		{ terrain: board, lanes: lanes(board), structures: [], waves: false, ...options },
-		seed
-	)
-}
-
-/** Runs `count` ticks, returning every event with the tick it happened in. */
-function run(w: World, count: number): { tick: number; event: SimEvent }[] {
-	const log: { tick: number; event: SimEvent }[] = []
-	for (let i = 0; i < count; i++) {
-		const tick = w.tick
-		for (const event of w.step()) log.push({ tick, event })
-	}
-	return log
-}
-
-const attacks = (log: { tick: number; event: SimEvent }[]) =>
-	log.flatMap(({ tick, event }) => (event.type === "attack" ? [{ tick, ...event }] : []))
-
-/** The tick a unit of this speed, charging from empty on tick `from`, first has a full gauge. */
-const fullAt = (speed: number, from = 0) => from + Math.ceil(GAUGE_FULL / speed) - 1
-
-/** The ticks of a standing unit's first `count` attacks: it empties its gauge each time. */
-function cadence(speed: number, count: number): number[] {
-	const out = [fullAt(speed)]
-	while (out.length < count) out.push(fullAt(speed, (out.at(-1) ?? 0) + 1))
-	return out
-}
+import {
+	attacks,
+	cadence,
+	fullAt,
+	run,
+	testWorld as world,
+	trace,
+	waitingLane
+} from "#lib/testing/world.ts"
+import { STEP_FULL, TICK_RATE } from "./constants.ts"
+import { Facing } from "./grid.ts"
+import { World, type StructureSetup } from "./world.ts"
 
 describe("World: walking", () => {
 	it("walks its lane at its walk speed", () => {
@@ -135,7 +102,7 @@ describe("World: Sentinels", () => {
 	const board = openTerrain(30, 9)
 	const tower: StructureSetup = { team: "radiant", tier: 1, entity: "t", col: 5, row: 4 }
 	/** A Dire lane that ends where the creep stands, so it waits there. */
-	const waiting: LaneSetup = { team: "dire", lane: "mid", path: [[15.5, 4.5]], spawner: [15, 4] }
+	const waiting = waitingLane("dire", 15, 4)
 
 	it("hits the nearest enemy in reach every 4 s, never missing, until it dies", () => {
 		const w = new World({ terrain: board, lanes: [waiting], structures: [tower], waves: false }, 1)
@@ -144,12 +111,18 @@ describe("World: Sentinels", () => {
 		const creep = w.spawnCreep(w.lanes[0], "melee", 15, 4, Facing.west)
 		const log = run(w, 400)
 		const hits = attacks(log)
-		// 448 a hit on creeps: the second kills a 550 HP creep.
+		// 450 − 4/2 a hit on creeps: the second kills a 550 HP creep.
 		expect(hits.map((a) => a.tick)).toEqual(cadence(SENTINELS[1].speed, 2))
 		expect(hits[1].tick - hits[0].tick).toBe(4 * TICK_RATE)
 		expect(hits.every((a) => a.hit && a.damage === 448)).toBe(true)
 		const death = log.find(({ event }) => event.type === "death")
-		expect(death?.event).toEqual({ type: "death", unit: creep, killer: w.units[0] })
+		expect(death?.event).toEqual({
+			type: "death",
+			unit: creep,
+			killer: w.units[0],
+			bounty: 0,
+			denied: false
+		})
 	})
 
 	it("blocks its footprint", () => {
@@ -223,15 +196,8 @@ describe("World: invariants", () => {
 	})
 
 	it("is deterministic for a seed", () => {
-		const trace = (seed: number) =>
-			run(lane(seed), 120 * TICK_RATE)
-				.map(({ tick, event }) =>
-					event.type === "attack" ?
-						`${String(tick)}:${String(event.attacker.id)}>${String(event.target.id)}:${String(event.damage)}`
-					:	`${String(tick)}:${event.type}:${String(event.unit.id)}`
-				)
-				.join("|")
-		expect(trace(3)).toBe(trace(3))
-		expect(trace(3)).not.toBe(trace(4))
+		const of = (seed: number) => trace(run(lane(seed), 120 * TICK_RATE))
+		expect(of(3)).toBe(of(3))
+		expect(of(3)).not.toBe(of(4))
 	})
 })

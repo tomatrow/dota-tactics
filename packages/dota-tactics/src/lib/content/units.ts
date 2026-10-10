@@ -1,14 +1,17 @@
 /**
- * Lane creeps and Sentinels (DESIGN.md §6, §9). v0 numbers, to be tuned with `scripts/lane-sim.ts`.
+ * Unit stats, and lane creeps and Sentinels (DESIGN.md §6, §9). v0 numbers, to be tuned with
+ * `scripts/lane-sim.ts`. Heroes' stats come from their jobs (`heroes.ts`).
  */
 
 export type Team = "radiant" | "dire"
 export type CreepKind = "melee" | "ranged" | "siege"
-export type UnitKind = CreepKind | "sentinel"
+export type UnitKind = CreepKind | "sentinel" | "hero"
 
 export interface UnitStats {
 	readonly kind: UnitKind
 	readonly hp: number
+	/** Most MP; MP starts at 0 and grows 10 per action (§3). 0 for units without abilities. */
+	readonly mp: number
 	readonly atk: number
 	readonly def: number
 	/** Percent, before facing (DESIGN.md §12). */
@@ -28,12 +31,17 @@ export interface UnitStats {
 	readonly vsStructures: number
 	/** Damage multiplier against lane creeps. */
 	readonly vsCreeps: number
+	/** Gold to the hero who lands the killing blow (§6). */
+	readonly bounty: number
 }
 
 export const isCreep = (stats: UnitStats): boolean =>
 	stats.kind === "melee" || stats.kind === "ranged" || stats.kind === "siege"
 
+export const isHero = (stats: UnitStats): boolean => stats.kind === "hero"
+
 const creep = {
+	mp: 0,
 	def: 0,
 	evasion: 0,
 	speed: 33, // ~3 s per attack (§6)
@@ -47,10 +55,20 @@ const creep = {
 
 export const CREEPS: Record<CreepKind, UnitStats> = {
 	// Dota's HP. ATK sized so equal waves resolve in ~30 s at a 3 s cadence (§6).
-	melee: { ...creep, kind: "melee", hp: 550, atk: 80, def: 4, reach: 2 },
-	ranged: { ...creep, kind: "ranged", hp: 300, atk: 70, reach: 8 },
+	// Bounties are Dota's.
+	melee: { ...creep, kind: "melee", hp: 550, atk: 80, def: 4, reach: 2, bounty: 36 },
+	ranged: { ...creep, kind: "ranged", hp: 300, atk: 70, reach: 8, bounty: 45 },
 	// Slow and long-ranged; hits structures hard.
-	siege: { ...creep, kind: "siege", hp: 900, atk: 100, speed: 15, reach: 10, vsStructures: 2.5 }
+	siege: {
+		...creep,
+		kind: "siege",
+		hp: 900,
+		atk: 100,
+		speed: 15,
+		reach: 10,
+		vsStructures: 2.5,
+		bounty: 70
+	}
 }
 
 /** FFTA monster families (§6). */
@@ -59,18 +77,19 @@ export const CREEP_NAMES: Record<Team, Record<CreepKind, string>> = {
 	dire: { melee: "Zombie", ranged: "Red Cap", siege: "Flan" }
 }
 
-/** Sentinel (tower) stats by tier (§9). */
+/** Sentinel (tower) stats by tier (§9). ATK is what heroes take, before DEF. */
 export const SENTINELS: Record<1 | 2 | 3 | 4, UnitStats> = {
-	1: sentinel(1800, 180),
-	2: sentinel(2100, 220),
-	3: sentinel(2100, 260),
-	4: sentinel(2100, 260)
+	1: sentinel(1800, 300),
+	2: sentinel(2100, 340),
+	3: sentinel(2100, 400),
+	4: sentinel(2100, 400)
 }
 
 function sentinel(hp: number, atk: number): UnitStats {
 	return {
 		kind: "sentinel",
 		hp,
+		mp: 0,
 		atk,
 		// High: a melee creep (80) chips 15 a hit.
 		def: 130,
@@ -82,8 +101,9 @@ function sentinel(hp: number, atk: number): UnitStats {
 		radius: 1,
 		structure: true,
 		vsStructures: 1,
-		// 448 a hit on creeps: 2 hits a melee or siege creep, 1 a ranged. Creeps alone rarely take
-		// a T1 in a 30-minute game (scripts/lane-sim.ts); against heroes it hits for its plain ATK.
-		vsCreeps: 2.5
+		// A T1 does 450 before DEF to creeps: 2 hits a melee or siege creep, 1 a ranged. Creeps
+		// alone rarely take a T1 in a 30-minute game (scripts/lane-sim.ts).
+		vsCreeps: 1.5,
+		bounty: 0
 	}
 }

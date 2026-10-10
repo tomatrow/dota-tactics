@@ -2,21 +2,29 @@ import type { MapModel } from "dota-tactics-grid/map/model.ts"
 import type { Team } from "#lib/content/units.ts"
 import type { TilePoint } from "./lane-field.ts"
 import type { LaneName } from "./unit.ts"
-import type { LaneSetup, Scenario, StructureSetup } from "./world.ts"
+import type { HeroSetup, LaneSetup, Scenario, StructureSetup } from "./world.ts"
 
 export interface ScenarioOptions {
 	/** The lanes whose waves run. */
 	readonly lanes: readonly LaneName[]
 	/** Sentinels of these lanes up to this tier stand; 0 for none. */
 	readonly maxTier: 0 | 1 | 2 | 3
+	readonly heroes?: readonly HeroSetup[]
 }
 
-/** The prototype slice (DESIGN.md §11): mid lane, the two T1s. */
-export const SLICE: ScenarioOptions = { lanes: ["mid"], maxTier: 1 }
+/** The prototype slice (DESIGN.md §11): mid lane, the two T1s, the player's Warrior for Radiant. */
+export const SLICE: ScenarioOptions = {
+	lanes: ["mid"],
+	maxTier: 1,
+	heroes: [{ team: "radiant", job: "warrior" }]
+}
 
 const TEAMS: readonly Team[] = ["radiant", "dire"]
 
-/** A scenario on the real map: lanes, spawners and Sentinels from the cartographer's data. */
+/**
+ * A scenario on the real map: lanes, spawners, Sentinels and Clan Halls (the fountains) from the
+ * cartographer's data.
+ */
 export function mapScenario(model: MapModel, options: ScenarioOptions = SLICE): Scenario {
 	const { entities, lanes } = model.data
 	const toTile = ([x, y]: readonly number[]): TilePoint => [
@@ -46,5 +54,18 @@ export function mapScenario(model: MapModel, options: ScenarioOptions = SLICE): 
 		structures.push({ team: e.team, tier, entity: e.name, col: e.cell[0], row: e.cell[1] })
 	}
 
-	return { terrain: model, lanes: laneSetups, structures }
+	const halls: Partial<Record<Team, readonly [number, number]>> = {}
+	for (const e of entities) {
+		if (e.kind === "fountain" && e.cell && (e.team === "radiant" || e.team === "dire")) {
+			halls[e.team] = e.cell
+		}
+	}
+
+	return {
+		terrain: model,
+		lanes: laneSetups,
+		structures,
+		heroes: options.heroes ?? [],
+		halls
+	}
 }

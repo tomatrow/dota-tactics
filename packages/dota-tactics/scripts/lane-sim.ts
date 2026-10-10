@@ -9,7 +9,7 @@ import { parseArgs } from "node:util"
 import { TUNING } from "#lib/content/tuning.ts"
 import type { Team } from "#lib/content/units.ts"
 import { TICK_RATE } from "#lib/sim/constants.ts"
-import { mapScenario } from "#lib/sim/scenario.ts"
+import { mapScenario, SLICE } from "#lib/sim/scenario.ts"
 import type { Unit } from "#lib/sim/unit.ts"
 import { World } from "#lib/sim/world.ts"
 import { loadMapFromDisk } from "#lib/testing/map.ts"
@@ -25,7 +25,7 @@ const minutes = Number(values.minutes)
 const seeds = Number(values.seeds)
 
 const model = loadMapFromDisk()
-const scenario = mapScenario(model)
+const scenario = mapScenario(model, { ...SLICE, heroes: [] })
 
 const clock = (tick: number) => {
 	const s = Math.round(tick / TICK_RATE)

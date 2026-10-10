@@ -8,8 +8,7 @@
 	import { Color, Matrix4, type InstancedMesh } from "three"
 	import { TEAM_COLOURS } from "dota-tactics-grid/scene/palette.ts"
 	import { ATTACK_EFFECT, getGameState } from "#lib/game/GameState.svelte.ts"
-	import { projectileAt } from "#lib/game/units.ts"
-	import type { Unit } from "#lib/sim/unit.ts"
+	import { bodyHeight, projectileAt } from "#lib/game/units.ts"
 
 	/** Most bolts in flight at once. */
 	const MAX = 256
@@ -23,12 +22,6 @@
 		dire: new Color(TEAM_COLOURS.dire).lerp(new Color(0xffffff), 0.5)
 	}
 
-	/** How high (tiles) above its feet a unit shoots from, or is hit at. */
-	const muzzle = (unit: Unit) =>
-		unit.stats.structure ? 3.2
-		: unit.stats.kind === "ranged" ? 1
-		: 0.7
-
 	useTask(() => {
 		if (!mesh) return
 		const time = game.time
@@ -41,7 +34,12 @@
 			const [ax, ay, az] = game.position(attacker)
 			const [tx, ty, tz] = game.position(target)
 			const arc = attacker.stats.kind === "siege" ? 1.5 : 0.3
-			const at = projectileAt([ax, ay + muzzle(attacker), az], [tx, ty + 0.8, tz], t, arc)
+			const at = projectileAt(
+				[ax, ay + bodyHeight(attacker.stats), az],
+				[tx, ty + bodyHeight(target.stats), tz],
+				t,
+				arc
+			)
 			const size = attacker.stats.structure ? 0.28 : 0.16
 			matrix.makeScale(size, size, size).setPosition(...at)
 			mesh.setMatrixAt(count, matrix)

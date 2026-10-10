@@ -13,5 +13,12 @@ export const TUNING = {
 	/** Damage never falls below this percent of ATK (§12). */
 	minDamage: 10,
 	/** Creeps keep within this many tiles of their lane's path when they can. */
-	laneCorridor: 4
+	laneCorridor: 4,
+	/** MP every action gives, abilities included (§3). */
+	mpPerAction: 10,
+	/** A dead hero is back after this many seconds, plus `respawnPerLevel` per level (§5). */
+	respawnBase: 10,
+	respawnPerLevel: 3,
+	/** A hero may deny its own creep under this percent of its HP (§6). */
+	denyBelow: 50
 } as const

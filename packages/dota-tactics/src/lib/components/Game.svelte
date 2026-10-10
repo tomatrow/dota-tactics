@@ -1,6 +1,6 @@
 <!--
 	One game on one map: the board's viewer state and the game's state, shared with everything
-	below, the 3D stage, the HUD and the keys.
+	below, the 3D stage, the HUD and the keys (Dota 2's defaults, DESIGN.md §11).
 -->
 <script lang="ts">
 	import type { MapModel } from "dota-tactics-grid/map/model.ts"
@@ -8,6 +8,7 @@
 	import { GameState, setGameState } from "#lib/game/GameState.svelte.ts"
 	import ClockWindow from "./ClockWindow.svelte"
 	import ControlsWindow from "./ControlsWindow.svelte"
+	import HeroWindow from "./HeroWindow.svelte"
 	import Stage from "./Stage.svelte"
 	import UnitWindow from "./UnitWindow.svelte"
 
@@ -24,25 +25,51 @@
 		if (import.meta.env.DEV) Object.assign(window, { game })
 	})
 
-	// A click on the board (the board's picker pins what it hit) selects what's there.
-	$effect(() => game.select(view.pinned))
-
 	function onkeydown(event: KeyboardEvent) {
 		const typing =
 			event.target instanceof Element && event.target.closest("input, select, textarea")
 		if (typing || event.metaKey || event.ctrlKey || event.altKey) return
-		if (event.key === "F1") {
-			event.preventDefault()
-			game.centre()
-		} else if (event.key === "F9") {
-			event.preventDefault()
-			game.togglePause()
-		} else if (event.key === " ") {
+		if (event.key === " ") {
 			event.preventDefault()
 			game.following = true
-		} else if (event.key === "Escape") view.pinned = null
-		else if (event.key === "[") game.rotate(-1)
-		else if (event.key === "]") game.rotate(1)
+			return
+		}
+		if (event.repeat) return
+		switch (event.key.length === 1 ? event.key.toLowerCase() : event.key) {
+			case "F1":
+				event.preventDefault()
+				game.selectHero()
+				break
+			case "F9":
+				event.preventDefault()
+				game.togglePause()
+				break
+			case "Escape":
+				game.cancel()
+				break
+			case "q":
+				game.useAbility(0)
+				break
+			case "w":
+				game.useAbility(1)
+				break
+			case "e":
+				game.useAbility(2)
+				break
+			case "a":
+				game.attackMove()
+				break
+			case "s":
+			case "h":
+				game.stop()
+				break
+			case "[":
+				game.rotate(-1)
+				break
+			case "]":
+				game.rotate(1)
+				break
+		}
 	}
 
 	function onkeyup(event: KeyboardEvent) {
@@ -55,4 +82,5 @@
 <Stage />
 <ClockWindow />
 <UnitWindow />
+<HeroWindow />
 <ControlsWindow />

@@ -1,6 +1,6 @@
 <!--
 	Everything in the 3D view: the board from dota-tactics-grid (renderer, lights, terrain, water,
-	trees, buildings, picking), and the game's camera, units and effects on top.
+	trees, buildings, tile picking), and the game's camera, mouse input, units and effects on top.
 -->
 <script lang="ts">
 	import { T } from "@threlte/core"
@@ -15,6 +15,7 @@
 	import Water from "dota-tactics-grid/components/scene/Water.svelte"
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
 	import GameCamera from "./GameCamera.svelte"
+	import GameInput from "./GameInput.svelte"
 	import GameLoop from "./GameLoop.svelte"
 	import Units from "./Units.svelte"
 
@@ -36,6 +37,7 @@
 	cost far less. -->
 <Renderer aoSamples={8} aoScale={0.25} dynamic />
 <Picker entities={[entities].filter((group) => group !== undefined)} />
+<GameInput />
 
 <T attach="background" is={background} />
 <Lighting />

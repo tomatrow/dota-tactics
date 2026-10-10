@@ -181,7 +181,8 @@ over the walkable layer.
    > nearest creep > nearest hero > tower.
 3. Charge (same rule as heroes: only while standing, so first attack lands ~3s after contact).
    At full, attack. Re-evaluate.
-4. No enemy in 8 tiles → resume walking.
+4. No enemy in 8 tiles → resume walking. Something standing in the way (a hero body-blocking, a
+   creep that stopped) is walked round: towards the nearest free tile further down the lane.
 
 Hitting an enemy hero near creeps pulls their aggro — Dota's main laning tool, kept exactly.
 
@@ -212,7 +213,7 @@ Measured (`pnpm lane-sim`, mid lane, T1s only, no heroes, 12 seeds × 30 min):
 - Wave fights last a median **30 s** (from a wave's first blow to its last creep's death). On
   target.
 - The front swings between the T1s over ~4–5 minutes, as unattended Dota lanes do.
-- Creeps alone took a T1 in 3 of 12 seeds, earliest at 16:15 (siege waves add up).
+- Creeps alone took a T1 in 2 of 12 seeds, earliest at 26:18 (siege waves add up).
 
 ### Identity
 
@@ -240,6 +241,10 @@ when my gauge fills."
 FFTA rule: walk through allies, never stop on them; enemies block. The enemy wave is a wall a
 melee hero must go around (lanes are 8–15 tiles wide). Steps cost gauge, so going around is a
 real cost.
+
+Passing is for heroes. Creeps block each other and heroes (waves keep their shape) and walk
+round what stands in the lane, so a hero can body-block its own creeps, as in Dota. One hero
+passes through a tile at a time; structures' footprints block everyone.
 
 ### Neutrals
 
@@ -317,7 +322,7 @@ Units with HP and a gauge; never move, so they're always charging. Speed 25 → 
 
 | Tier    | Damage vs heroes | Note                                                                 |
 | ------- | ---------------: | -------------------------------------------------------------------- |
-| T1      |              280 | ≈30% of a level-1 hero (265 on the Warrior); a dive buys ~2 actions. |
+| T1      |              300 | ≈30% of a level-1 hero (285 on the Warrior); a dive buys ~2 actions. |
 | T2      |              340 |                                                                      |
 | T3 / T4 |              400 |                                                                      |
 
@@ -325,10 +330,12 @@ Units with HP and a gauge; never move, so they're always charging. Speed 25 → 
 - Hit chance 100%; evasion does not apply. Attackers below the tower still take the 25% uphill
   miss, so diving high ground is punished.
 - DEF 130: creeps chip (a melee creep does 15 a hit), heroes dent (Dota's rule).
-- **448 a hit against creeps** (2 hits a melee or siege creep, 1 a ranged): ×1.6 on the T1's 280. With 180 against creeps a T1 needed a minute to clear a wave that comes every 30 s, and
-  creeps alone took a T1 in 6 of 8 seeds within 15 minutes (earliest 8:29). At 448, creeps alone
-  take a T1 in 3 of 12 seeds over 30 minutes (earliest 16:15). Against heroes it hits for its
-  plain ATK.
+- **450 before DEF against creeps** (×1.5 on the T1's 300): 2 hits a melee or siege creep, 1 a
+  ranged. With 180 against creeps a T1 needed a minute to clear a wave that comes every 30 s,
+  and creeps alone took a T1 in 6 of 8 seeds within 15 minutes (earliest 8:29). At 450, creeps
+  alone take a T1 in 2 of 12 seeds over 30 minutes (earliest 26:18). Against heroes it hits for
+  its plain ATK. (×1.6 on 280 would be 448 before DEF: a 900 HP siege creep would survive two
+  hits.)
 - Footprint 3×3 tiles; reach and aggro are measured to its nearest tile.
 - **Aggro** (Dota's): target the closest enemy, except an enemy hero who attacks an allied hero in
   range becomes the target immediately. Aggro drops if you attack your own creep — **which costs
@@ -467,8 +474,8 @@ Each is playable or testable on its own.
 2. **Creeps and towers, no heroes.** ✅ Mid waves, flow field, aggro, attacks, deaths, the two
    T1s. `pnpm lane-sim` checks §6 headless (results in §6, §9). In the browser: HP and CT bars,
    bolts, lunges, hit flashes; click to select, the clock with speeds 0–8×.
-3. **One hero.** Warrior: click to move, attack orders, the gauge (charges only standing),
-   facing, First Aid, Body Slam, gold on last hits, denies. Plan below.
+3. **One hero.** ✅ Warrior: click to move, attack orders, the gauge (charges only standing),
+   facing, First Aid, Body Slam, gold on last hits, denies, death and respawn. Details below.
 4. **Black Mage.** MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
    Rend Speed + Slow. Facing evasion, uphill miss.
 5. **Opponent.** Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when it
@@ -477,14 +484,14 @@ Each is playable or testable on its own.
    questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
    if players always act the instant the gauge fills, the cadence is too slow.
 
-### Milestone 3 plan: one hero
+### Milestone 3: one hero
 
-The player's Bangaa Warrior (Radiant) in the milestone-2 lane. No enemy hero yet.
+The player's Bangaa Warrior (Radiant) in the milestone-2 lane. No enemy hero yet. Built as
+planned below, except where "Built differently" says.
 
-**Numbers first.** Put §13's Warrior and §9's Sentinels (280 / 340 / 400 against heroes,
-`vsCreeps` 1.6 so creeps still take 448) into `content/`. `UnitStats` gains `kind: "hero"`,
-`res`, `matk`, `mp` (max), `jump`. Creeps: RES 0, MATK 0, MP 0. Tests that pin 448 stay; the
-Sentinel-vs-non-creep test becomes 280 − 15 = 265.
+**Numbers first.** §13's Warrior and §9's Sentinels (300 / 340 / 400 against heroes, `vsCreeps`
+1.5 so creeps still take 450 before DEF) in `content/`. `UnitStats` gains `kind: "hero"`, `mp`
+(max) and `bounty`; RES, MATK and Jump come with magic (milestone 4).
 
 **Sim** (`src/lib/sim/`):
 
@@ -531,8 +538,10 @@ Sentinel-vs-non-creep test becomes 280 − 15 = 265.
 **View and input:**
 
 - **Pick by screen.** Units are picked by projecting each unit's body centre to the screen,
-  nearest within ~28 px of the pointer; the ground under the pointer is the grid picker's
-  hover tile. Selection moves off the grid picker's pin to this.
+  nearest within its pick radius (0.45–0.65 tiles, at least 14 px) of the pointer. A click
+  ray-casts its own tile, as the grid's picker does: the picker only looks once a frame, and a
+  click can come in the same frame as the move before it. Selection moves off the grid picker's
+  pin to this; commands always go to the hero, whatever is selected.
 - **Dota controls** (§11 table): right-click ground = move, enemy = attack, own creep under 50%
   = deny (else move); Q First Aid, W Rend Speed (disabled), E Body Slam: an enemy-targeted
   ability enters targeting (left-click a unit, right-click or Esc cancels), a self ability is
@@ -557,6 +566,26 @@ to the same game. Browser: walk the Warrior to lane, last-hit, deny, die to the 
 
 **Done when** you can play the Warrior in mid against the waves: farm, deny, push the Dire T1
 down, die under it, respawn and walk back.
+
+**Built differently** from the plan:
+
+- Sentinels are 300 ×1.5, not 280 ×1.6 (§9): the same 450 against creeps.
+- Body Slam costs 20 MP (§13). At 0 MP it would beat a plain attack every action; 20 is more
+  than an action's 10, so it's banked for the kill.
+- Creeps walk round what stands in the lane (§6). A hero idling in the lane stalled its own
+  wave behind it: a creep only stepped to cheaper or equal tiles on the lane field.
+- A* breaks ties between equally short paths towards the straight line to the goal (so a hero
+  crossing open ground walks the diagonal, not an L), and expands at most 12,000 tiles. Each
+  open area of ground is labelled, so a click on a cliff or an island walks to the nearest tile
+  the hero can reach. A hero that finds no way waits 5 ticks before searching again.
+- Last hits and denies pop up over the creep, Dota's "+36" and "!".
+- The controls window moved to the top left, out of the hero window's way.
+
+**Measured.** Fountain to own T1 mid: 38.3 s (§4 estimated 37 s). Hero path searches cost about
+0.06 ms a tick. 60 fps at retina with AO on, at the fountain and in the mid fight (the machine
+unloaded; milestone 2 measured 36 under load). Nobody has played it yet: the two §11 questions
+are still open. One for the playtest: an attack-move that reaches its tile ends, and the idle
+hero then stands by the fight without joining it (idle heroes never pick targets, §3).
 
 Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
 is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
@@ -617,10 +646,11 @@ innate count is a balance knob per job.
 Abilities (Battle Tech):
 
 - **First Aid** (mastered) — self heal 25% HP. 0 MP. The lane salve.
-- **Rend Speed** (mastered, A2's Speedbreak) — reach 2, −6 speed on target for 15s. The
+- **Rend Speed** (mastered, A2's Speedbreak) — 10 MP, reach 2, −6 speed on target for 15s. The
   anti-mage tool: the target's gauge fills ~30% slower.
-- **Body Slam** (taught by Shortsword, 100 AP) — reach 2, ATK × 1.6 (288 − DEF/2), caster takes
-  10% of damage dealt. The kill button.
+- **Body Slam** (taught by Shortsword, 100 AP) — 20 MP, reach 2, ATK × 1.6 (288 − DEF/2),
+  caster takes 10% of damage dealt. The kill button. Its cost is more than an action's 10 MP, so
+  it can't be used every action: from empty, two actions bank it, then every other action.
 
 Reaction: none at start. Support: none. Starting gear: Shortsword, Leather Armor.
 

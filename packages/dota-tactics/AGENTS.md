@@ -33,9 +33,14 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   `performance.now` in the sim. It runs in Node tests and the headless scripts.
 - **Content** (jobs, abilities, items, creeps, towers, tuning) is typed data in
   `src/lib/content/`, the one place the doc's numbers live in code.
+- **Players steer heroes with commands**: `world.command(heroId, command)`, plain data with units
+  by id (`#lib/sim/commands.ts`), applied at the start of the next tick in the order given. A
+  game replays from its seed and its (tick, hero, command) log; nothing else may reach into the
+  sim's state during play.
 - **`GameState`** (`#lib/game/GameState.svelte.ts`) is the runes class between the sim and the
-  view: it advances the game each frame, turns input into commands and exposes what the HUD and
-  scene read. Shared with `createContext`, one per game, never a module-level singleton.
+  view: it advances the game each frame, turns input into commands to the player's hero and
+  exposes what the HUD and scene read. Shared with `createContext`, one per game, never a
+  module-level singleton.
 - **Components render; they don't own rules.** DOM HUD in `src/lib/components/`, the 3D scene in
   `src/lib/components/scene/`. Pure helpers worth a Node test (camera maths, paths) are plain TS
   in `src/lib/game/`.
@@ -49,9 +54,11 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   render order above the water's, or the water draws over them.
 - **In development, `window.game`** is the `GameState`, for the console and headless checks
   (`game.speed = 0`, `game.selected = …`).
-- **Input** follows Dota 2's default layout (`DESIGN.md` §11). The camera leaves the left and
-  right mouse buttons to the game: wheel zooms, middle-drag pans, the view turns only in quarter
-  turns.
+- **Input** follows Dota 2's default layout (`DESIGN.md` §11). Keys are in `Game.svelte`; the
+  mouse on the board is `GameInput.svelte`, which picks units by where their bodies are on
+  screen and ray-casts the clicked tile itself (the grid's picker only updates once a frame).
+  The camera leaves the left and right mouse buttons to the game: wheel zooms, middle-drag pans,
+  the view turns only in quarter turns.
 - **Scene coordinates** are the grid's: 1 unit = 1 tile, Y up, north is −Z
   (`dota-tactics-grid/scene/coords.ts`).
 
@@ -60,6 +67,8 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
 - Vitest in Node: `src/**/*.test.ts` and `scripts/**/*.test.ts`. Rules get thorough tests with
   expectations derived from the formulas in `DESIGN.md`; components get visual checks.
 - Sim tests draw small boards as text (`#lib/testing/terrain.ts`) and turn waves off to place
-  creeps by hand (`world.spawnCreep`). `#lib/testing/map.ts` loads the real map in Node.
+  creeps by hand (`world.spawnCreep`; `waitingLane` keeps a creep where it's put). Heroes start
+  at a Clan Hall tile the scenario gives. `#lib/testing/world.ts` has the world, run and trace
+  helpers; `#lib/testing/map.ts` loads the real map in Node.
 - Tuning numbers come from `pnpm lane-sim` (`scripts/lane-sim.ts`: the real map, many seeds,
   headless). Record what it measured in `DESIGN.md` next to the numbers it justified.

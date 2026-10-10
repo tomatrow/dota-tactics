@@ -1,6 +1,6 @@
 <!--
-	The selected unit: who it is, its HP and gauge, its stats, and what it's doing. Refreshed every
-	tick.
+	The selected unit (not the player's hero: the hero window shows that): who it is, its HP and
+	gauge, its stats, and what it's doing. Refreshed every tick.
 -->
 <script lang="ts">
 	import { getGameState } from "#lib/game/GameState.svelte.ts"
@@ -11,7 +11,7 @@
 	const info = $derived.by(() => {
 		void game.tick
 		const unit = game.selected
-		if (!unit) return null
+		if (!unit || unit === game.hero) return null
 		const { stats } = unit
 		const doing =
 			unit.step ? "Walking"

@@ -1,3 +1,5 @@
+import type { Ability } from "#lib/content/abilities.ts"
+import type { Job } from "#lib/content/heroes.ts"
 import type { Team, UnitStats } from "#lib/content/units.ts"
 import type { Facing } from "./grid.ts"
 import type { LaneField } from "./lane-field.ts"
@@ -23,6 +25,46 @@ export interface Step {
 	progress: number
 }
 
+/** What a hero is doing, as its player last ordered it (DESIGN.md §3, §11). */
+export type Order =
+	| { readonly type: "idle" }
+	| { readonly type: "move"; readonly col: number; readonly row: number }
+	/** Repeats until the target dies or the order changes. */
+	| { readonly type: "attack"; readonly target: Unit }
+	/** Walks to the tile, fighting whatever enemy comes within aggro range on the way. */
+	| { readonly type: "attackMove"; readonly col: number; readonly row: number }
+	/** Waits for a full gauge (walking into reach first), uses the ability, then does `then`. */
+	| {
+			readonly type: "ability"
+			readonly ability: Ability
+			/** Null for an ability used on the caster itself. */
+			readonly target: Unit | null
+			readonly then: Order
+	  }
+
+export const IDLE: Order = { type: "idle" }
+
+/** What only a hero has: its job, orders, economy and respawn. */
+export class Hero {
+	readonly job: Job
+	/** Its Clan Hall's tile: it starts and respawns on the nearest free tile to it. */
+	readonly hall: readonly [col: number, row: number]
+	order: Order = IDLE
+	level = 1
+	gold = 0
+	lastHits = 0
+	denies = 0
+	/** The tick it comes back after dying; -1 while alive. */
+	respawnAt = -1
+	/** A hero that found no way to go doesn't search again before this tick. */
+	retryAt = 0
+
+	constructor(job: Job, hall: readonly [col: number, row: number]) {
+		this.job = job
+		this.hall = hall
+	}
+}
+
 export interface UnitInit {
 	readonly team: Team
 	readonly stats: UnitStats
@@ -33,9 +75,10 @@ export interface UnitInit {
 	readonly lane?: Lane
 	readonly wave?: number
 	readonly entity?: string
+	readonly hero?: Hero
 }
 
-/** Anything on the board that fights: creeps and structures, heroes later. */
+/** Anything on the board that fights: creeps, structures and heroes. */
 export class Unit {
 	readonly id: number
 	readonly team: Team
@@ -47,14 +90,18 @@ export class Unit {
 	readonly wave: number
 	/** The map entity a structure stands for, by name; null for anything else. */
 	readonly entity: string | null
+	/** A hero's own state; null for anything else. */
+	readonly hero: Hero | null
 	/** The tile the unit stands on, or is stepping off. For a structure, its footprint's centre. */
 	col: number
 	row: number
 	facing: Facing
 	hp: number
+	mp = 0
 	/** Points × TICK_RATE; full at GAUGE_FULL. */
 	gauge = 0
 	step: Step | null = null
+	/** Who it's fighting, or walking into reach of. */
 	target: Unit | null = null
 	/** The tile index the unit last stepped off, so a sidestep doesn't go straight back. */
 	previous = -1
@@ -73,6 +120,7 @@ export class Unit {
 		this.lane = init.lane ?? null
 		this.wave = init.wave ?? -1
 		this.entity = init.entity ?? null
+		this.hero = init.hero ?? null
 		this.hp = init.stats.hp
 	}
 }
