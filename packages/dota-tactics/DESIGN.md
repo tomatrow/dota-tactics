@@ -315,19 +315,20 @@ barracks → **Camps**, fountain → **Clan Hall**. The Dota names are used belo
 
 Units with HP and a gauge; never move, so they're always charging. Speed 25 → one hit every 4s.
 
-| Tier    | Damage | Note                                            |
-| ------- | -----: | ----------------------------------------------- |
-| T1      |    180 | ≈30% of a level-1 hero; a dive buys ~2 actions. |
-| T2      |    220 |                                                 |
-| T3 / T4 |    260 |                                                 |
+| Tier    | Damage vs heroes | Note                                                                 |
+| ------- | ---------------: | -------------------------------------------------------------------- |
+| T1      |              280 | ≈30% of a level-1 hero (265 on the Warrior); a dive buys ~2 actions. |
+| T2      |              340 |                                                                      |
+| T3 / T4 |              400 |                                                                      |
 
 - Range 11, aggro radius 14, vision 30 / 12, true sight 11.
 - Hit chance 100%; evasion does not apply. Attackers below the tower still take the 25% uphill
   miss, so diving high ground is punished.
 - DEF 130: creeps chip (a melee creep does 15 a hit), heroes dent (Dota's rule).
-- **×2.5 against creeps** (448 a hit: 2 hits a melee or siege creep, 1 a ranged). At plain
-  damage a T1 needed a minute to clear a wave that comes every 30 s, and creeps alone took a T1
-  in 6 of 8 seeds within 15 minutes (earliest 8:29). Against heroes it hits for its plain 180.
+- **448 a hit against creeps** (2 hits a melee or siege creep, 1 a ranged): ×1.6 on the T1's 280. With 180 against creeps a T1 needed a minute to clear a wave that comes every 30 s, and
+  creeps alone took a T1 in 6 of 8 seeds within 15 minutes (earliest 8:29). At 448, creeps alone
+  take a T1 in 3 of 12 seeds over 30 minutes (earliest 16:15). Against heroes it hits for its
+  plain ATK.
 - Footprint 3×3 tiles; reach and aggro are measured to its nearest tile.
 - **Aggro** (Dota's): target the closest enemy, except an enemy hero who attacks an allied hero in
   range becomes the target immediately. Aggro drops if you attack your own creep — **which costs
@@ -467,7 +468,7 @@ Each is playable or testable on its own.
    T1s. `pnpm lane-sim` checks §6 headless (results in §6, §9). In the browser: HP and CT bars,
    bolts, lunges, hit flashes; click to select, the clock with speeds 0–8×.
 3. **One hero.** Warrior: click to move, attack orders, the gauge (charges only standing),
-   facing, First Aid, Body Slam, gold on last hits, denies.
+   facing, First Aid, Body Slam, gold on last hits, denies. Plan below.
 4. **Black Mage.** MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
    Rend Speed + Slow. Facing evasion, uphill miss.
 5. **Opponent.** Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when it
@@ -475,6 +476,87 @@ Each is playable or testable on its own.
 6. **Tuning.** Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
    questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
    if players always act the instant the gauge fills, the cadence is too slow.
+
+### Milestone 3 plan: one hero
+
+The player's Bangaa Warrior (Radiant) in the milestone-2 lane. No enemy hero yet.
+
+**Numbers first.** Put §13's Warrior and §9's Sentinels (280 / 340 / 400 against heroes,
+`vsCreeps` 1.6 so creeps still take 448) into `content/`. `UnitStats` gains `kind: "hero"`,
+`res`, `matk`, `mp` (max), `jump`. Creeps: RES 0, MATK 0, MP 0. Tests that pin 448 stay; the
+Sentinel-vs-non-creep test becomes 280 − 15 = 265.
+
+**Sim** (`src/lib/sim/`):
+
+- **Heroes.** `content/heroes.ts`: jobs as data (name, stats, ability ids). A `Unit` gets
+  `hero: HeroState | null`: order, MP, gold, last hits, denies, respawn tick. The scenario
+  lists heroes (team, job); they start at their Clan Hall (the fountain entity's nearest free
+  tiles). Walk speed from Move: Move 4 = 300 u/s.
+- **Commands.** `world.command(unit, order)` queues; queued commands apply at the start of the
+  next `step()`, in issue order, so a replay of (tick, command) pairs reproduces a game (the
+  networking hook).
+- **Orders.** `idle` · `move` (tile) · `attack` (unit; repeats) · `attackMove` (tile; attacks
+  the nearest enemy within 8 on the way, units before structures, then carries on) ·
+  `ability` (id, target or none). S and H both stop: an idle hero never auto-acquires (§3), so
+  Dota's hold has nothing to add yet. After an ability on an enemy the order becomes `attack`
+  on it; after a self ability, the previous order resumes.
+- **Queued actions.** An order whose action isn't ready (gauge not full) walks into reach,
+  stands, charges, and acts the instant the gauge fills. A full gauge holds while idle: the
+  player times last hits by right-clicking when the creep is low.
+- **Pathfinding.** A* over the whole map (`PathSearch`, buffers reused per world), Manhattan
+  heuristic, step cost 1, replanned every step (cheap for a few heroes). Structures' footprints
+  and enemies block; allies are passable but never a goal. A goal tile that's taken becomes
+  the nearest free tile to it. Creeps keep the lane field and the local search.
+- **Walking through allies** (§6). A second occupancy layer, `passers`: a hero stepping onto an
+  ally's tile holds nothing there and marks `passers`; arriving, it releases what it held
+  behind it. Every other unit's `canEnter` needs both `occupant` and `passers` empty. A hero
+  blocked while passing waits there and claims the tile the moment it's free. Creeps still
+  block each other (waves keep their shape).
+- **Attacks and abilities.** Hero attack = the creep attack. Abilities are data
+  (`content/abilities.ts`: name, MP, reach, target kind, effect) resolved by a switch in the
+  sim; the full threlte-tactics pipeline waits until there are enough abilities to need it.
+  First Aid: self, heal 25% of max HP. Body Slam: enemy in reach 2, ATK × 1.6, 10% of the
+  damage dealt back to the caster (none on a miss). Every action gives +10 MP (capped). Rend
+  Speed is listed but disabled until milestone 4.
+- **Last hits and denies.** A hero's killing blow on an enemy creep: Dota's bounty (melee 36,
+  ranged 45, siege 70) to its gold, +1 last hit. An `attack` order on an own creep is only
+  accepted under 50% HP (otherwise it's a `move` to it); killing it is a deny: no gold, +1
+  deny. The death event carries `bounty` and `denied`. No XP or levels yet.
+- **Creep targeting** (§6): enemy creeps before heroes before structures; the hero-attacks-hero
+  rule waits for an enemy hero.
+- **Death and respawn.** A dead hero leaves the board (its tiles freed) and returns after
+  10 + 3 × level s (13 s at level 1) at its Clan Hall with full HP, 0 MP, empty gauge, idle;
+  same id, so units stay in id order.
+
+**View and input:**
+
+- **Pick by screen.** Units are picked by projecting each unit's body centre to the screen,
+  nearest within ~28 px of the pointer; the ground under the pointer is the grid picker's
+  hover tile. Selection moves off the grid picker's pin to this.
+- **Dota controls** (§11 table): right-click ground = move, enemy = attack, own creep under 50%
+  = deny (else move); Q First Aid, W Rend Speed (disabled), E Body Slam: an enemy-targeted
+  ability enters targeting (left-click a unit, right-click or Esc cancels), a self ability is
+  ordered at once; A then left-click = attack-move; S / H stop; F1 centres on and selects the
+  hero; Space follows the hero.
+- **HeroView.** A Bangaa: bigger team-coloured body, head with a snout, a tail, a sword; facing,
+  lunge (bigger for Body Slam), hit flash, blob shadow, bars (HP, CT). A green burst on First
+  Aid.
+- **Overlays.** While targeting: the ability's reach as a diamond of tile highlights around the
+  hero. Order feedback: a green tile flash where you moved, a red ring on what you attack.
+- **HeroWindow** (bottom centre): name, HP / MP / CT bars, the three abilities with keys and MP
+  (greyed when disabled), what's queued ("Body Slam → Zombie"), gold, last hits / denies, and
+  the respawn countdown. The selected-unit window stays for anything else.
+
+**Tests** (Node, small text boards): A* round walls; no charge while walking, charges and holds
+full when idle; idle never attacks a creep in reach; an attack order walks in, fires the
+moment the gauge fills, repeats every 5 s; passes through an allied creep, never through an
+enemy, never stops on an ally; last hit pays the bounty; deny refused above 50%, counted below,
+no gold; First Aid heals 25% capped; Body Slam damage and recoil; +10 MP per action capped;
+respawn after 13 s at the Clan Hall; creeps prefer creeps to the hero; a command log replays
+to the same game. Browser: walk the Warrior to lane, last-hit, deny, die to the tower, respawn.
+
+**Done when** you can play the Warrior in mid against the waves: farm, deny, push the Dire T1
+down, die under it, respawn and walk back.
 
 Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
 is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
@@ -504,8 +586,13 @@ Kept deliberately simple; the prototype is for feel, not balance.
 
 ## 13. Starter kits, v0
 
-Both kits assume: level 1, no items beyond starting gear, Dota-scale HP so creep and tower
-numbers can be lifted directly.
+Both kits assume level 1 and no items beyond starting gear.
+
+**Heroes hit big and act rarely** (decided after milestone 2). A hero's hit is ~2–3× a creep's,
+so one hero action is worth ~2 creep actions, and the last-hit window is "under ~180 HP": a
+couple of creep hits wide, readable from the HP bar. Hero HP scales so a hero duel still takes
+~6 trades. (Before this, the Warrior's 58 a hit was weaker than a creep's 80: 50 s to kill a
+creep alone, and last hits a coin flip.)
 
 Each job starts with **two mastered abilities** (the draft equivalent of clan history) plus
 **one piece of gear teaching a third**. This is a prototype convenience; in the real game the
@@ -513,27 +600,27 @@ innate count is a balance knob per job.
 
 ### Bangaa Warrior
 
-| Stat    |         Value | Note                     |
-| ------- | ------------: | ------------------------ |
-| HP      |           620 | ~Dota strength hero at 1 |
-| MP      | 0, +10/action |                          |
-| ATK     |            58 | includes Shortsword      |
-| MATK    |            20 |                          |
-| DEF     |            30 |                          |
-| RES     |            14 |                          |
-| Speed   |            20 | one action / 5s          |
-| Move    |             4 | 4.7 tiles/s              |
-| Jump    |             2 |                          |
-| Evasion |            10 |                          |
-| Reach   |             2 | melee                    |
+| Stat    |         Value | Note                                                    |
+| ------- | ------------: | ------------------------------------------------------- |
+| HP      |           900 | a wave alone kills in ~12 s; another Warrior in ~6 hits |
+| MP      | 0, +10/action | max 40                                                  |
+| ATK     |           180 | includes Shortsword; 178 on a melee creep               |
+| MATK    |            20 |                                                         |
+| DEF     |            30 |                                                         |
+| RES     |            14 |                                                         |
+| Speed   |            20 | one action / 5s                                         |
+| Move    |             4 | 4.7 tiles/s                                             |
+| Jump    |             2 |                                                         |
+| Evasion |            10 |                                                         |
+| Reach   |             2 | melee                                                   |
 
 Abilities (Battle Tech):
 
 - **First Aid** (mastered) — self heal 25% HP. 0 MP. The lane salve.
 - **Rend Speed** (mastered, A2's Speedbreak) — reach 2, −6 speed on target for 15s. The
   anti-mage tool: the target's gauge fills ~30% slower.
-- **Body Slam** (taught by Shortsword, 100 AP) — reach 2, ATK × 1.6, caster takes 10% of damage
-  dealt. The kill button.
+- **Body Slam** (taught by Shortsword, 100 AP) — reach 2, ATK × 1.6 (288 − DEF/2), caster takes
+  10% of damage dealt. The kill button.
 
 Reaction: none at start. Support: none. Starting gear: Shortsword, Leather Armor.
 
@@ -542,27 +629,28 @@ the mage's 3.5, so the mage cannot simply run — it needs Chill.
 
 ### Nu Mou Black Mage
 
-| Stat    |         Value | Note              |
-| ------- | ------------: | ----------------- |
-| HP      |           420 |                   |
-| MP      | 0, +10/action |                   |
-| ATK     |            30 | Rod               |
-| MATK    |            60 |                   |
-| DEF     |            16 |                   |
-| RES     |            32 |                   |
-| Speed   |            18 | one action / 5.6s |
-| Move    |             3 | 3.5 tiles/s       |
-| Jump    |             2 |                   |
-| Evasion |             5 |                   |
-| Reach   |             2 | rod bonk          |
+| Stat    |         Value | Note                                             |
+| ------- | ------------: | ------------------------------------------------ |
+| HP      |           600 | a Warrior kills it in 4 hits                     |
+| MP      | 0, +10/action | max 120                                          |
+| ATK     |            60 | Rod; weak on purpose: mages last-hit with spells |
+| MATK    |            60 |                                                  |
+| DEF     |            16 |                                                  |
+| RES     |            32 |                                                  |
+| Speed   |            18 | one action / 5.6s                                |
+| Move    |             3 | 3.5 tiles/s                                      |
+| Jump    |             2 |                                                  |
+| Evasion |             5 |                                                  |
+| Reach   |             2 | rod bonk                                         |
 
 Abilities (Black Magic):
 
-- **Fire** (mastered) — 8 MP, range 10, instant, hits target tile + radius 1, power 90.
-- **Blizzard** (mastered) — 8 MP, range 10, instant, single target, power 70, **Chill** −40%
+- **Fire** (mastered) — 8 MP, range 10, instant, hits target tile + radius 1, power 150
+  (180 on a creep, 173 on the Warrior: about a Warrior's hit).
+- **Blizzard** (mastered) — 8 MP, range 10, instant, single target, power 110, **Chill** −40%
   walk speed for 3s. The kiting tool.
 - **Fira** (taught by Firewheel Rod, 150 AP) — 16 MP, range 10, **2s charge**, radius 3,
-  power 150.
+  power 250.
 
 Reaction: none at start. Support: none. Starting gear: Firewheel Rod, Hempen Robe.
 
@@ -578,22 +666,8 @@ Plan: Blizzard the approaching Warrior, step back, Fire, step back. The Warrior 
 - Is one Chill enough to make a Move 3 caster kiteable against Move 4 melee, or does the mage
   need Move 4 too?
 - Does a 2s charge on Fira feel like a real window to Rend Speed / step out of radius 3?
-- Is a 5s action cadence tense at these HP pools (~8–9 trades to kill), or do fights need to
+- Is a 5s action cadence tense at these HP pools (~6 trades to kill), or do fights need to
   be ~30% shorter?
-
-**Problem found in milestone 2, to settle before milestone 3: heroes hit softer than creeps.**
-A melee creep deals 80 every ~3 s (26/s); the Warrior's 58 every 5 s is 12/s, and only 56 a
-hit on a creep. In Dota a level-1 hero out-damages a creep about 2:1. Here:
-
-- A Warrior alone needs 10 hits (50 s) to kill a melee creep.
-- Last hits are a coin flip: creep HP falls in steps of 78 (a creep's hit), and the Warrior
-  only kills from ≤ 56, so the window between "killable" and "dead" is usually one enemy creep's
-  hit away, about a second.
-
-Proposal: heroes hit big and act rarely. Hero ATK ~2–3× a creep's per hit (Warrior ~180,
-Black Mage spells to match), so a hero's action is worth ~2 creep actions and the last-hit
-window is "under ~180 HP": a couple of creep hits wide, readable from the HP bar. Hero HP and
-the Sentinel's 180 would scale with it.
 
 ## 14. Open
 
@@ -605,5 +679,4 @@ In rough order of how much they shape the prototype:
 4. ~~Vision.~~ See §10.
 5. Judge Points / Scions / Combos in real time.
 6. Networking model (deterministic sim is the goal; fill-order rule in §3 is for this).
-7. **Hero damage vs creeps** (§13): heroes currently hit softer than creeps. Settle before
-   milestone 3.
+7. ~~Hero damage vs creeps.~~ Heroes hit big and act rarely (§13).
