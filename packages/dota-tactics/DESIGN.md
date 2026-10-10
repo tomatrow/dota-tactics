@@ -35,7 +35,9 @@ Related packages: [`dota-cartographer`](../dota-cartographer) (map extraction),
 | Jobs | Race + job fixed at draft. No mid-match job changes. |
 | Laws / Judges | **Not** included. Judge Points as a team resource may stay (§9). |
 | Creeps | Full units, same rules as heroes, no abilities. Denies in. (§6) |
-| Win | Destroy the enemy Ancient. |
+| Vision | Dota fog of war, 360°, Dota radii. Trees and height block line of sight. Team-shared. (§10) |
+| Structures | Dota rules, FF names: Crystal, Sentinels, Camps, Clan Hall. Glyph = Wall, 15s. (§9) |
+| Win | Destroy the enemy Crystal (Ancient). |
 
 ## 3. Clock: ATB
 
@@ -193,7 +195,7 @@ real cost.
 28 camps from the map data, each an FFTA monster family (Wolves, Bombs, Lamia, Malboro for
 ancients…). Same AI, leashed to spawn. Respawn each minute if the camp area is empty, so
 stacking works as in Dota. Hooks: Beastmaster / Morpher dominate (Chen), Blue Mage learns,
-Hunter bonuses. Roshan is a boss family; Aegis = one Auto-Life. Tormentor = a Bomb that reflects.
+Hunter bonuses. Roshan is a boss family; drops an Angel Ring (Auto-Life). Tormentor = a Bomb that reflects.
 
 ## 7. Races × jobs = the hero pool
 
@@ -214,33 +216,135 @@ Clan titles / privileges → per-match talent tree at levels 10/15/20/25.
 ## 8. Equipment, abilities, AP
 
 FFTA's core loop: equip gear that teaches an ability, earn AP, master it, keep it. This **is**
-Dota's item system with a learning curve.
+Dota's item system with a learning curve. **The shop sells FF gear only** (decided); Dota's
+items do not exist, which keeps the game from being Dota with a skin.
 
-- The shop sells FFTA gear. Blink Dagger teaches Blink; master it, sell the dagger, buy a BKB.
 - Gold does double duty: stats now, abilities permanently. Early items are "what do I want
   mastered by minute 15."
 - **AP accrues per action you take** while wearing the item (+ bonus on kill / assist). Not
   from farm, so a support that acts constantly masters items as fast as a farmed carry.
-- Bazaar / Smith crafting = Dota recipes.
-- TP scroll is an item that teaches Teleport (3s channel to a friendly structure). Prototype:
-  everyone has one on cooldown.
-- Dispatch missions → couriers.
+- **Slots**: FFTA's five — weapon, offhand, head, body, accessory — plus a consumables bag.
+  Weapons teach action abilities; armor and helms teach reaction / support; accessories are
+  passives. A build is "which five pieces, in what order, to master what."
+- **Consumables**: everyone may use them as an action (Dota rule). Alchemist uses them at range
+  and at double effect.
+- **Shop tiers** unlock by match time (0 / 10 / 20 min). Bought at the fountain; delivered by
+  **Dispatch** (courier) if you're in the field.
+- **Bazaar** (A2): neutrals drop loot; combinations unlock gear the shop doesn't sell. This
+  replaces Dota's neutral items — you jungle for ingredients.
+- Curate ~60 pieces for the real game, chosen by what they teach. Prototype needs ~6.
 
-Open: item list, what teaches what, AP costs, where you can buy (fountain only / side shops).
+### Dota item roles → FF answers
 
-## 9. Structures and the Dota layer
+| Dota | Answer |
+| --- | --- |
+| Boots | Spiked / Feather / Dash Boots, Move +1 / +2. Accessory. |
+| Blink Dagger | **A job, not an item.** Dragoon Jump, Gria flight, Time Mage, Assassin. Mobility is drafted. |
+| BKB | Ribbon / Star Armlet — status immunity, passive. |
+| Force Staff, Eul's | Time Magic. |
+| Aghanim's | None. Mastery is the upgrade. |
+| Stat items | Gear is stat items. |
+| Tango, Salve, Clarity | Potion, Hi-Potion, Ether. |
+| Bottle / runes | Lotus pools and rune spots stay as map features. |
+| **TP scroll** | **Warp Stone.** Consumable, 3s channel to a friendly structure, cooldown. Prototype: everyone starts with one. |
+| Wards, Smoke, Dust | See §10. |
+| Aegis | Roshan drops an **Angel Ring** (Auto-Life). Lost on death. |
+| Buyback | **Phoenix Down**, priced like buyback. Alchemist can throw one on an ally's corpse. |
+| Courier | Dispatch. |
+| Neutral items | Bazaar. |
 
-- **Towers**: units with speed ~25, range 11, big damage, no move. Dota aggro rules (prefers a
-  hero who attacked a hero). Backdoor regen when no enemy creep within 14 tiles.
-- **Barracks / Ancient**: units with HP. Ancient is the win condition.
-- **Day / night** every 5 min; affects vision.
-- **Death**: countdown, buyback for gold. Possible: Rubick-style "take an ability from the
-  corpse" — not decided.
+Open: the curated item list, what teaches what, AP costs.
+
+## 9. Structures
+
+FFTA has none, so they take FF names: Ancient → **Crystal**, towers → **Sentinels**,
+barracks → **Camps**, fountain → **Clan Hall**. The Dota names are used below for clarity only.
+
+### Sentinels (towers)
+
+Units with HP and a gauge; never move, so they're always charging. Speed 25 → one hit every 4s.
+
+| Tier | Damage | Note |
+| --- | ---: | --- |
+| T1 | 180 | ≈30% of a level-1 hero; a dive buys ~2 actions. 3 hits on a melee creep. |
+| T2 | 220 | |
+| T3 / T4 | 260 | |
+
+- Range 11, aggro radius 14, vision 30 / 12, true sight 11.
+- Hit chance 100%; evasion does not apply. Attackers below the tower still take the 25% uphill
+  miss, so diving high ground is punished.
+- DEF very high: creeps chip, heroes dent (Dota's rule).
+- **Aggro** (Dota's): target the closest enemy, except an enemy hero who attacks an allied hero in
+  range becomes the target immediately. Aggro drops if you attack your own creep — **which costs
+  an action here**, so dropping tower aggro is a real trade.
+- **Backdoor**: T1 has no protection. T2+ regenerate fast and take −25% damage when no enemy
+  creep is within 14 tiles.
+- **Death**: 125 gold to the team plus a last-hit bonus. Deny your own tower under 10%.
+
+### Camps (barracks), Crystal (Ancient)
+
+- T3 down → that lane's Camps are vulnerable. A Camp down → super creeps in that lane; all six →
+  megas.
+- T4s are vulnerable once any T3 is down. The Crystal is vulnerable once both T4s are down.
+  Destroying it wins.
+
+### Glyph
+
+**Wall** (decided): every structure and lane creep is invulnerable for 15s (~3 actions).
+5-minute cooldown, refreshed when a T1 falls. Dota's 6s is less than one action here.
+
+### Other
+
+- **Clan Hall** (fountain): huge damage, true sight, full regen area. Untouchable.
+- **Outposts** (both in the map data): capturable by a 6s channel once the nearby T2 is down.
+  Grant vision and are Warp Stone targets.
+- **Day / night** every 5 min; affects vision (§10).
+- **Death**: countdown; Phoenix Down is buyback (§8). Possible: Rubick-style "take an ability
+  from the corpse" — not decided.
 - **Judge Points** (A2): earned by acting and killing, spent on Combos and Scion summons.
   Proposal: team-shared ult gauge. Roshan grants a large chunk.
-- **Vision / fog**: FFTA has none. Trees block, height uplifts, wards are items. Undesigned.
 
-## 10. Prototype slice
+## 10. Vision
+
+FFTA has no fog; Dota's is copied nearly exactly, because the map data (height levels, trees)
+already contains everything it needs and without it there are no ganks, no reason for day/night,
+and nothing for Ninja / Illusionist / Ranger to do.
+
+- **Team-shared.** Anything a friendly unit or structure sees, the team sees.
+- **Radius** (tiles, day / night): hero 28 / 12, tower 30 / 12, creep 13 / 12. Night radius is
+  smaller than most spell ranges (10–14) on purpose: at night you can be hit by what you can't
+  see.
+- **360°** (decided). Facing stays a combat stat; a gank from fog already hits your back.
+- **Height**: you see your level and below, never up a level except from the ramp.
+- **Trees** block line of sight; a unit inside a tree tile sees out. Cut trees regrow after
+  5 min. Tree-cutting is job-gated (Geomancer, Viking, Gria).
+- **Line of sight** is computed per tile pair over the level and tree layers, not just radius.
+- Attacking from fog reveals the attacker briefly.
+- Unit-targeted abilities need vision; tile-targeted ones can be aimed into fog. Charge bars are
+  visible only while the caster is.
+- **Enemy HP and gauges are visible whenever the unit is.** The last-hit and "about to act"
+  reads depend on it. Fog is the only thing that hides information.
+- Map features already in the data: outposts (vision + Warp Stone target when owned), the ten
+  watchers (activate for a vision radius), Roshan's pit.
+
+### Dota vision items → FF answers
+
+| Dota | Answer |
+| --- | --- |
+| Observer ward | **Watcher's Lantern** — consumable, tile-placed, 25-tile vision, 6 min, 2 per team. The one invented item. |
+| Sentry ward | **Sentry Lantern** — consumable, true sight in 15 tiles, 6 min. (Decided: consumable, so a draft without detection isn't lost.) |
+| True sight abilities | Ranger's Sight trap, Sage's *Sight*. |
+| Smoke of Deceit | **Smoke Bomb** — real FF item. Team-wide Transparent until near enemies. |
+| Dust, Gem | None. |
+| Invisibility | Ninja / Assassin / Illusionist. Transparent status, broken by acting. |
+| Scan | The map's watchers. |
+
+Prototype: slice 1 is fog-free to test the ATB feel in isolation; slice 2 adds fog, a jungle
+entrance and a third hero to test ganks.
+
+Netcode: fog means the server must own visibility eventually. Prototype trusts the client.
+
+## 11. Prototype slice
 
 One lane (mid). Two T1 towers. Waves. Two heroes: **Bangaa Warrior** vs **Nu Mou Black Mage**,
 mage starts at 0 MP, each with one piece of gear teaching one ability. Win = kill the far tower.
@@ -252,13 +356,112 @@ It answers the only two questions that need play to answer:
 
 Levers if it's laggy: higher base speed, larger walk speed, partial charge while walking.
 
-## 11. Open
+## 12. Combat resolution, v0
+
+Kept deliberately simple; the prototype is for feel, not balance.
+
+- **Hit chance** = 95 − evasion. Evasion is full from the front, half from the sides, zero from
+  behind. Target one or more height levels above the attacker: −25% to physical attacks (Dota's
+  uphill miss). Magic always hits unless a reaction ability says otherwise.
+- **Physical damage** = ATK − DEF/2, minimum 10% of ATK.
+- **Magic damage** = spell power × MATK/50 − RES/2, minimum 10%.
+- **Height**: no damage bonus (FFTA). `Jump` is the number of height levels a unit can step up in
+  one tile. Proposal: Jump ≥ 3 (Dragoon) or flight (Gria) can cross one-level cliffs the
+  walkable layer marks impassable — a mobility tool Dota reserves for Blink.
+- **Status**: FFTA set. Slow / Haste modify gauge fill. Stop freezes it. Stun resets it to 0 and
+  interrupts a charge. Chill (new, Dota-ism) reduces walk speed.
+- **Charge-time spells**: FFTA spells are instant; FFT's are charged. We use a hybrid: tier 1
+  instant, tier 2 charged 2s, tier 3 charged 4s. Charged spells are aimed at tiles, visible,
+  interruptible. This is where Dota's channel/dodge play comes from.
+- **Walking pauses the gauge, it does not reset it.** A 1-tile sidestep costs 0.2s; a 10-tile
+  reposition costs ~2s, i.e. 40% of a turn. Tempo cost is proportional to distance.
+
+## 13. Starter kits, v0
+
+Both kits assume: level 1, no items beyond starting gear, Dota-scale HP so creep and tower
+numbers can be lifted directly.
+
+Each job starts with **two mastered abilities** (the draft equivalent of clan history) plus
+**one piece of gear teaching a third**. This is a prototype convenience; in the real game the
+innate count is a balance knob per job.
+
+### Bangaa Warrior
+
+| Stat | Value | Note |
+| --- | ---: | --- |
+| HP | 620 | ~Dota strength hero at 1 |
+| MP | 0, +10/action | |
+| ATK | 58 | includes Shortsword |
+| MATK | 20 | |
+| DEF | 30 | |
+| RES | 14 | |
+| Speed | 20 | one action / 5s |
+| Move | 4 | 4.7 tiles/s |
+| Jump | 2 | |
+| Evasion | 10 | |
+| Reach | 2 | melee |
+
+Abilities (Battle Tech):
+
+- **First Aid** (mastered) — self heal 25% HP. 0 MP. The lane salve.
+- **Rend Speed** (mastered, A2's Speedbreak) — reach 2, −6 speed on target for 15s. The
+  anti-mage tool: the target's gauge fills ~30% slower.
+- **Body Slam** (taught by Shortsword, 100 AP) — reach 2, ATK × 1.6, caster takes 10% of damage
+  dealt. The kill button.
+
+Reaction: none at start. Support: none. Starting gear: Shortsword, Leather Armor.
+
+Plan: close, Rend Speed, trade attacks and First Aid, Body Slam to finish. Walk speed 4.7 beats
+the mage's 3.5, so the mage cannot simply run — it needs Chill.
+
+### Nu Mou Black Mage
+
+| Stat | Value | Note |
+| --- | ---: | --- |
+| HP | 420 | |
+| MP | 0, +10/action | |
+| ATK | 30 | Rod |
+| MATK | 60 | |
+| DEF | 16 | |
+| RES | 32 | |
+| Speed | 18 | one action / 5.6s |
+| Move | 3 | 3.5 tiles/s |
+| Jump | 2 | |
+| Evasion | 5 | |
+| Reach | 2 | rod bonk |
+
+Abilities (Black Magic):
+
+- **Fire** (mastered) — 8 MP, range 10, instant, hits target tile + radius 1, power 90.
+- **Blizzard** (mastered) — 8 MP, range 10, instant, single target, power 70, **Chill** −40%
+  walk speed for 3s. The kiting tool.
+- **Fira** (taught by Firewheel Rod, 150 AP) — 16 MP, range 10, **2s charge**, radius 3,
+  power 150.
+
+Reaction: none at start. Support: none. Starting gear: Firewheel Rod, Hempen Robe.
+
+MP curve: action 1 must be a rod attack or item (0 MP). From action 2, Fire or Blizzard every
+action. Fira needs two non-casting actions banked. Ether (consumable, +30 MP) shortcuts this.
+
+Plan: Blizzard the approaching Warrior, step back, Fire, step back. The Warrior closes anyway
+— the question is how much HP it has when it arrives, and whether Rend Speed lands before Fira.
+
+### What the matchup is testing
+
+- Does the step-stop-act rhythm appear naturally, or do both players just stand and trade?
+- Is one Chill enough to make a Move 3 caster kiteable against Move 4 melee, or does the mage
+  need Move 4 too?
+- Does a 2s charge on Fira feel like a real window to Rend Speed / step out of radius 3?
+- Is a 5s action cadence tense at these HP pools (~8–9 trades to kill), or do fights need to
+  be ~30% shorter?
+
+## 14. Open
 
 In rough order of how much they shape the prototype:
 
-1. Starter kits for Warrior and Black Mage at scaled numbers (HP, attack, speed, move, gear, MP).
-2. Towers: damage, priority, glyph or not.
+1. ~~Starter kits.~~ See §13; validate in play.
+2. ~~Towers.~~ See §9.
 3. Shop and AP economy (§8).
-4. Vision and fog of war.
+4. ~~Vision.~~ See §10.
 5. Judge Points / Scions / Combos in real time.
 6. Networking model (deterministic sim is the goal; fill-order rule in §3 is for this).
