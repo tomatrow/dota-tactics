@@ -122,6 +122,8 @@ export class Unit {
 	mp = 0
 	/** Points × TICK_RATE; full at GAUGE_FULL. */
 	gauge = 0
+	/** The tick its gauge last became full: how long it waited to act (§11, milestone 6). */
+	fullSince = 0
 	step: Step | null = null
 	/** Who it's fighting, or walking into reach of. */
 	target: Unit | null = null

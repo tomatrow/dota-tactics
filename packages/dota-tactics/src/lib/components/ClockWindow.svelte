@@ -1,6 +1,6 @@
 <!--
-	The score (kills by each side's hero), the game clock, the next wave's countdown, and the game
-	speed (F9 pauses).
+	The score (kills by each side's hero), the game clock, the next wave's countdown, the game speed
+	(F9 pauses) and a step of one tick (F10).
 -->
 <script lang="ts">
 	import { getGameState, SPEEDS } from "#lib/game/GameState.svelte.ts"
@@ -35,9 +35,21 @@
 				}}
 				type="button"
 			>
-				{speed === 0 ? "❚❚" : `${String(speed)}×`}
+				{speed === 0 ? "❚❚"
+				: speed === 0.5 ? "½×"
+				: `${String(speed)}×`}
 			</button>
 		{/each}
+		<button
+			onclick={(event) => {
+				game.step()
+				event.currentTarget.blur()
+			}}
+			title="Pause and step one tick, 0.05 s (F10)"
+			type="button"
+		>
+			Step
+		</button>
 	</div>
 </section>
 

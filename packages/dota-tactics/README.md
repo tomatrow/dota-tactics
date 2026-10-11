@@ -6,12 +6,14 @@ per player, real-time with an ATB gauge.
 
 The design is in [DESIGN.md](./DESIGN.md); conventions are in [AGENTS.md](./AGENTS.md).
 
-**Status:** milestone 5 of the prototype slice (`DESIGN.md` §11). You play a Bangaa Warrior or a
-Nu Mou Black Mage in the mid lane against the AI playing the other: walk from the Clan Hall,
-last-hit and deny the creep waves, fight with the Warrior's techniques or the mage's Fire,
-Blizzard and Fira, kill the enemy hero, and win by destroying the enemy's mid T1. Everything
-runs on a deterministic 20 Hz simulation. `?seed=123` replays a game's creeps and rolls,
-`?job=blackMage` picks your hero and `?side=dire` your side (or use the controls window).
+**Status:** milestone 6, the last of the prototype slice (`DESIGN.md` §11). You play a Bangaa
+Warrior or a Nu Mou Black Mage in the mid lane against the AI playing the other: walk from the
+Clan Hall, last-hit and deny the creep waves, fight with the Warrior's techniques or the mage's
+Fire, Blizzard and Fira, kill the enemy hero, and win by destroying the enemy's mid T1. The
+tuning window shows how both heroes spend their time and changes any number while you play.
+Everything runs on a deterministic 20 Hz simulation. `?seed=123` replays a game's creeps and
+rolls, `?job=blackMage` picks your hero and `?side=dire` your side (or use the controls window),
+and `?tune=` starts a game with changed numbers.
 
 ## Usage
 
@@ -23,15 +25,15 @@ cd packages/dota-tactics
 pnpm dev                     # http://localhost:5173
 ```
 
-| Script                        | What it does                                                          |
-| ----------------------------- | --------------------------------------------------------------------- |
-| `pnpm dev`                    | Dev server                                                            |
-| `pnpm build` / `pnpm preview` | Static site in `build/`                                               |
-| `pnpm check`                  | svelte-check and TypeScript                                           |
-| `pnpm lint` / `pnpm format`   | Prettier and ESLint                                                   |
-| `pnpm test`                   | Vitest unit tests (Node)                                              |
-| `pnpm lane-sim`               | Headless mid lane, no heroes; prints timings (`--minutes`, `--seeds`) |
-| `pnpm duel-sim`               | Headless games, the AI on both heroes; prints who won and how         |
+| Script                        | What it does                                                             |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`                    | Dev server                                                               |
+| `pnpm build` / `pnpm preview` | Static site in `build/`                                                  |
+| `pnpm check`                  | svelte-check and TypeScript                                              |
+| `pnpm lint` / `pnpm format`   | Prettier and ESLint                                                      |
+| `pnpm test`                   | Vitest unit tests (Node)                                                 |
+| `pnpm lane-sim`               | Headless mid lane, no heroes; prints timings (`--minutes`, `--seeds`)    |
+| `pnpm duel-sim`               | Headless games, the AI on both heroes; prints who won and how (`--tune`) |
 
 ## Controls
 
@@ -51,7 +53,8 @@ Dota 2's default layout. Commands always go to your hero.
 | Left-click a unit        | Inspect it                                                  |
 | F1                       | Select and centre on your hero                              |
 | Space (hold)             | Keep the camera on your hero                                |
-| F9                       | Pause                                                       |
+| F9 / F10                 | Pause (resumes at its speed) / step one tick                |
+| `` ` `` (backtick)       | The tuning window                                           |
 | Screen edge, middle-drag | Pan                                                         |
 | Wheel                    | Zoom                                                        |
 | `[` / `]`                | Turn the view 90°                                           |
@@ -59,6 +62,23 @@ Dota 2's default layout. Commands always go to your hero.
 The gauge (CT) fills only while you stand still; every action empties it and gives 10 MP. Fira
 charges for 2 s: the mage stands until it lands, and its area shows red to everyone. Items
 (ZXCVBN) come later.
+
+## Tuning
+
+The tuning window (top right, or the backtick key) is for playtests (`DESIGN.md` §11's two
+questions):
+
+- **Time**: for you and the AI, how much of the time you walk, charge, stand with a full gauge or
+  cast; actions a minute; and how long a full gauge waits before you act. If you nearly always
+  act the moment it fills, the cadence is too slow. Restart counts afresh after a change.
+- **Numbers**: every number the game plays by (rules, heroes, abilities, statuses, creeps,
+  Sentinels). A change applies from the next tick, to this game. The game's links, and "New game
+  with these", carry the changes as `?tune=path:value,…`; Reset all goes back to the defaults.
+- **Copy** puts a note on the clipboard: the seed, the heroes, what's tuned, the telemetry and a
+  link to play again with the same numbers.
+
+`pnpm duel-sim --tune tuning.walkCharge:50` tries numbers headless, the AI on both heroes. A
+number worth keeping goes into `DESIGN.md`, then `src/lib/content/`.
 
 ## Built on
 

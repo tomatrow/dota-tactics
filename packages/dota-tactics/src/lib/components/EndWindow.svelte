@@ -24,7 +24,7 @@
 			lastHits: hero.lastHits,
 			denies: hero.denies,
 			gold: hero.gold,
-			again: `?job=${hero.job.id}&side=${game.hero.team}`
+			again: game.href()
 		}
 	})
 </script>

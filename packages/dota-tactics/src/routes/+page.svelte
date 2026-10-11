@@ -3,6 +3,7 @@
 	import { loadMap } from "dota-tactics-grid/map/load.ts"
 	import Game from "#lib/components/Game.svelte"
 	import { isJobId } from "#lib/content/heroes.ts"
+	import { parseChanges } from "#lib/content/rules.ts"
 	import { Random } from "#lib/sim/random.ts"
 
 	const loading = loadMap()
@@ -14,6 +15,8 @@
 	const jobParam = page.url.searchParams.get("job") ?? ""
 	const job = isJobId(jobParam) ? jobParam : "warrior"
 	const side = page.url.searchParams.get("side") === "dire" ? "dire" : "radiant"
+	// `?tune=path:value,…` starts the game with numbers changed (DESIGN.md §11, milestone 6).
+	const tune = parseChanges(page.url.searchParams.get("tune") ?? "")
 </script>
 
 <svelte:head>
@@ -23,7 +26,7 @@
 {#await loading}
 	<div class="win" role="status">Loading the map…</div>
 {:then model}
-	<Game {job} {model} {seed} {side} />
+	<Game {job} {model} {seed} {side} {tune} />
 {:catch error}
 	<div class="win" role="alert">
 		<strong>Couldn't load dota_map.json</strong>

@@ -50,7 +50,8 @@ still**. At 100 the unit may act. Acting resets the gauge to 0.
 
 - Baseline `speed` 20 → one action per 5s. Ninja/Assassin ~28 (3.6s), Defender ~15 (6.7s).
 - A full gauge holds; nothing is lost by thinking except time. No overflow / banked turns.
-- Walking charges at 0–25% rate (tune in prototype; start at 0).
+- Walking charges at 0–25% rate (tune in prototype; start at 0). AI against AI, 25–50% lets a
+  melee hero catch a kiting caster (§11, milestone 6; §14).
 - Non-player units (creeps, towers, neutrals) act the instant they fill.
 - The sim runs at 20 ticks/s. Within a tick, units act in id order (spawn order): units that
   fill on the same tick act in that order. Deterministic for netcode.
@@ -486,9 +487,9 @@ Each is playable or testable on its own.
 5. **Opponent.** ✅ Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when
    it has MP, retreats at low HP. Respawn at the Clan Hall. Win on the enemy T1 mid. Details
    below.
-6. **Tuning.** Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
+6. **Tuning.** ✅ Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
    questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
-   if players always act the instant the gauge fills, the cadence is too slow.
+   if players always act the instant the gauge fills, the cadence is too slow. Details below.
 
 ### Milestone 3: one hero
 
@@ -715,6 +716,69 @@ Spectral's oldstyle 1 read as an I.
 - The AI takes ~5 µs a tick in the browser. 60 fps at retina with AO on, in the mid fight with
   both heroes (measured with another game running).
 
+### Milestone 6: tuning
+
+Built:
+
+- **Time**: pause (F9, which resumes at the speed it paused from), a step of one tick (F10 or the
+  clock's Step: 0.05 s, then paused), and speeds ½× to 8×.
+- **Each game plays by its own numbers** (`World#rules`): a copy of the content's, which units'
+  stats point into, so a change applies to every unit of the kind from the next tick.
+  `world.tune(path, value)` changes one (`jobs.warrior.stats.speed`); HP and MP stay within a
+  lowered maximum, and a new wave interval starts after the wave that's due. The content stays
+  the defaults.
+- **The tuning window** (top right; the backtick key or its title):
+  - _Time_: the telemetry below for both heroes, from the start or the last Restart.
+  - _Numbers_: every number by section (rules, heroes, abilities, statuses, creeps, Sentinels),
+    changed ones in gold with their default to go back to. Left out: footprints and the lanes'
+    corridor, which can't change in a running game, and numbers nothing uses (a creep's MP).
+  - Links to new games (Play again, Play as, New game with these) carry the changed numbers as
+    `?tune=path:value,…`.
+  - Copy puts a playtest note on the clipboard: the seed, the heroes, what's tuned, the
+    telemetry and a link to a new game with the same numbers.
+- **Telemetry** (`sim/telemetry.ts`, from an `act` event that says how long the gauge was full)
+  for the two questions, as shares of the time a hero is alive:
+  - walking (the gauge paused), charging (standing, filling), full and standing (it could act
+    and hasn't), casting;
+  - actions a minute, of the most its speed allows (12 at speed 20);
+  - **how long a full gauge waits**: "acted as it filled" is the share of actions within ¼ s of
+    the gauge filling, with the median wait and a histogram (under ¼ s, 1 s, 3 s, 10 s, longer).
+    If nearly every action comes as the gauge fills, the cadence is too slow. A repeating attack
+    order acts the tick its gauge fills, so the share also counts how often a target was ready.
+- `pnpm duel-sim --tune path:value,…` plays the AI with changed numbers.
+
+Chosen here, to confirm in play (§14):
+
+- A tuned number belongs to the game it was tuned in (and the links from it) until it's written
+  into this doc and the content.
+- "As it filled" means within ¼ s: a quick reaction. The AI thinks every 0.2 s.
+
+**Measured** (`pnpm duel-sim --tune`: AI against AI, the Warrior Radiant and the Black Mage Dire,
+12 seeds × 30 min):
+
+| Tuned                | Warrior K/D | Actions/min | Walking   | Acted as it filled | Mage LH |
+| -------------------- | ----------: | ----------: | --------- | -----------------: | ------: |
+| nothing              |   1.1 / 0.1 |   5.1 / 4.4 | 43% / 45% |          27% / 11% |      77 |
+| walk charge 25%      |   3.2 / 0.3 |   5.3 / 4.0 | 47% / 55% |          28% / 10% |      61 |
+| walk charge 50%      |   5.1 / 0.3 |   5.8 / 4.0 | 47% / 63% |          25% / 11% |      52 |
+| walk charge 100%     |   3.8 / 0.4 |   6.7 / 3.8 | 47% / 70% |          26% / 11% |      48 |
+| speed 25 / 23 (+25%) |   0.8 / 0.0 |   5.6 / 5.0 | 45% / 46% |          27% / 11% |      84 |
+| Fire 12 MP           |   0.8 / 0.0 |   5.2 / 4.2 | 41% / 45% |          29% / 14% |      67 |
+
+(Warrior / mage where there are two.)
+
+- **Walk charge is the lever that changes fights.** The Warrior arrives with a gauge, and the
+  mage's kiting (step back, Chill, the Sentinel) stops working: at 50% the Warrior kills it five
+  times a game, and the mage walks more and farms less.
+- **Faster gauges add few actions** (+10% for +25% speed): the AI is held back by walking and
+  waiting for last hits, not by its gauge. Its median wait is about 1 s; the Warrior acts as its
+  gauge fills a quarter of the time, the mage a tenth. A player's numbers are the ones that
+  answer the questions; the AI's are a baseline. At +25% speed the mage won 4 of the 12 games
+  (the earliest at 20:48), more than with any other setting.
+- Fire at 12 MP cuts the mage's last hits from 77 to 67 (§14 item 11).
+- 60 fps at retina with AO on in the mid fight with the window closed, on Time, or with every
+  section of Numbers open. Telemetry takes ~0.1 µs a tick.
+
 Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
 is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
 gameplay zoom AO's radius spans many pixels, so the game renders it at a quarter resolution
@@ -854,3 +918,8 @@ In rough order of how much they shape the prototype:
 13. First Aid at 0 MP heals back a mage's harass: ~5,000 damage a game for 0.1 deaths, AI
     against AI (§11, milestone 5).
 14. Spells draw aggro like blows; the Clan Hall doesn't restore MP (§11, milestone 5).
+15. Walk charge (§3: 0–25%, starting at 0). AI against AI, 25–50% lets a melee hero catch a
+    kiting caster (1.1 kills a game at 0, 3.2 at 25%, 5.1 at 50%); 0 keeps §3's step-stop-act
+    (§11, milestone 6).
+16. A tuned number lives in its game and the links from it (`?tune=`), not in the content, until
+    it's written down (§11, milestone 6).

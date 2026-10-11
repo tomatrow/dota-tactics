@@ -1,16 +1,8 @@
-import { ABILITIES, followsUp, hitsStructures, type Ability } from "#lib/content/abilities.ts"
-import { JOBS, type JobId } from "#lib/content/heroes.ts"
-import { STATUS_IDS, STATUSES, type Infliction, type StatusId } from "#lib/content/statuses.ts"
-import { TUNING } from "#lib/content/tuning.ts"
-import {
-	CREEP_NAMES,
-	CREEPS,
-	isCreep,
-	isHero,
-	SENTINELS,
-	type CreepKind,
-	type Team
-} from "#lib/content/units.ts"
+import { followsUp, hitsStructures, type Ability } from "#lib/content/abilities.ts"
+import type { JobId } from "#lib/content/heroes.ts"
+import { defaultRules, setNumber, type Rules } from "#lib/content/rules.ts"
+import { STATUS_IDS, type Infliction, type StatusId } from "#lib/content/statuses.ts"
+import { CREEP_NAMES, isCreep, isHero, type CreepKind, type Team } from "#lib/content/units.ts"
 import { hitChance, magicDamage, physicalDamage } from "./combat.ts"
 import type { Command } from "./commands.ts"
 import { GAUGE_FULL, STEP_FULL, TICK_RATE, ticks } from "./constants.ts"
@@ -125,11 +117,17 @@ function findInRing(
 /**
  * The simulation: a fixed-rate, deterministic world of units on the map's tiles. `step()` advances
  * one tick. Units act in id order; all randomness comes from the world's seeded generator; players
- * steer their heroes with `command()`.
+ * steer their heroes with `command()`. Its numbers are its own copy (`rules`), tunable between
+ * ticks with `tune()`.
  */
 export class World {
 	readonly terrain: Terrain
 	readonly random: Random
+	/**
+	 * The numbers it plays by. Units' stats are these objects, so a change applies to every unit of
+	 * the kind, from the next tick.
+	 */
+	readonly rules: Rules
 	readonly lanes: readonly Lane[]
 	/** Every hero, living or dead, in id order. */
 	readonly heroes: readonly Unit[]
@@ -158,11 +156,15 @@ export class World {
 	#commands: { unit: number; command: Command }[] = []
 	#nextId = 1
 	#events: SimEvent[] = []
+	/** The next wave's number (0-based), and the tick it comes. */
+	#wave = 0
+	#nextWave = 0
 
-	constructor(scenario: Scenario, seed: number) {
+	constructor(scenario: Scenario, seed: number, rules: Rules = defaultRules()) {
 		const { terrain } = scenario
 		this.terrain = terrain
 		this.random = new Random(seed)
+		this.rules = rules
 		this.#waves = scenario.waves ?? true
 		this.#regen = scenario.regen ?? true
 		const count = terrain.cols * terrain.rows
@@ -174,7 +176,7 @@ export class World {
 		for (const s of scenario.structures) {
 			const unit = this.#add({
 				team: s.team,
-				stats: SENTINELS[s.tier],
+				stats: rules.sentinels[s.tier],
 				name: `Sentinel T${String(s.tier)}`,
 				col: s.col,
 				row: s.row,
@@ -201,14 +203,15 @@ export class World {
 			const hall = scenario.halls?.[team]
 			if (!hall) throw new Error(`a ${team} hero needs a Clan Hall`)
 			const [[col, row]] = this.#freeTilesNear(hall[0], hall[1], 1)
+			const spec = rules.jobs[job]
 			const unit = this.#add({
 				team,
-				stats: JOBS[job].stats,
-				name: `${JOBS[job].race} ${JOBS[job].name}`,
+				stats: spec.stats,
+				name: `${spec.race} ${spec.name}`,
 				col,
 				row,
 				facing: team === "radiant" ? Facing.north : Facing.south,
-				hero: new Hero(JOBS[job], hall)
+				hero: new Hero(spec, hall)
 			})
 			this.#occupant[tileIndex(terrain, col, row)] = unit.id
 			return unit
@@ -218,6 +221,11 @@ export class World {
 	/** Seconds since the game started. */
 	get time(): number {
 		return this.tick / TICK_RATE
+	}
+
+	/** The tick the next wave comes. */
+	get nextWave(): number {
+		return this.#nextWave
 	}
 
 	/** The unit standing on (or stepping onto) a tile. */
@@ -240,13 +248,28 @@ export class World {
 		this.#commands.push({ unit: hero, command })
 	}
 
+	/**
+	 * Changes one of its numbers (a path into `rules`, such as "jobs.warrior.stats.speed"); it
+	 * applies from the next tick. Units keep their HP and MP, within a lowered maximum. False when
+	 * there's no number at the path.
+	 */
+	tune(path: string, value: number): boolean {
+		if (!setNumber(this.rules, path, value)) return false
+		for (const unit of this.units) {
+			unit.hp = Math.min(unit.hp, unit.stats.hp)
+			unit.mp = Math.min(unit.mp, unit.stats.mp)
+		}
+		return true
+	}
+
 	/** Advances one tick; returns what happened in it (and since the last step). */
 	step(): SimEvent[] {
 		this.#applyCommands()
 		this.#respawnHeroes()
 		if (this.#regen && this.tick % TICK_RATE === 0) this.#regenerate()
-		if (this.#waves && this.tick % ticks(TUNING.waveInterval) === 0) {
-			this.#spawnWaves(Math.floor(this.tick / ticks(TUNING.waveInterval)))
+		if (this.#waves && this.tick >= this.#nextWave) {
+			this.#spawnWaves(this.#wave++)
+			this.#nextWave += Math.max(1, ticks(this.rules.tuning.waveInterval))
 		}
 		for (const unit of this.units) {
 			if (!unit.alive) continue
@@ -268,7 +291,7 @@ export class World {
 		if (!this.#canEnter(col, row)) throw new Error(`can't place a creep on ${String([col, row])}`)
 		const unit = this.#add({
 			team: lane.team,
-			stats: CREEPS[kind],
+			stats: this.rules.creeps[kind],
 			name: CREEP_NAMES[lane.team][kind],
 			col,
 			row,
@@ -284,7 +307,7 @@ export class World {
 		return (
 			unit.team === hero.team &&
 			isCreep(unit.stats) &&
-			unit.hp * 100 < unit.stats.hp * TUNING.denyBelow
+			unit.hp * 100 < unit.stats.hp * this.rules.tuning.denyBelow
 		)
 	}
 
@@ -296,7 +319,7 @@ export class World {
 	/** A unit's speed (gauge points per second) now, with its statuses: never below 1. */
 	speedOf(unit: Unit): number {
 		let speed = unit.stats.speed
-		for (const id of STATUS_IDS) if (this.has(unit, id)) speed += STATUSES[id].speed
+		for (const id of STATUS_IDS) if (this.has(unit, id)) speed += this.rules.statuses[id].speed
 		return Math.max(1, speed)
 	}
 
@@ -304,7 +327,7 @@ export class World {
 	walkOf(unit: Unit): number {
 		let walk = unit.stats.walk
 		for (const id of STATUS_IDS) {
-			if (this.has(unit, id)) walk = Math.floor((walk * STATUSES[id].walk) / 100)
+			if (this.has(unit, id)) walk = Math.floor((walk * this.rules.statuses[id].walk) / 100)
 		}
 		return walk
 	}
@@ -329,7 +352,7 @@ export class World {
 	}
 
 	#field(path: readonly TilePoint[]): LaneField {
-		return new LaneField(this.terrain, path, TUNING.laneCorridor, this.#footprints)
+		return new LaneField(this.terrain, path, this.rules.tuning.laneCorridor, this.#footprints)
 	}
 
 	#forFootprint(unit: Unit, f: (index: number) => void) {
@@ -374,7 +397,8 @@ export class World {
 	}
 
 	#spawnWaves(wave: number) {
-		const siege = wave % TUNING.siegeEvery === TUNING.siegeEvery - 1
+		const { siegeEvery } = this.rules.tuning
+		const siege = wave % siegeEvery === siegeEvery - 1
 		const kinds = siege ? [...WAVE, "siege" as const] : WAVE
 		for (const lane of this.lanes) {
 			const tiles = this.#freeTilesNear(lane.spawner[0], lane.spawner[1], kinds.length)
@@ -383,7 +407,7 @@ export class World {
 				const [col, row] = tiles[i]
 				const unit = this.#add({
 					team: lane.team,
-					stats: CREEPS[kind],
+					stats: this.rules.creeps[kind],
 					name: CREEP_NAMES[lane.team][kind],
 					col,
 					row,
@@ -455,7 +479,7 @@ export class World {
 			}
 			case "ability":
 			case "abilityAt": {
-				const ability = ABILITIES[command.ability]
+				const ability = this.rules.abilities[command.ability]
 				if (!hero.job.abilities.includes(ability.id) || !ability.enabled) return null
 				if (unit.mp < ability.mp) return null
 				const aim = this.#aim(unit, ability, command)
@@ -536,8 +560,9 @@ export class World {
 		for (const unit of this.heroes) {
 			const hall = unit.hero?.hall
 			if (!unit.alive || !hall || unit.hp >= unit.stats.hp) continue
-			if (Math.abs(unit.col - hall[0]) + Math.abs(unit.row - hall[1]) > TUNING.hallRadius) continue
-			const amount = Math.floor((unit.stats.hp * TUNING.hallRegen) / 100)
+			const { hallRadius, hallRegen } = this.rules.tuning
+			if (Math.abs(unit.col - hall[0]) + Math.abs(unit.row - hall[1]) > hallRadius) continue
+			const amount = Math.floor((unit.stats.hp * hallRegen) / 100)
 			unit.hp = Math.min(unit.stats.hp, unit.hp + amount)
 		}
 	}
@@ -746,7 +771,7 @@ export class World {
 		let carry = 0
 		if (step) {
 			step.progress += this.walkOf(unit)
-			this.#charge(unit, TUNING.walkCharge)
+			this.#charge(unit, this.rules.tuning.walkCharge)
 			if (step.progress < STEP_FULL) return
 			carry = step.progress - STEP_FULL
 			this.#arrive(unit)
@@ -953,15 +978,24 @@ export class World {
 	// Combat
 
 	#charge(unit: Unit, percent: number) {
+		if (unit.gauge >= GAUGE_FULL) return
 		const speed = this.speedOf(unit)
 		const gain = percent === 100 ? speed : Math.floor((speed * percent) / 100)
 		unit.gauge = Math.min(GAUGE_FULL, unit.gauge + gain)
+		if (unit.gauge >= GAUGE_FULL) unit.fullSince = this.tick
 	}
 
 	/** An action's cost: the full gauge, and its MP; every action gives MP (§3). */
-	#act(unit: Unit, mp: number) {
+	#act(unit: Unit, ability: Ability | null) {
+		const mp = ability?.mp ?? 0
+		this.#events.push({
+			type: "act",
+			unit,
+			ability: ability?.id ?? null,
+			waited: this.tick - unit.fullSince
+		})
 		unit.gauge = 0
-		unit.mp = Math.max(0, Math.min(unit.stats.mp, unit.mp - mp + TUNING.mpPerAction))
+		unit.mp = Math.max(0, Math.min(unit.stats.mp, unit.mp - mp + this.rules.tuning.mpPerAction))
 	}
 
 	#level(unit: Unit): number {
@@ -970,7 +1004,7 @@ export class World {
 	}
 
 	#attack(attacker: Unit, target: Unit) {
-		this.#act(attacker, 0)
+		this.#act(attacker, null)
 		this.#strike(attacker, target, null, 1)
 	}
 
@@ -989,9 +1023,11 @@ export class World {
 		else this.#provoke(attacker, target)
 		const side = exposure(target.facing, attacker.col - target.col, attacker.row - target.row)
 		const uphill = this.#level(target) > this.#level(attacker)
-		const chance = hitChance(attacker.stats, target.stats, side, uphill)
+		const { tuning } = this.rules
+		const chance = hitChance(attacker.stats, target.stats, side, uphill, tuning)
 		const hit = this.random.percent(chance)
-		const damage = hit && power > 0 ? physicalDamage(attacker.stats, target.stats, power) : 0
+		const damage =
+			hit && power > 0 ? physicalDamage(attacker.stats, target.stats, power, tuning) : 0
 		target.hp -= damage
 		this.#events.push({
 			type: "attack",
@@ -1014,7 +1050,7 @@ export class World {
 		const { ability, aim } = order
 		hero.order = order.then
 		if (unit.mp < ability.mp) return
-		this.#act(unit, ability.mp)
+		this.#act(unit, ability)
 		const target =
 			aim.kind === "unit" ? aim.unit
 			: aim.kind === "self" ? unit
@@ -1075,7 +1111,7 @@ export class World {
 				for (const victim of victims) {
 					if (!victim.alive) continue
 					this.#provoke(unit, victim)
-					const damage = magicDamage(unit.stats, victim.stats, effect.power)
+					const damage = magicDamage(unit.stats, victim.stats, effect.power, this.rules.tuning)
 					victim.hp -= damage
 					this.#events.push({
 						type: "magic",
@@ -1105,7 +1141,7 @@ export class World {
 				if (d <= other.stats.reach) other.target = attacker
 			} else if (isCreep(other.stats) && d <= other.stats.aggro) {
 				other.provoker = attacker
-				other.provokedUntil = this.tick + ticks(TUNING.aggroTime)
+				other.provokedUntil = this.tick + ticks(this.rules.tuning.aggroTime)
 			}
 		}
 	}
@@ -1163,7 +1199,8 @@ export class World {
 				credit.lastHits++
 			}
 		} else if (credit && hero && killer.team !== unit.team) {
-			bounty = TUNING.heroBounty + TUNING.heroBountyPerLevel * hero.level
+			const { heroBounty, heroBountyPerLevel } = this.rules.tuning
+			bounty = heroBounty + heroBountyPerLevel * hero.level
 			credit.gold += bounty
 			credit.kills++
 		}
@@ -1174,7 +1211,8 @@ export class World {
 			unit.mp = 0
 			hero.order = IDLE
 			hero.deaths++
-			hero.respawnAt = this.tick + ticks(TUNING.respawnBase + TUNING.respawnPerLevel * hero.level)
+			const { respawnBase, respawnPerLevel } = this.rules.tuning
+			hero.respawnAt = this.tick + ticks(respawnBase + respawnPerLevel * hero.level)
 		} else {
 			this.#byId.delete(unit.id)
 		}

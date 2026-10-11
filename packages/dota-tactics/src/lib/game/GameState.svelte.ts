@@ -4,16 +4,24 @@ import type { MapModel } from "dota-tactics-grid/map/model.ts"
 import { sceneY, tileX, tileZ } from "dota-tactics-grid/scene/coords.ts"
 import { WATER_DEPTH } from "dota-tactics-grid/scene/water.ts"
 import type { ViewerState } from "dota-tactics-grid/state.svelte.ts"
-import { ABILITIES, hitsStructures, type Ability, type AbilityId } from "#lib/content/abilities.ts"
+import { hitsStructures, type Ability, type AbilityId } from "#lib/content/abilities.ts"
 import { JOB_IDS, type JobId } from "#lib/content/heroes.ts"
+import {
+	changes,
+	defaultRules,
+	formatChanges,
+	setNumber,
+	type Change,
+	type Rules
+} from "#lib/content/rules.ts"
 import { STATUSES } from "#lib/content/statuses.ts"
-import { TUNING } from "#lib/content/tuning.ts"
 import type { Team } from "#lib/content/units.ts"
 import type { Command } from "#lib/sim/commands.ts"
 import { STEP_FULL, TICK_RATE, TICK_SECONDS } from "#lib/sim/constants.ts"
 import type { SimEvent } from "#lib/sim/events.ts"
 import { HeroAI, type Intent } from "#lib/sim/hero-ai.ts"
 import { mapScenario, SLICE } from "#lib/sim/scenario.ts"
+import { Telemetry } from "#lib/sim/telemetry.ts"
 import type { Unit } from "#lib/sim/unit.ts"
 import { World } from "#lib/sim/world.ts"
 import type { Vec3 } from "./camera.ts"
@@ -120,26 +128,39 @@ export interface OrderMark {
 }
 
 /** The game speeds the clock offers; 0 is paused. */
-export const SPEEDS = [0, 1, 2, 4, 8] as const
+export const SPEEDS = [0, 0.5, 1, 2, 4, 8] as const
+
+type Speed = (typeof SPEEDS)[number]
 
 /**
  * One game: the board's viewer state (which the board's components read), the simulation, the
  * player's hero and the AI that plays the other, and what the view and input share. Each frame
  * `advance` runs the world's fixed ticks for the time that passed, the AI deciding before each;
  * positions between ticks are interpolated. Input becomes commands to the hero. The game stops
- * when a team wins.
+ * when a team wins. Its numbers can be tuned while it runs, and telemetry counts how the heroes
+ * spend their time (DESIGN.md §11, milestone 6).
  */
 export class GameState {
 	readonly model: MapModel
 	readonly view: ViewerState
 	readonly world: World
+	readonly seed: number
+	/** The player's job. */
+	readonly job: JobId
 	/** The player's hero. */
 	readonly hero: Unit
 	/** The other hero, and the AI that plays it (DESIGN.md §11). */
 	readonly opponent: Unit
 	readonly ai: HeroAI
+	readonly telemetry: Telemetry
+	/** The content's numbers, which the world's started as before `?tune=`. */
+	readonly defaults: Rules = defaultRules()
 	/** Game seconds per real second; 0 is paused. */
-	speed = $state<(typeof SPEEDS)[number]>(1)
+	speed = $state<Speed>(1)
+	/** Counts changes to the numbers, for what shows them: the world's rules aren't reactive. */
+	retuned = $state(0)
+	/** The tuning window is open. */
+	tuning = $state(false)
 	/** The world's tick, mirrored for the HUD: everything that reads it updates each tick. */
 	tick = $state(0)
 	/** The living units, reassigned when one appears or dies. */
@@ -176,14 +197,24 @@ export class GameState {
 	#accumulator = 0
 	#popupId = 0
 	#noticeId = 0
+	/** The speed F9 resumes at. */
+	#resume: Speed = 1
 
 	/**
 	 * A game where the player plays `job` for `side`, and the AI the other job (the slice's
-	 * matchup, §11) for the other side.
+	 * matchup, §11) for the other side, with the content's numbers but for `tune`'s.
 	 */
-	constructor(view: ViewerState, seed: number, job: JobId = "warrior", side: Team = "radiant") {
+	constructor(
+		view: ViewerState,
+		seed: number,
+		job: JobId = "warrior",
+		side: Team = "radiant",
+		tune: readonly Change[] = []
+	) {
 		this.view = view
 		this.model = view.model
+		this.seed = seed
+		this.job = job
 		const other: Team = side === "radiant" ? "dire" : "radiant"
 		const rival = JOB_IDS.find((id) => id !== job) ?? job
 		const scenario = mapScenario(this.model, {
@@ -193,13 +224,16 @@ export class GameState {
 				{ team: other, job: rival }
 			]
 		})
-		this.world = new World(scenario, seed)
+		const rules = defaultRules()
+		for (const [path, value] of tune) setNumber(rules, path, value)
+		this.world = new World(scenario, seed, rules)
 		const hero = this.world.heroes.find((u) => u.team === side)
 		const opponent = this.world.heroes.find((u) => u.team === other)
 		if (!hero || !opponent) throw new Error("the scenario needs a hero on each side")
 		this.hero = hero
 		this.opponent = opponent
 		this.ai = new HeroAI(this.world, opponent)
+		this.telemetry = new Telemetry(this.world)
 		this.selected = hero
 		this.roster = [...this.world.units]
 		this.focus = this.position(hero)
@@ -212,8 +246,7 @@ export class GameState {
 
 	/** Seconds until the next wave. */
 	get nextWave(): number {
-		const interval = TUNING.waveInterval
-		return interval - ((this.tick / TICK_RATE) % interval)
+		return (this.world.nextWave - this.tick) / TICK_RATE
 	}
 
 	/** Moves the game on by `delta` real seconds. */
@@ -222,11 +255,35 @@ export class GameState {
 		let changed = false
 		while (this.#accumulator >= TICK_SECONDS && this.winner === null) {
 			this.#accumulator -= TICK_SECONDS
-			this.ai.update()
-			for (const event of this.world.step()) changed = this.#handle(event) || changed
-			this.tick = this.world.tick
+			changed = this.#tick() || changed
 		}
 		if (this.winner !== null) this.#accumulator = 0
+		this.#refresh(changed)
+	}
+
+	/** F10: pauses, and moves the game on by one tick. */
+	step() {
+		this.pause()
+		this.#accumulator = 0
+		this.#refresh(this.winner === null && this.#tick())
+	}
+
+	/**
+	 * One tick: the AI decides, the world steps, and the view and telemetry take in what happened;
+	 * true when the roster changed.
+	 */
+	#tick(): boolean {
+		this.ai.update()
+		const events = this.world.step()
+		this.telemetry.record(events)
+		let changed = false
+		for (const event of events) changed = this.#handle(event) || changed
+		this.tick = this.world.tick
+		return changed
+	}
+
+	/** Brings what the view reads up to the world: the roster, effects still showing, the focus. */
+	#refresh(changed: boolean) {
 		this.alpha = this.#accumulator / TICK_SECONDS
 		if (changed) this.roster = [...this.world.units]
 
@@ -251,6 +308,8 @@ export class GameState {
 	#handle(event: SimEvent): boolean {
 		const at = this.world.tick / TICK_RATE
 		switch (event.type) {
+			case "act":
+				return false
 			case "spawn":
 				if (event.unit === this.hero) this.selected ??= this.hero
 				return true
@@ -277,7 +336,12 @@ export class GameState {
 				this.#hitPopup(event.attacker, event.target, true, event.damage, at)
 				return false
 			case "spell":
-				this.spells.push({ ability: ABILITIES[event.ability], col: event.col, row: event.row, at })
+				this.spells.push({
+					ability: this.world.rules.abilities[event.ability],
+					col: event.col,
+					row: event.row,
+					at
+				})
 				return false
 			case "status":
 				this.#popup(event.unit, "status", STATUSES[event.status].name, at, 0.35)
@@ -401,7 +465,7 @@ export class GameState {
 	/** The hero's ability on a key (Q = 0, W = 1, E = 2), if it has one there. */
 	ability(slot: number): Ability | null {
 		const id = this.hero.hero?.job.abilities[slot]
-		return id ? ABILITIES[id] : null
+		return id ? this.world.rules.abilities[id] : null
 	}
 
 	/** Whether an ability of the hero's can be aimed at a unit: an enemy it works on. */
@@ -554,9 +618,38 @@ export class GameState {
 		this.view.rotate(direction)
 	}
 
-	/** Pauses, or resumes at 1×. */
+	/** F9: pauses, or resumes at the speed it was paused from. */
 	togglePause() {
-		this.speed = this.speed === 0 ? 1 : 0
+		if (this.speed === 0) this.speed = this.#resume
+		else this.pause()
+	}
+
+	pause() {
+		if (this.speed !== 0) this.#resume = this.speed
+		this.speed = 0
+	}
+
+	// Tuning (DESIGN.md §11, milestone 6)
+
+	/** Changes one of the game's numbers from the next tick; false when there's none at `path`. */
+	tune(path: string, value: number): boolean {
+		if (!this.world.tune(path, value)) return false
+		this.retuned++
+		return true
+	}
+
+	/** The numbers that differ from the content's. */
+	changes(): Change[] {
+		void this.retuned
+		return changes(this.world.rules, this.defaults)
+	}
+
+	/** A link to a new game: this one's hero and side unless given others, and its tuned numbers. */
+	href(options: { job?: JobId; side?: Team } = {}): string {
+		const tune = formatChanges(this.changes())
+		const job = options.job ?? this.job
+		const side = options.side ?? this.hero.team
+		return `?job=${job}&side=${side}${tune ? `&tune=${tune}` : ""}`
 	}
 }
 

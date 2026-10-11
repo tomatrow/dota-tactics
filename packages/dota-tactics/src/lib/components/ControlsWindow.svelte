@@ -1,15 +1,13 @@
 <!--
 	The controls that work so far (Dota 2's defaults), in an FFT-style window, and which hero and
 	side to play (the AI plays the other hero, for the other side): a link reloads the page as
-	another game.
+	another game, with any numbers tuned.
 -->
 <script lang="ts">
 	import { JOB_IDS, JOBS } from "#lib/content/heroes.ts"
 	import { getGameState, teamName } from "#lib/game/GameState.svelte.ts"
 
 	const game = getGameState()
-	const job = $derived(game.hero.hero?.job.id)
-	const side = $derived(game.hero.team)
 </script>
 
 <dl class="win">
@@ -27,8 +25,10 @@
 	<dd>Inspect a unit</dd>
 	<dt>F1 · Space (hold)</dt>
 	<dd>Centre on · follow your hero</dd>
-	<dt>F9</dt>
-	<dd>Pause</dd>
+	<dt>F9 · F10</dt>
+	<dd>Pause · step a tick</dd>
+	<dt>` (backtick)</dt>
+	<dd>Tuning: telemetry, numbers</dd>
 	<dt>Edge, middle-drag · wheel</dt>
 	<dd>Pan · zoom</dd>
 	<dt>[ &nbsp;]</dt>
@@ -36,7 +36,7 @@
 	<dt>Play as</dt>
 	<dd class="choices">
 		{#each JOB_IDS as id (id)}
-			<a aria-current={id === job} data-sveltekit-reload href="?job={id}&side={side}">
+			<a aria-current={id === game.job} data-sveltekit-reload href={game.href({ job: id })}>
 				{JOBS[id].race}
 				{JOBS[id].name}
 			</a>
@@ -45,7 +45,11 @@
 	<dt>For</dt>
 	<dd class="choices">
 		{#each ["radiant", "dire"] as const as team (team)}
-			<a aria-current={team === side} data-sveltekit-reload href="?job={job}&side={team}">
+			<a
+				aria-current={team === game.hero.team}
+				data-sveltekit-reload
+				href={game.href({ side: team })}
+			>
 				{teamName(team)}
 			</a>
 		{/each}

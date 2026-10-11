@@ -35,6 +35,10 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   `src/lib/content/`, the one place the doc's numbers live in code. An ability is its target
   (self, enemy, tile), reach, area, charge time and an effect kind; the world resolves effects by
   kind (`World#resolve`), so a new ability of an existing kind is only data.
+- **A world plays by its own copy of the numbers** (`World#rules`, from `#lib/content/rules.ts`),
+  which units' stats point into, so the tuning window can change them while it runs. The sim and
+  the AI read numbers from `world.rules`, never from the content's constants, and nothing changes
+  the content. `world.tune(path, value)` changes one, between ticks.
 - **Players steer heroes with commands**: `world.command(heroId, command)`, plain data with units
   by id (`#lib/sim/commands.ts`), applied at the start of the next tick in the order given. A
   game replays from its seed and its (tick, hero, command) log; nothing else may reach into the
@@ -43,6 +47,8 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   hero commands, never touching the world's state. Its `update()` runs before each
   `world.step()`: in `GameState`, `scripts/duel-sim.ts` and the tests' `play`. It reads abilities
   by their effect, not their ids.
+- **Telemetry** (`#lib/sim/telemetry.ts`) reads the world after each step (`record(events)`) and
+  changes nothing; `GameState` and `scripts/duel-sim.ts` share it.
 - **`GameState`** (`#lib/game/GameState.svelte.ts`) is the runes class between the sim and the
   view: it advances the game each frame (the AI deciding before each tick), turns input into
   commands to the player's hero and exposes what the HUD and scene read. Shared with

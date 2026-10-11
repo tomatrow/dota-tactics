@@ -8,6 +8,16 @@ import type { Unit } from "./unit.ts"
 export type SimEvent =
 	/** A unit appeared: a creep, a structure at the start, a hero at the start or respawning. */
 	| { readonly type: "spawn"; readonly unit: Unit }
+	/**
+	 * A unit spent its full gauge: an attack, or an ability (whose own events follow). `waited` is
+	 * how many ticks the gauge had been full: 0 when it acted the tick it filled.
+	 */
+	| {
+			readonly type: "act"
+			readonly unit: Unit
+			readonly ability: AbilityId | null
+			readonly waited: number
+	  }
 	/** A weapon blow: a plain attack, or a technique (`ability`). */
 	| {
 			readonly type: "attack"

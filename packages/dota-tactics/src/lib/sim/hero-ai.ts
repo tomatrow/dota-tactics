@@ -1,6 +1,4 @@
-import { ABILITIES, type Ability, type AbilityEffect } from "#lib/content/abilities.ts"
-import { STATUSES } from "#lib/content/statuses.ts"
-import { TUNING } from "#lib/content/tuning.ts"
+import type { Ability, AbilityEffect } from "#lib/content/abilities.ts"
 import { isCreep } from "#lib/content/units.ts"
 import { magicDamage, physicalDamage } from "./combat.ts"
 import type { Command } from "./commands.ts"
@@ -251,7 +249,7 @@ export class HeroAI {
 	/** The hero's first usable ability with this kind of effect, if it has the MP for it. */
 	#ability(kind: AbilityEffect["kind"], mp = this.unit.mp): Ability | null {
 		for (const id of this.unit.hero?.job.abilities ?? []) {
-			const ability = ABILITIES[id]
+			const ability = this.world.rules.abilities[id]
 			if (ability.enabled && ability.effect.kind === kind && ability.mp <= mp) return ability
 		}
 		return null
@@ -260,17 +258,27 @@ export class HeroAI {
 	/** Its spells it has the MP for: instant ones first. */
 	#spells(): Ability[] {
 		const spells = (this.unit.hero?.job.abilities ?? [])
-			.map((id) => ABILITIES[id])
+			.map((id) => this.world.rules.abilities[id])
 			.filter((a) => a.enabled && a.effect.kind === "magic" && a.mp <= this.unit.mp)
 		return spells.sort((a, b) => a.charge - b.charge)
 	}
 
 	/** A caster fights from range with spells; anyone else walks up and hits. */
-	static #isCaster(unit: Unit): boolean {
+	#isCaster(unit: Unit): boolean {
 		return (unit.hero?.job.abilities ?? []).some((id) => {
-			const ability = ABILITIES[id]
+			const ability = this.world.rules.abilities[id]
 			return ability.effect.kind === "magic" && ability.reach > unit.stats.reach
 		})
+	}
+
+	/** The damage the hero's blow, times `power`, does to a unit. */
+	#blowDamage(target: Unit, power = 1): number {
+		return physicalDamage(this.unit.stats, target.stats, power, this.world.rules.tuning)
+	}
+
+	/** The damage a spell of the hero's with this power does to a unit. */
+	#spellDamage(target: Unit, power: number): number {
+		return magicDamage(this.unit.stats, target.stats, power, this.world.rules.tuning)
 	}
 
 	/** Whether a unit is coming for the hero: attacking it, or aiming an ability at it. */
@@ -283,15 +291,14 @@ export class HeroAI {
 
 	/** The most damage the hero can do to a unit with one action now (not counting charged spells). */
 	#burst(target: Unit): number {
-		const me = this.unit
-		let best = physicalDamage(me.stats, target.stats)
+		let best = this.#blowDamage(target)
 		const strike = this.#ability("strike")
 		if (strike?.effect.kind === "strike") {
-			best = Math.max(best, physicalDamage(me.stats, target.stats, strike.effect.power))
+			best = Math.max(best, this.#blowDamage(target, strike.effect.power))
 		}
 		for (const spell of this.#spells()) {
 			if (spell.charge > 0 || spell.effect.kind !== "magic") continue
-			best = Math.max(best, magicDamage(me.stats, target.stats, spell.effect.power))
+			best = Math.max(best, this.#spellDamage(target, spell.effect.power))
 		}
 		return best
 	}
@@ -408,13 +415,13 @@ export class HeroAI {
 			return { intent: "evade", command: this.#goTo(this.#line.tileAt(out)) }
 		}
 		const foe = s.foe
-		if (foe && HeroAI.#isCaster(me) && !HeroAI.#isCaster(foe) && this.#chasing(foe)) {
+		if (foe && this.#isCaster(me) && !this.#isCaster(foe) && this.#chasing(foe)) {
 			if (this.#distance(foe) <= KITE_RANGE && foe.hp > this.#burst(foe)) {
 				const chill = this.#spells().find(
 					(a) =>
 						a.effect.kind === "magic" &&
 						a.effect.inflicts !== undefined &&
-						STATUSES[a.effect.inflicts.status].walk < 100
+						world.rules.statuses[a.effect.inflicts.status].walk < 100
 				)
 				const status = chill?.effect.kind === "magic" ? chill.effect.inflicts?.status : undefined
 				if (chill && status && s.ready && !world.has(foe, status)) {
@@ -443,12 +450,12 @@ export class HeroAI {
 		const me = this.unit
 		const foe = s.foe
 		if (!foe) return null
-		const caster = HeroAI.#isCaster(me)
+		const caster = this.#isCaster(me)
 		const d = this.#distance(foe)
 		const kill = foe.hp <= this.#burst(foe)
 		const range =
 			caster ? Math.max(0, ...this.#spells().map((a) => a.reach)) + 2
-			: HeroAI.#isCaster(foe) ? DIVE_RANGE
+			: this.#isCaster(foe) ? DIVE_RANGE
 			: 8
 		if (d > range) return null
 		// Melee goes to the foe; a caster casts from the edge of its reach towards it.
@@ -465,7 +472,7 @@ export class HeroAI {
 		// Its creeps near the hero turn on it when it hits their hero (§6).
 		const joining = s.enemyCreeps.filter((c) => this.#distance(c) <= c.stats.aggro).length
 		// A melee hero's plan against a caster (§13): close in with a full gauge, and hit.
-		const dive = !caster && HeroAI.#isCaster(foe) && s.ready && s.health >= DIVE_AT && joining <= 3
+		const dive = !caster && this.#isCaster(foe) && s.ready && s.health >= DIVE_AT && joining <= 3
 		if (!kill && !dive && !(ahead && joining <= 2)) return null
 		if (caster && !s.ready) return null
 		// A melee hero doesn't follow its foe into a charged spell's area.
@@ -477,13 +484,13 @@ export class HeroAI {
 	/** The action against the enemy hero: a caster's spell; melee, a debuff, a technique or a blow. */
 	#attackHero(foe: Unit, kill: boolean): Command | null {
 		const { world, unit: me } = this
-		if (HeroAI.#isCaster(me)) {
+		if (this.#isCaster(me)) {
 			const spells = this.#spells()
 			const killer = spells.find(
 				(a) =>
 					a.charge === 0 &&
 					a.effect.kind === "magic" &&
-					magicDamage(me.stats, foe.stats, a.effect.power) >= foe.hp
+					this.#spellDamage(foe, a.effect.power) >= foe.hp
 			)
 			const still = foe.casting !== null || (foe.step === null && foe.hero?.order.type !== "move")
 			const spell =
@@ -517,7 +524,7 @@ export class HeroAI {
 		const order = me.hero?.order
 		if (order?.type === "attack" && order.target.alive && isCreep(order.target.stats)) {
 			const target = order.target
-			if (target.hp <= physicalDamage(me.stats, target.stats)) {
+			if (target.hp <= this.#blowDamage(target)) {
 				return { intent: target.team === me.team ? "deny" : "lastHit", command: null }
 			}
 		}
@@ -527,7 +534,7 @@ export class HeroAI {
 			!this.#threatened(u.col, u.row) &&
 			(!this.#underTower(u.col, u.row, s, 1) ||
 				(s.enemyTower !== null && this.#tanked(s.enemyTower, s) && s.health > 0.5))
-		const blow = (u: Unit) => physicalDamage(me.stats, u.stats)
+		const blow = (u: Unit) => this.#blowDamage(u)
 		const lastHit = this.#nearest(
 			s.enemyCreeps.filter((c) => c.hp <= blow(c) && this.#distance(c) <= reach && safe(c))
 		)
@@ -536,14 +543,14 @@ export class HeroAI {
 		if (spell) return { intent: "lastHit", command: spell }
 		// A technique, when MP would otherwise go to waste at its cap.
 		const strike = this.#ability("strike")
-		if (strike?.effect.kind === "strike" && me.mp + TUNING.mpPerAction > me.stats.mp) {
+		if (
+			strike?.effect.kind === "strike" &&
+			me.mp + this.world.rules.tuning.mpPerAction > me.stats.mp
+		) {
 			const { power } = strike.effect
 			const big = this.#nearest(
 				s.enemyCreeps.filter(
-					(c) =>
-						c.hp <= physicalDamage(me.stats, c.stats, power) &&
-						this.#distance(c) <= reach &&
-						safe(c)
+					(c) => c.hp <= this.#blowDamage(c, power) && this.#distance(c) <= reach && safe(c)
 				)
 			)
 			if (big) {
@@ -583,17 +590,17 @@ export class HeroAI {
 					if (Math.abs(c - col) + Math.abs(r - row) > spell.area) continue
 					// A charged spell lands where they stand: walkers will have gone.
 					if (charged && e.step) continue
-					const damage = magicDamage(me.stats, e.stats, power)
+					const damage = this.#spellDamage(e, power)
 					const hp = charged ? e.hp - CHARGE_ATTRITION : e.hp
 					gold += damage >= hp ? e.stats.bounty : damage * creepDamage
 				}
 				if (foe && (trading || charged)) {
 					const [c, r] = world.tileOf(foe)
 					if (Math.abs(c - col) + Math.abs(r - row) <= spell.area) {
-						const damage = magicDamage(me.stats, foe.stats, power)
+						const damage = this.#spellDamage(foe, power)
 						const still = foe.casting !== null || foe.step === null
 						gold +=
-							damage >= foe.hp ? TUNING.heroBounty
+							damage >= foe.hp ? world.rules.tuning.heroBounty
 							: charged ? (still ? 0.5 : 0) * damage * HERO_DAMAGE_GOLD
 							: damage * HERO_DAMAGE_GOLD
 					}
@@ -665,7 +672,7 @@ export class HeroAI {
 		const me = this.unit
 		if (s.foe && this.#distance(s.foe) <= PUSH_DISTANCE) return null
 		if (!s.ready) return null
-		if (HeroAI.#isCaster(me)) {
+		if (this.#isCaster(me)) {
 			const spell = this.#bestSpell(s, 0.1)
 			return spell && { intent: "push", command: spell }
 		}
@@ -682,7 +689,7 @@ export class HeroAI {
 	/** A blow on the enemy Sentinel, for a hero that can hurt it, while its creeps hold its aggro. */
 	#siege(s: Survey): Plan | null {
 		const tower = s.enemyTower
-		if (!tower || HeroAI.#isCaster(this.unit) || !this.#tanked(tower, s) || s.health <= 0.5) {
+		if (!tower || this.#isCaster(this.unit) || !this.#tanked(tower, s) || s.health <= 0.5) {
 			return null
 		}
 		if (s.enemyCreeps.some((c) => this.#distance(c, tower) <= 4)) return null
@@ -700,14 +707,17 @@ export class HeroAI {
 		if (this.world.tick - this.#fullSince < ticks(BANK_AFTER)) return null
 		const most = Math.max(
 			0,
-			...(me.hero?.job.abilities ?? []).map((id) => (ABILITIES[id].enabled ? ABILITIES[id].mp : 0))
+			...(me.hero?.job.abilities ?? []).map((id) => {
+				const ability = this.world.rules.abilities[id]
+				return ability.enabled ? ability.mp : 0
+			})
 		)
-		const capped = me.mp + TUNING.mpPerAction > me.stats.mp
+		const capped = me.mp + this.world.rules.tuning.mpPerAction > me.stats.mp
 		if (me.mp >= most && !capped) return null
 		const siege = this.#siege(s)
 		if (siege) return siege
 		// A caster stands back from its wave, so it walks that much further.
-		const reach = me.stats.reach + LAST_HIT_WALK + (HeroAI.#isCaster(me) ? BEHIND_CASTER : 0)
+		const reach = me.stats.reach + LAST_HIT_WALK + (this.#isCaster(me) ? BEHIND_CASTER : 0)
 		const deny = this.#nearest(
 			s.ownCreeps.filter((c) => this.world.deniable(me, c) && this.#distance(c) <= reach)
 		)
@@ -731,7 +741,7 @@ export class HeroAI {
 	#position(s: Survey): Plan {
 		const me = this.unit
 		const line = this.#line
-		const caster = HeroAI.#isCaster(me)
+		const caster = this.#isCaster(me)
 		const here = line.along(me.col, me.row)
 		const behind = s.front === null ? -Infinity : s.front - (caster ? BEHIND_CASTER : BEHIND_MELEE)
 		const engaged = s.front !== null && s.enemyFront !== null && s.enemyFront - s.front <= 10
@@ -758,7 +768,7 @@ export class HeroAI {
 			tile = line.tileAt(along)
 		}
 		const foe = s.foe
-		if (caster && foe && !HeroAI.#isCaster(foe)) {
+		if (caster && foe && !this.#isCaster(foe)) {
 			while (along > 0 && this.#tileDistance(tile[0], tile[1], foe) < CASTER_SPACE) {
 				along -= 1
 				tile = line.tileAt(along)
