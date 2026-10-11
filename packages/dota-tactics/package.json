@@ -14,7 +14,8 @@
 		"format": "prettier --cache --cache-strategy content --write .",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"lane-sim": "node scripts/lane-sim.ts"
+		"lane-sim": "node scripts/lane-sim.ts",
+		"duel-sim": "node scripts/duel-sim.ts"
 	},
 	"devDependencies": {
 		"@eslint/js": "catalog:",

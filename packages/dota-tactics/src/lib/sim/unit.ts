@@ -3,7 +3,7 @@ import type { Job } from "#lib/content/heroes.ts"
 import type { StatusId } from "#lib/content/statuses.ts"
 import type { Team, UnitStats } from "#lib/content/units.ts"
 import type { Facing } from "./grid.ts"
-import type { LaneField } from "./lane-field.ts"
+import type { LaneField, TilePoint } from "./lane-field.ts"
 
 export type LaneName = "top" | "mid" | "bot"
 
@@ -13,6 +13,8 @@ export interface Lane {
 	readonly name: LaneName
 	/** Where its waves appear. */
 	readonly spawner: readonly [col: number, row: number]
+	/** In tile coordinates, from the spawner's end to the enemy's. */
+	readonly path: readonly TilePoint[]
 	/** The way to the end of its path; rebuilt when a structure falls. */
 	field: LaneField
 }
@@ -72,6 +74,8 @@ export class Hero {
 	gold = 0
 	lastHits = 0
 	denies = 0
+	kills = 0
+	deaths = 0
 	/** The tick it comes back after dying; -1 while alive. */
 	respawnAt = -1
 	/** A hero that found no way to go doesn't search again before this tick. */
@@ -130,6 +134,12 @@ export class Unit {
 	casting: Casting | null = null
 	/** The tick each status wears off: it has the status while the tick is earlier. */
 	statuses: Record<StatusId, number> = { slow: 0, chill: 0 }
+	/**
+	 * For a creep: an enemy hero that attacked one of its heroes, which it goes for until tick
+	 * `provokedUntil` (§6).
+	 */
+	provoker: Unit | null = null
+	provokedUntil = 0
 
 	constructor(id: number, init: UnitInit) {
 		this.id = id

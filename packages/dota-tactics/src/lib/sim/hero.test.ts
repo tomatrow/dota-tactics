@@ -22,7 +22,10 @@ const WARRIOR = JOBS.warrior.stats
 /** Ticks for a speed-20 gauge to fill from empty. */
 const CHARGE = GAUGE_FULL / WARRIOR.speed
 
-/** A world with the Radiant Warrior at a Clan Hall, and lanes whose creeps wait where placed. */
+/**
+ * A world with the Radiant Warrior at a Clan Hall (which doesn't heal: tests set HP by hand), and
+ * lanes whose creeps wait where placed.
+ */
 function setup(
 	options: {
 		board?: Terrain
@@ -39,6 +42,7 @@ function setup(
 			heroes: [{ team: "radiant", job: "warrior" }],
 			halls: { radiant: options.hall ?? [3, 4] },
 			lanes: options.lanes ?? lanes(board),
+			regen: false,
 			...options.scenario
 		},
 		seed

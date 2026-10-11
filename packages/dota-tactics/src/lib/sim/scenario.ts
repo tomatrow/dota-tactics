@@ -10,13 +10,22 @@ export interface ScenarioOptions {
 	/** Sentinels of these lanes up to this tier stand; 0 for none. */
 	readonly maxTier: 0 | 1 | 2 | 3
 	readonly heroes?: readonly HeroSetup[]
+	/** The Sentinel each team loses the game with: in this lane, of this tier. */
+	readonly objective?: { readonly lane: LaneName; readonly tier: 1 | 2 | 3 }
 }
 
-/** The prototype slice (DESIGN.md §11): mid lane, the two T1s, the player's Warrior for Radiant. */
+/**
+ * The prototype slice (DESIGN.md §11): mid lane, the two T1s, a Warrior for Radiant and a Black
+ * Mage for Dire; the first to destroy the other's T1 wins.
+ */
 export const SLICE: ScenarioOptions = {
 	lanes: ["mid"],
 	maxTier: 1,
-	heroes: [{ team: "radiant", job: "warrior" }]
+	heroes: [
+		{ team: "radiant", job: "warrior" },
+		{ team: "dire", job: "blackMage" }
+	],
+	objective: { lane: "mid", tier: 1 }
 }
 
 const TEAMS: readonly Team[] = ["radiant", "dire"]
@@ -51,7 +60,15 @@ export function mapScenario(model: MapModel, options: ScenarioOptions = SLICE): 
 		const tier = e.tier
 		if (tier !== 1 && tier !== 2 && tier !== 3) continue
 		if (tier > options.maxTier) continue
-		structures.push({ team: e.team, tier, entity: e.name, col: e.cell[0], row: e.cell[1] })
+		const objective = options.objective?.lane === e.lane && options.objective.tier === tier
+		structures.push({
+			team: e.team,
+			tier,
+			entity: e.name,
+			col: e.cell[0],
+			row: e.cell[1],
+			objective
+		})
 	}
 
 	const halls: Partial<Record<Team, readonly [number, number]>> = {}

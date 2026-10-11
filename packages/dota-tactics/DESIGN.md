@@ -184,7 +184,9 @@ over the walkable layer.
 4. No enemy in 8 tiles → resume walking. Something standing in the way (a hero body-blocking, a
    creep that stopped) is walked round: towards the nearest free tile further down the lane.
 
-Hitting an enemy hero near creeps pulls their aggro — Dota's main laning tool, kept exactly.
+Hitting an enemy hero near creeps pulls their aggro — Dota's main laning tool, kept exactly. Built
+(§11, milestone 5): a hero's blow or spell at an enemy hero, hit or miss, draws the victim's creeps
+that have the attacker in aggro range, for 4 s (one creep action, and a step or two).
 
 ### Waves
 
@@ -338,8 +340,9 @@ Units with HP and a gauge; never move, so they're always charging. Speed 25 → 
   hits.)
 - Footprint 3×3 tiles; reach and aggro are measured to its nearest tile.
 - **Aggro** (Dota's): target the closest enemy, except an enemy hero who attacks an allied hero in
-  range becomes the target immediately. Aggro drops if you attack your own creep — **which costs
-  an action here**, so dropping tower aggro is a real trade.
+  range becomes the target immediately (built: until it leaves the Sentinel's reach). Aggro drops
+  if you attack your own creep — **which costs an action here**, so dropping tower aggro is a
+  real trade.
 - **Backdoor**: T1 has no protection. T2+ regenerate fast and take −25% damage when no enemy
   creep is within 14 tiles.
 - **Death**: 125 gold to the team plus a last-hit bonus. Deny your own tower under 10%.
@@ -358,7 +361,9 @@ Units with HP and a gauge; never move, so they're always charging. Speed 25 → 
 
 ### Other
 
-- **Clan Hall** (fountain): huge damage, true sight, full regen area. Untouchable.
+- **Clan Hall** (fountain): huge damage, true sight, full regen area. Untouchable. Built so far:
+  heroes within 12 tiles regain 5% of their HP a second (full in 20 s); MP isn't restored, since
+  MP comes from actions (§3).
 - **Outposts** (both in the map data): capturable by a 6s channel once the nearby T2 is down.
   Grant vision and are Warp Stone targets.
 - **Day / night** every 5 min; affects vision (§10).
@@ -478,8 +483,9 @@ Each is playable or testable on its own.
    facing, First Aid, Body Slam, gold on last hits, denies, death and respawn. Details below.
 4. **Black Mage.** ✅ MP from zero, Fire, Blizzard + Chill, Fira with a 2s visible charge,
    Rend Speed + Slow. Facing evasion, uphill miss. Details below.
-5. **Opponent.** Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when it
-   has MP, retreats at low HP. Respawn at the Clan Hall. Win on the enemy T1 mid.
+5. **Opponent.** ✅ Scripted hero AI: follows its wave, last-hits, trades when ahead, casts when
+   it has MP, retreats at low HP. Respawn at the Clan Hall. Win on the enemy T1 mid. Details
+   below.
 6. **Tuning.** Pause, step, sim speed; a live panel for the §5 numbers. Telemetry for the two
    questions: time walking vs charging, actions per minute, and **how long gauges sit full** —
    if players always act the instant the gauge fills, the cadence is too slow.
@@ -645,6 +651,70 @@ mounts the scene's components inside the `<canvas>` element, where Chrome makes 
 spell effects compile their shaders as the board loads: on the first spell it took a 100 ms
 frame (measured under load; the rest of these numbers are on an idle machine).
 
+### Milestone 5: the opponent
+
+You pick a hero and a side (`?job=`, `?side=dire`, or the controls window); the AI plays the
+other hero for the other side. The first side to destroy the other's mid T1 wins. Built:
+
+- **The AI plays through commands** (`sim/hero-ai.ts`), as a player does. Its `update()` runs
+  before each step and decides every 4 ticks (0.2 s, about a reaction time); it gives a command
+  only when it changes its mind. It reads the world and never changes it, so a game with it
+  replays from the seed and the command log like any other: to the sim it's one more client.
+- **What it does**, most urgent first:
+  - walks out of a charged spell's area;
+  - under 30% HP, retreats until it has 90%: a hero with a heal waits behind its Sentinel and
+    heals, one without walks home to its Clan Hall;
+  - backs off from a Sentinel shooting it, from enemy creeps on it, and (a caster) from a melee
+    hero coming for it, chilling the hero first if it can;
+  - kills the enemy hero when one action can; trades when 15% of its HP ahead (less under its
+    own Sentinel, or with the foe already in reach). A melee hero goes for a caster up to 14
+    tiles away with a full gauge and 60% of its HP: §13's plan, since it walks faster;
+  - with a full gauge, last-hits and denies: blows, or spells where they pay (gold from kills,
+    and a quarter of a gold a point of damage to the enemy hero, less their MP);
+  - pushes while the enemy hero is dead or more than 16 tiles away, and hits the Sentinel when
+    it can hurt it and its creeps hold the Sentinel's aggro;
+  - after holding a full gauge for 2 s while short of MP for its abilities, or capped, hits a
+    creep for the MP;
+  - otherwise holds its spot: 2 tiles (melee) or 6 (caster) behind its wave's front; with no
+    fight on, where it is and out of the enemy creeps' aggro (a caster just outside it), no
+    further back than its Sentinel. Never past the enemy Sentinel, or in its reach.
+- It reads abilities by their effect (heal, strike, debuff, magic, and their numbers), not their
+  ids, so a new job is played without changes.
+- **Hero kills** pay 125 + 8 × level gold (133 at level 1, Dota's) and count kills and deaths.
+  A hero killed by creeps or a Sentinel pays nobody.
+- **Aggro** (§6, §9): a hero's blow or spell at an enemy hero draws the victim's creeps for 4 s,
+  and its Sentinels that have the attacker in reach. Attacking an own creep sheds both.
+- **The Clan Hall** heals: 5% of HP a second within 12 tiles (§9).
+- **The win**: a Sentinel can be its team's objective (the slice's are the mid T1s). When one
+  falls the world records the winner (a `victory` event) and the game stops.
+
+Chosen here, to confirm in play (§14):
+
+- **Spells draw aggro like blows.** Dota's only draw it with attacks; here mages harass with
+  spells. Their reach mostly keeps them out of it anyway (Fire 10; creeps' aggro 8, Sentinels'
+  reach 11).
+- **The Clan Hall doesn't restore MP.**
+
+View: the score (kills by side) in the clock window, and news under it (a hero slain, with the
+gold; a Sentinel fallen) in green or red for your side. K/D in the hero window. The unit window
+shows a hero's MP and score, and for the AI's what it's about ("AI: Last-hitting"). A Victory or
+Defeat window ends the game, with your score and another game. The clock uses lining figures:
+Spectral's oldstyle 1 read as an I.
+
+**Measured** (`pnpm duel-sim`: the AI on both heroes, 12 seeds × 30 min, each way round):
+
+- 23 of 24 games had no winner at 30 minutes; a mage won one at 27:52. Neither AI dives a
+  Sentinel, and waves alone take a T1 in 2 of 12 games (§6).
+- The mage farms more (about 80 last hits to the Warrior's 50 and 25 denies) and does ~5,000
+  damage a game to the Warrior, who heals it back with First Aid. The Warrior lands little but
+  killing blows on the mage (~300 a game, about one kill): chased, the mage backs off towards
+  its Sentinel and chills it, and the Sentinel ends the chase. Against the AI, one Chill and a
+  Sentinel to run to are enough for a Move 3 caster (§13's question).
+- Each acts ~5 times a minute (of the 12 a full gauge allows), walks ~43% of the time and holds
+  a full gauge ~14% of it (milestone 6's telemetry, early).
+- The AI takes ~5 µs a tick in the browser. 60 fps at retina with AO on, in the mid fight with
+  both heroes (measured with another game running).
+
 Rendering moving units on the grid's board: units cast no real shadows (the board's shadow map
 is static; they get blob shadows), and `<Renderer dynamic>` refreshes the AO every frame. At
 gameplay zoom AO's radius spans many pixels, so the game renders it at a quarter resolution
@@ -778,3 +848,9 @@ In rough order of how much they shape the prototype:
 10. Charged spells: committed for now, as in FFT; or cancelled by any order, as a Dota channel
     (MP and gauge lost).
 11. The Black Mage's wave clear: Fire every action from the second (§11, milestone 4).
+12. Game length. AI against AI, the slice almost never ends in 30 minutes (§11, milestone 5).
+    Levers: creeps' stat growth (§6, not built), Sentinels that fall faster, a bigger reward
+    for a kill (a longer respawn, levels).
+13. First Aid at 0 MP heals back a mage's harass: ~5,000 damage a game for 0.1 deaths, AI
+    against AI (§11, milestone 5).
+14. Spells draw aggro like blows; the Clan Hall doesn't restore MP (§11, milestone 5).

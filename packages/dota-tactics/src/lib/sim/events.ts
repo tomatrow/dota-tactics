@@ -1,5 +1,6 @@
 import type { AbilityId } from "#lib/content/abilities.ts"
 import type { StatusId } from "#lib/content/statuses.ts"
+import type { Team } from "#lib/content/units.ts"
 import type { Exposure } from "./grid.ts"
 import type { Unit } from "./unit.ts"
 
@@ -62,8 +63,10 @@ export type SimEvent =
 			readonly type: "death"
 			readonly unit: Unit
 			readonly killer: Unit | null
-			/** Gold the killer earned: a hero's last hit on an enemy creep. */
+			/** Gold the killer earned: a hero's last hit on an enemy creep or hero. */
 			readonly bounty: number
 			/** A hero killed its own creep. */
 			readonly denied: boolean
 	  }
+	/** A team destroyed the other's objective (the slice's mid T1): the game is won. */
+	| { readonly type: "victory"; readonly team: Team }

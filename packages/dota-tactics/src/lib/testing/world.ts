@@ -1,6 +1,7 @@
 import { GAUGE_FULL } from "#lib/sim/constants.ts"
 import type { SimEvent } from "#lib/sim/events.ts"
 import type { Terrain } from "#lib/sim/grid.ts"
+import type { HeroAI } from "#lib/sim/hero-ai.ts"
 import { World, type LaneSetup, type Scenario } from "#lib/sim/world.ts"
 
 /** Both teams' lanes along the middle row, Radiant going east. */
@@ -47,12 +48,28 @@ export function run(w: World, count: number): Logged[] {
 
 /**
  * Steps at least once (so commands apply), then until `done` holds, at most `limit` ticks;
- * returns the events on the way.
+ * returns the events on the way. AIs, if any, decide before each step, as in a game.
  */
-export function until(w: World, done: () => boolean, limit = 2000): Logged[] {
-	const log: Logged[] = [...run(w, 1)]
-	for (let i = 1; i < limit && !done(); i++) log.push(...run(w, 1))
+export function until(
+	w: World,
+	done: () => boolean,
+	limit = 2000,
+	ais: readonly HeroAI[] = []
+): Logged[] {
+	const log: Logged[] = [...play(w, ais, 1)]
+	for (let i = 1; i < limit && !done(); i++) log.push(...play(w, ais, 1))
 	if (!done()) throw new Error("ran out of ticks")
+	return log
+}
+
+/** Runs `count` ticks with AIs deciding before each step, as in a game. */
+export function play(w: World, ais: readonly HeroAI[], count: number): Logged[] {
+	const log: Logged[] = []
+	for (let i = 0; i < count; i++) {
+		for (const ai of ais) ai.update()
+		const tick = w.tick
+		for (const event of w.step()) log.push({ tick, event })
+	}
 	return log
 }
 
@@ -75,6 +92,7 @@ export const trace = (log: readonly Logged[]) =>
 		.map(({ tick, event }) =>
 			event.type === "attack" || event.type === "magic" ?
 				`${String(tick)}:${String(event.attacker.id)}>${String(event.target.id)}:${String(event.damage)}`
-			:	`${String(tick)}:${event.type}:${String(event.unit.id)}`
+			: event.type === "victory" ? `${String(tick)}:victory:${event.team}`
+			: `${String(tick)}:${event.type}:${String(event.unit.id)}`
 		)
 		.join("|")

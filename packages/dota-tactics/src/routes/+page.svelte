@@ -9,9 +9,11 @@
 	// `?seed=` replays a game; otherwise each load is a new one.
 	const param = page.url.searchParams.get("seed")
 	const seed = param !== null && /^\d+$/.test(param) ? Number(param) : Random.randomSeed()
-	// `?job=` picks the player's hero (DESIGN.md §13); the Warrior otherwise.
+	// `?job=` picks the player's hero (DESIGN.md §13), the Warrior otherwise; `?side=dire` plays
+	// for Dire. The AI plays the other hero for the other side.
 	const jobParam = page.url.searchParams.get("job") ?? ""
 	const job = isJobId(jobParam) ? jobParam : "warrior"
+	const side = page.url.searchParams.get("side") === "dire" ? "dire" : "radiant"
 </script>
 
 <svelte:head>
@@ -21,7 +23,7 @@
 {#await loading}
 	<div class="win" role="status">Loading the map…</div>
 {:then model}
-	<Game {job} {model} {seed} />
+	<Game {job} {model} {seed} {side} />
 {:catch error}
 	<div class="win" role="alert">
 		<strong>Couldn't load dota_map.json</strong>

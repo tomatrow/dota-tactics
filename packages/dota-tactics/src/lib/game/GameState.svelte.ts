@@ -5,12 +5,14 @@ import { sceneY, tileX, tileZ } from "dota-tactics-grid/scene/coords.ts"
 import { WATER_DEPTH } from "dota-tactics-grid/scene/water.ts"
 import type { ViewerState } from "dota-tactics-grid/state.svelte.ts"
 import { ABILITIES, hitsStructures, type Ability, type AbilityId } from "#lib/content/abilities.ts"
-import type { JobId } from "#lib/content/heroes.ts"
+import { JOB_IDS, type JobId } from "#lib/content/heroes.ts"
 import { STATUSES } from "#lib/content/statuses.ts"
 import { TUNING } from "#lib/content/tuning.ts"
+import type { Team } from "#lib/content/units.ts"
 import type { Command } from "#lib/sim/commands.ts"
 import { STEP_FULL, TICK_RATE, TICK_SECONDS } from "#lib/sim/constants.ts"
 import type { SimEvent } from "#lib/sim/events.ts"
+import { HeroAI, type Intent } from "#lib/sim/hero-ai.ts"
 import { mapScenario, SLICE } from "#lib/sim/scenario.ts"
 import type { Unit } from "#lib/sim/unit.ts"
 import { World } from "#lib/sim/world.ts"
@@ -34,6 +36,27 @@ export const SPELL_EFFECT = 0.8
 
 /** How long (game seconds) a hit flashes. */
 const FLASH = 0.12
+
+/** How long (game seconds) a notice stays up. */
+const NOTICE_TIME = 5
+
+/** What the AI's hero is about, in words, for the unit window. */
+const INTENTS: Record<Intent, string> = {
+	dead: "Fallen",
+	casting: "Casting",
+	dodge: "Dodging a spell",
+	retreat: "Retreating to heal",
+	mend: "Healing",
+	evade: "Backing off",
+	kill: "Going for the kill",
+	trade: "Trading blows",
+	lastHit: "Last-hitting",
+	deny: "Denying",
+	push: "Pushing",
+	siege: "Attacking the Sentinel",
+	bank: "Hitting creeps for MP",
+	lane: "Holding the lane"
+}
 
 /** An attack, or a spell's damage to one unit, the view is still showing. */
 export interface AttackEffect {
@@ -73,6 +96,15 @@ export interface Popup {
 	readonly at: number
 }
 
+/** A line at the top of the screen: a hero slain, a Sentinel fallen. */
+export interface Notice {
+	readonly id: number
+	readonly text: string
+	/** Good or bad news for the player's team. */
+	readonly good: boolean
+	readonly at: number
+}
+
 /** What a left-click picks, after an ability key or A. */
 export type Targeting =
 	{ readonly kind: "ability"; readonly ability: Ability } | { readonly kind: "attackMove" }
@@ -92,9 +124,10 @@ export const SPEEDS = [0, 1, 2, 4, 8] as const
 
 /**
  * One game: the board's viewer state (which the board's components read), the simulation, the
- * player's hero, and what the view and input share. Each frame `advance` runs the world's fixed
- * ticks for the time that passed; positions between ticks are interpolated. Input becomes commands
- * to the hero.
+ * player's hero and the AI that plays the other, and what the view and input share. Each frame
+ * `advance` runs the world's fixed ticks for the time that passed, the AI deciding before each;
+ * positions between ticks are interpolated. Input becomes commands to the hero. The game stops
+ * when a team wins.
  */
 export class GameState {
 	readonly model: MapModel
@@ -102,6 +135,9 @@ export class GameState {
 	readonly world: World
 	/** The player's hero. */
 	readonly hero: Unit
+	/** The other hero, and the AI that plays it (DESIGN.md §11). */
+	readonly opponent: Unit
+	readonly ai: HeroAI
 	/** Game seconds per real second; 0 is paused. */
 	speed = $state<(typeof SPEEDS)[number]>(1)
 	/** The world's tick, mirrored for the HUD: everything that reads it updates each tick. */
@@ -117,6 +153,9 @@ export class GameState {
 	targeting = $state.raw<Targeting | null>(null)
 	mark = $state.raw<OrderMark | null>(null)
 	popups = $state.raw<readonly Popup[]>([])
+	notices = $state.raw<readonly Notice[]>([])
+	/** The team that won, once one has. */
+	winner = $state<Team | null>(null)
 	/** Space is held: the camera stays centred on the hero. */
 	following = $state(false)
 	/** What the camera centres on, in scene coordinates: the hero, or its Clan Hall while it's dead. */
@@ -136,15 +175,31 @@ export class GameState {
 	aim: readonly [col: number, row: number] | null = null
 	#accumulator = 0
 	#popupId = 0
+	#noticeId = 0
 
-	constructor(view: ViewerState, seed: number, job: JobId = "warrior") {
+	/**
+	 * A game where the player plays `job` for `side`, and the AI the other job (the slice's
+	 * matchup, §11) for the other side.
+	 */
+	constructor(view: ViewerState, seed: number, job: JobId = "warrior", side: Team = "radiant") {
 		this.view = view
 		this.model = view.model
-		const scenario = mapScenario(this.model, { ...SLICE, heroes: [{ team: "radiant", job }] })
+		const other: Team = side === "radiant" ? "dire" : "radiant"
+		const rival = JOB_IDS.find((id) => id !== job) ?? job
+		const scenario = mapScenario(this.model, {
+			...SLICE,
+			heroes: [
+				{ team: side, job },
+				{ team: other, job: rival }
+			]
+		})
 		this.world = new World(scenario, seed)
-		const hero = this.world.heroes.find((u) => u.team === "radiant")
-		if (!hero) throw new Error("the scenario has no Radiant hero")
+		const hero = this.world.heroes.find((u) => u.team === side)
+		const opponent = this.world.heroes.find((u) => u.team === other)
+		if (!hero || !opponent) throw new Error("the scenario needs a hero on each side")
 		this.hero = hero
+		this.opponent = opponent
+		this.ai = new HeroAI(this.world, opponent)
 		this.selected = hero
 		this.roster = [...this.world.units]
 		this.focus = this.position(hero)
@@ -165,11 +220,13 @@ export class GameState {
 	advance(delta: number) {
 		this.#accumulator += Math.min(delta, MAX_FRAME) * this.speed
 		let changed = false
-		while (this.#accumulator >= TICK_SECONDS) {
+		while (this.#accumulator >= TICK_SECONDS && this.winner === null) {
 			this.#accumulator -= TICK_SECONDS
+			this.ai.update()
 			for (const event of this.world.step()) changed = this.#handle(event) || changed
 			this.tick = this.world.tick
 		}
+		if (this.winner !== null) this.#accumulator = 0
 		this.alpha = this.#accumulator / TICK_SECONDS
 		if (changed) this.roster = [...this.world.units]
 
@@ -180,6 +237,9 @@ export class GameState {
 		while (this.spells.length > 0 && this.spells[0].at < time - SPELL_EFFECT) this.spells.shift()
 		if (this.popups.length > 0 && this.popups[0].at < time - POPUP_TIME) {
 			this.popups = this.popups.filter((p) => p.at >= time - POPUP_TIME)
+		}
+		if (this.notices.length > 0 && this.notices[0].at < time - NOTICE_TIME) {
+			this.notices = this.notices.filter((n) => n.at >= time - NOTICE_TIME)
 		}
 
 		const { hero } = this
@@ -229,16 +289,27 @@ export class GameState {
 			case "recoil":
 				return false
 			case "death": {
-				const { unit } = event
+				const { unit, killer } = event
 				if (unit.entity) this.fallen.add(unit.entity)
 				if (this.selected === unit) this.selected = null
 				if (this.hovered === unit) this.hovered = null
-				if (event.killer === this.hero && (event.bounty > 0 || event.denied)) {
+				if (killer === this.hero && (event.bounty > 0 || event.denied)) {
 					const text = event.denied ? "!" : `+${String(event.bounty)}`
 					this.#popup(unit, event.denied ? "deny" : "gold", text, at, 1)
 				}
+				const good = unit.team !== this.hero.team
+				if (unit.hero) {
+					const by = killer?.hero ? `${killer.name} slew` : `${killer?.name ?? "Something"} felled`
+					const gold = event.bounty > 0 ? ` (+${String(event.bounty)} g)` : ""
+					this.#notice(`${by} the ${teamName(unit.team)} ${unit.name}${gold}`, good, at)
+				} else if (unit.stats.structure) {
+					this.#notice(`The ${teamName(unit.team)} ${unit.name} has fallen`, good, at)
+				}
 				return true
 			}
+			case "victory":
+				this.winner = event.team
+				return false
 		}
 	}
 
@@ -249,6 +320,10 @@ export class GameState {
 		else if (damage > 0) {
 			this.#popup(target, target === this.hero ? "taken" : "dealt", String(damage), at, 0.7)
 		}
+	}
+
+	#notice(text: string, good: boolean, at: number) {
+		this.notices = [...this.notices, { id: ++this.#noticeId, text, good, at }]
 	}
 
 	/** A pop-up `above` tiles over a unit's body. */
@@ -336,6 +411,16 @@ export class GameState {
 			unit.team !== this.hero.team &&
 			(!unit.stats.structure || hitsStructures(ability))
 		)
+	}
+
+	/** Kills by each team's heroes, for the score. */
+	kills(team: Team): number {
+		return this.world.heroes.reduce((n, u) => n + (u.team === team ? (u.hero?.kills ?? 0) : 0), 0)
+	}
+
+	/** What the AI's hero is about, in words; null for any other unit. */
+	intentOf(unit: Unit): string | null {
+		return unit === this.opponent ? INTENTS[this.ai.intent] : null
 	}
 
 	/** Whether the hero can use an ability now (or as soon as its gauge is full). */
@@ -474,5 +559,7 @@ export class GameState {
 		this.speed = this.speed === 0 ? 1 : 0
 	}
 }
+
+export const teamName = (team: Team): string => (team === "radiant" ? "Radiant" : "Dire")
 
 export const [getGameState, setGameState] = createContext<GameState>()

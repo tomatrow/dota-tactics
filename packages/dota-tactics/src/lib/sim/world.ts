@@ -58,6 +58,8 @@ export interface StructureSetup {
 	readonly entity: string
 	readonly col: number
 	readonly row: number
+	/** Its team loses the game when it falls (the Crystal; the slice's mid T1). */
+	readonly objective?: boolean
 }
 
 /** A hero to place, at its team's Clan Hall. */
@@ -76,6 +78,11 @@ export interface Scenario {
 	readonly halls?: Partial<Record<Team, readonly [col: number, row: number]>>
 	/** Whether waves spawn (default true); tests turn them off and place creeps themselves. */
 	readonly waves?: boolean
+	/**
+	 * Whether heroes regenerate at their Clan Hall (default true); tests that set a hero's HP by
+	 * hand turn it off.
+	 */
+	readonly regen?: boolean
 }
 
 /** How far (tiles) a unit looks for a way to reach its target, or a hero for a tile to stop on. */
@@ -130,8 +137,11 @@ export class World {
 	tick = 0
 	/** The living units, in id order. */
 	units: Unit[] = []
+	/** The team that destroyed the other's objective; null while the game is on. */
+	winner: Team | null = null
 
-	readonly #paths: ReadonlyMap<Lane, readonly TilePoint[]>
+	/** Structures whose fall loses their team the game. */
+	readonly #objectives = new Set<Unit>()
 	/** Per tile: the id of the unit standing on (or stepping onto) it; 0 when free. */
 	readonly #occupant: Int32Array
 	/** Per tile: the id of a hero passing through an ally standing there (§6); 0 when none. */
@@ -144,6 +154,7 @@ export class World {
 	readonly #search = new LocalSearch(SEARCH_LIMIT)
 	readonly #path: PathSearch
 	readonly #waves: boolean
+	readonly #regen: boolean
 	#commands: { unit: number; command: Command }[] = []
 	#nextId = 1
 	#events: SimEvent[] = []
@@ -153,6 +164,7 @@ export class World {
 		this.terrain = terrain
 		this.random = new Random(seed)
 		this.#waves = scenario.waves ?? true
+		this.#regen = scenario.regen ?? true
 		const count = terrain.cols * terrain.rows
 		this.#occupant = new Int32Array(count)
 		this.#passer = new Int32Array(count)
@@ -169,6 +181,7 @@ export class World {
 				facing: Facing.north,
 				entity: s.entity
 			})
+			if (s.objective) this.#objectives.add(unit)
 			this.#forFootprint(unit, (i) => {
 				this.#occupant[i] = unit.id
 				this.#footprints[i] = 1
@@ -176,18 +189,13 @@ export class World {
 		}
 		this.#regions = this.#findRegions()
 
-		const paths = new Map<Lane, readonly TilePoint[]>()
-		this.lanes = scenario.lanes.map((setup) => {
-			const lane: Lane = {
-				team: setup.team,
-				name: setup.lane,
-				spawner: setup.spawner,
-				field: this.#field(setup.path)
-			}
-			paths.set(lane, setup.path)
-			return lane
-		})
-		this.#paths = paths
+		this.lanes = scenario.lanes.map((setup) => ({
+			team: setup.team,
+			name: setup.lane,
+			spawner: setup.spawner,
+			path: setup.path,
+			field: this.#field(setup.path)
+		}))
 
 		this.heroes = (scenario.heroes ?? []).map(({ team, job }) => {
 			const hall = scenario.halls?.[team]
@@ -236,6 +244,7 @@ export class World {
 	step(): SimEvent[] {
 		this.#applyCommands()
 		this.#respawnHeroes()
+		if (this.#regen && this.tick % TICK_RATE === 0) this.#regenerate()
 		if (this.#waves && this.tick % ticks(TUNING.waveInterval) === 0) {
 			this.#spawnWaves(Math.floor(this.tick / ticks(TUNING.waveInterval)))
 		}
@@ -369,8 +378,7 @@ export class World {
 		const kinds = siege ? [...WAVE, "siege" as const] : WAVE
 		for (const lane of this.lanes) {
 			const tiles = this.#freeTilesNear(lane.spawner[0], lane.spawner[1], kinds.length)
-			const path = this.#paths.get(lane) ?? []
-			const ahead = path[1] ?? path[0]
+			const ahead = lane.path[1] ?? lane.path[0]
 			kinds.forEach((kind, i) => {
 				const [col, row] = tiles[i]
 				const unit = this.#add({
@@ -520,6 +528,17 @@ export class World {
 			const at = this.units.findIndex((u) => u.id > unit.id)
 			this.units.splice(at < 0 ? this.units.length : at, 0, unit)
 			this.#events.push({ type: "spawn", unit })
+		}
+	}
+
+	/** Heroes in their Clan Hall's area regain HP, once a second (§9). */
+	#regenerate() {
+		for (const unit of this.heroes) {
+			const hall = unit.hero?.hall
+			if (!unit.alive || !hall || unit.hp >= unit.stats.hp) continue
+			if (Math.abs(unit.col - hall[0]) + Math.abs(unit.row - hall[1]) > TUNING.hallRadius) continue
+			const amount = Math.floor((unit.stats.hp * TUNING.hallRegen) / 100)
+			unit.hp = Math.min(unit.stats.hp, unit.hp + amount)
 		}
 	}
 
@@ -758,12 +777,23 @@ export class World {
 	}
 
 	/**
-	 * A creep's target (DESIGN.md §6): enemy creeps first, then heroes, then structures, all within
-	 * aggro range. It keeps the one it has while that's in range, unless something it prefers comes
-	 * into range.
+	 * A creep's target (DESIGN.md §6): an enemy hero that just attacked one of its heroes, then
+	 * enemy creeps, then heroes, then structures, all within aggro range. It keeps the one it has
+	 * while that's in range, unless something it prefers comes into range.
 	 */
 	#creepTarget(unit: Unit): Unit | null {
 		const { aggro } = unit.stats
+		const provoker = unit.provoker
+		if (provoker) {
+			if (
+				provoker.alive &&
+				this.tick < unit.provokedUntil &&
+				this.#distance(unit, provoker) <= aggro
+			) {
+				return provoker
+			}
+			unit.provoker = null
+		}
 		const current = unit.target
 		const kept = current?.alive && this.#distance(unit, current) <= aggro ? current : null
 		if (kept && isCreep(kept.stats)) return kept
@@ -955,6 +985,8 @@ export class World {
 		power: number
 	): { hit: boolean; damage: number } {
 		attacker.lastAttack = this.tick
+		if (attacker.hero && target.team === attacker.team) this.#dropAggro(attacker)
+		else this.#provoke(attacker, target)
 		const side = exposure(target.facing, attacker.col - target.col, attacker.row - target.row)
 		const uphill = this.#level(target) > this.#level(attacker)
 		const chance = hitChance(attacker.stats, target.stats, side, uphill)
@@ -1042,6 +1074,7 @@ export class World {
 						})
 				for (const victim of victims) {
 					if (!victim.alive) continue
+					this.#provoke(unit, victim)
 					const damage = magicDamage(unit.stats, victim.stats, effect.power)
 					victim.hp -= damage
 					this.#events.push({
@@ -1056,6 +1089,33 @@ export class World {
 				}
 				return
 			}
+		}
+	}
+
+	/**
+	 * Aggro (§6, §9): a hero attacking an enemy hero, hit or miss, draws the victim's creeps that
+	 * have it within aggro range for a while, and its Sentinels that have it in reach.
+	 */
+	#provoke(attacker: Unit, victim: Unit) {
+		if (!attacker.hero || !victim.hero || attacker.team === victim.team) return
+		for (const other of this.units) {
+			if (!other.alive || other.team !== victim.team) continue
+			const d = this.#distance(other, attacker)
+			if (other.stats.structure) {
+				if (d <= other.stats.reach) other.target = attacker
+			} else if (isCreep(other.stats) && d <= other.stats.aggro) {
+				other.provoker = attacker
+				other.provokedUntil = this.tick + ticks(TUNING.aggroTime)
+			}
+		}
+	}
+
+	/** A hero attacking its own creep sheds the aggro of the creeps and Sentinels on it (§9). */
+	#dropAggro(hero: Unit) {
+		for (const other of this.units) {
+			if (other.team === hero.team || other.hero) continue
+			if (other.target === hero) other.target = null
+			if (other.provoker === hero) other.provoker = null
 		}
 	}
 
@@ -1080,15 +1140,19 @@ export class World {
 				if (this.#occupant[i] === unit.id) this.#occupant[i] = 0
 				this.#footprints[i] = 0
 			})
-			for (const lane of this.lanes) lane.field = this.#field(this.#paths.get(lane) ?? [])
+			for (const lane of this.lanes) lane.field = this.#field(lane.path)
 			this.#regions = this.#findRegions()
 		}
 		// Nobody keeps aiming at it: a hero comes back as the same unit.
-		for (const other of this.units) if (other.target === unit) other.target = null
+		for (const other of this.units) {
+			if (other.target === unit) other.target = null
+			if (other.provoker === unit) other.provoker = null
+		}
 
 		let bounty = 0
 		let denied = false
 		const credit = killer?.hero
+		const hero = unit.hero
 		if (credit && killer !== unit && isCreep(unit.stats)) {
 			if (killer.team === unit.team) {
 				denied = true
@@ -1098,18 +1162,26 @@ export class World {
 				credit.gold += bounty
 				credit.lastHits++
 			}
+		} else if (credit && hero && killer.team !== unit.team) {
+			bounty = TUNING.heroBounty + TUNING.heroBountyPerLevel * hero.level
+			credit.gold += bounty
+			credit.kills++
 		}
 
-		const hero = unit.hero
 		if (hero) {
 			unit.step = null
 			unit.gauge = 0
 			unit.mp = 0
 			hero.order = IDLE
+			hero.deaths++
 			hero.respawnAt = this.tick + ticks(TUNING.respawnBase + TUNING.respawnPerLevel * hero.level)
 		} else {
 			this.#byId.delete(unit.id)
 		}
 		this.#events.push({ type: "death", unit, killer, bounty, denied })
+		if (this.#objectives.has(unit) && this.winner === null) {
+			this.winner = unit.team === "radiant" ? "dire" : "radiant"
+			this.#events.push({ type: "victory", team: this.winner })
+		}
 	}
 }

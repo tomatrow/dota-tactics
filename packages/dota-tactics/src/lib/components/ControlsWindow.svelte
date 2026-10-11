@@ -1,13 +1,15 @@
 <!--
-	The controls that work so far (Dota 2's defaults), in an FFT-style window, and which hero to play:
-	a link reloads the page as another game.
+	The controls that work so far (Dota 2's defaults), in an FFT-style window, and which hero and
+	side to play (the AI plays the other hero, for the other side): a link reloads the page as
+	another game.
 -->
 <script lang="ts">
 	import { JOB_IDS, JOBS } from "#lib/content/heroes.ts"
-	import { getGameState } from "#lib/game/GameState.svelte.ts"
+	import { getGameState, teamName } from "#lib/game/GameState.svelte.ts"
 
 	const game = getGameState()
-	const current = $derived(game.hero.hero?.job.id)
+	const job = $derived(game.hero.hero?.job.id)
+	const side = $derived(game.hero.team)
 </script>
 
 <dl class="win">
@@ -32,11 +34,19 @@
 	<dt>[ &nbsp;]</dt>
 	<dd>Turn 90°</dd>
 	<dt>Play as</dt>
-	<dd class="jobs">
+	<dd class="choices">
 		{#each JOB_IDS as id (id)}
-			<a aria-current={id === current} data-sveltekit-reload href="?job={id}">
+			<a aria-current={id === job} data-sveltekit-reload href="?job={id}&side={side}">
 				{JOBS[id].race}
 				{JOBS[id].name}
+			</a>
+		{/each}
+	</dd>
+	<dt>For</dt>
+	<dd class="choices">
+		{#each ["radiant", "dire"] as const as team (team)}
+			<a aria-current={team === side} data-sveltekit-reload href="?job={job}&side={team}">
+				{teamName(team)}
 			</a>
 		{/each}
 	</dd>
@@ -59,7 +69,7 @@
 	dd {
 		margin: 0;
 	}
-	.jobs {
+	.choices {
 		display: flex;
 		gap: 10px;
 	}

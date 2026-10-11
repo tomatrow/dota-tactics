@@ -39,10 +39,14 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   by id (`#lib/sim/commands.ts`), applied at the start of the next tick in the order given. A
   game replays from its seed and its (tick, hero, command) log; nothing else may reach into the
   sim's state during play.
+- **The AI plays like a player**: `HeroAI` (`#lib/sim/hero-ai.ts`) reads the world and gives its
+  hero commands, never touching the world's state. Its `update()` runs before each
+  `world.step()`: in `GameState`, `scripts/duel-sim.ts` and the tests' `play`. It reads abilities
+  by their effect, not their ids.
 - **`GameState`** (`#lib/game/GameState.svelte.ts`) is the runes class between the sim and the
-  view: it advances the game each frame, turns input into commands to the player's hero and
-  exposes what the HUD and scene read. Shared with `createContext`, one per game, never a
-  module-level singleton.
+  view: it advances the game each frame (the AI deciding before each tick), turns input into
+  commands to the player's hero and exposes what the HUD and scene read. Shared with
+  `createContext`, one per game, never a module-level singleton.
 - **Components render; they don't own rules.** DOM HUD in `src/lib/components/`, the 3D scene in
   `src/lib/components/scene/`. Pure helpers worth a Node test (camera maths, paths) are plain TS
   in `src/lib/game/`.
@@ -74,7 +78,10 @@ src/lib>` (its `exports`). `Game.svelte` creates the `ViewerState` its component
   expectations derived from the formulas in `DESIGN.md`; components get visual checks.
 - Sim tests draw small boards as text (`#lib/testing/terrain.ts`) and turn waves off to place
   creeps by hand (`world.spawnCreep`; `waitingLane` keeps a creep where it's put). Heroes start
-  at a Clan Hall tile the scenario gives. `#lib/testing/world.ts` has the world, run, until and
-  trace helpers; `#lib/testing/map.ts` loads the real map in Node.
+  at a Clan Hall tile the scenario gives (`regen: false` when a test sets HP by hand near it).
+  `#lib/testing/world.ts` has the world, run, until, play (with AIs) and trace helpers;
+  `#lib/testing/map.ts` loads the real map in Node.
 - Tuning numbers come from `pnpm lane-sim` (`scripts/lane-sim.ts`: the real map, many seeds,
-  headless). Record what it measured in `DESIGN.md` next to the numbers it justified.
+  headless, no heroes) and `pnpm duel-sim` (the AI on both heroes; `--trace <seed>` prints one
+  game's decisions and commands). Record what they measured in `DESIGN.md` next to the numbers
+  they justified.

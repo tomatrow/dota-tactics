@@ -6,12 +6,12 @@ per player, real-time with an ATB gauge.
 
 The design is in [DESIGN.md](./DESIGN.md); conventions are in [AGENTS.md](./AGENTS.md).
 
-**Status:** milestone 4 of the prototype slice (`DESIGN.md` §11). You play a Bangaa Warrior or a
-Nu Mou Black Mage in the mid lane: walk from the Clan Hall, last-hit and deny the creep waves,
-fight with the Warrior's techniques or the mage's Fire, Blizzard and Fira, push the Dire T1, die
-to it and respawn. Everything runs on a deterministic 20 Hz simulation; `?seed=123` replays a
-game's creeps and rolls, and `?job=blackMage` (or the controls window's "Play as") picks the
-hero. No enemy hero yet.
+**Status:** milestone 5 of the prototype slice (`DESIGN.md` §11). You play a Bangaa Warrior or a
+Nu Mou Black Mage in the mid lane against the AI playing the other: walk from the Clan Hall,
+last-hit and deny the creep waves, fight with the Warrior's techniques or the mage's Fire,
+Blizzard and Fira, kill the enemy hero, and win by destroying the enemy's mid T1. Everything
+runs on a deterministic 20 Hz simulation. `?seed=123` replays a game's creeps and rolls,
+`?job=blackMage` picks your hero and `?side=dire` your side (or use the controls window).
 
 ## Usage
 
@@ -31,6 +31,7 @@ pnpm dev                     # http://localhost:5173
 | `pnpm lint` / `pnpm format`   | Prettier and ESLint                                                   |
 | `pnpm test`                   | Vitest unit tests (Node)                                              |
 | `pnpm lane-sim`               | Headless mid lane, no heroes; prints timings (`--minutes`, `--seeds`) |
+| `pnpm duel-sim`               | Headless games, the AI on both heroes; prints who won and how         |
 
 ## Controls
 

@@ -1,11 +1,17 @@
 <!--
-	The game clock, the next wave's countdown, and the game speed (F9 pauses).
+	The score (kills by each side's hero), the game clock, the next wave's countdown, and the game
+	speed (F9 pauses).
 -->
 <script lang="ts">
 	import { getGameState, SPEEDS } from "#lib/game/GameState.svelte.ts"
 	import { TICK_RATE } from "#lib/sim/constants.ts"
 
 	const game = getGameState()
+
+	const score = $derived.by(() => {
+		void game.tick
+		return { radiant: game.kills("radiant"), dire: game.kills("dire") }
+	})
 
 	const clock = (seconds: number) => {
 		const s = Math.floor(seconds)
@@ -14,6 +20,9 @@
 </script>
 
 <section class="win" aria-label="Game clock">
+	<div class="score" title="Kills: Radiant – Dire">
+		<span class="radiant">{score.radiant}</span>–<span class="dire">{score.dire}</span>
+	</div>
 	<div class="time">{clock(game.tick / TICK_RATE)}</div>
 	<div class="wave">Next wave {clock(game.nextWave)}</div>
 	<div class="speeds" aria-label="Game speed" role="group">
@@ -44,10 +53,26 @@
 	}
 	.time {
 		font-family: var(--display);
+		/* Spectral's default figures are oldstyle: its 1 reads as an I. */
+		font-variant-numeric: lining-nums tabular-nums;
 		font-size: 22px;
 		letter-spacing: 0.06em;
 		min-width: 3.2em;
 		text-align: center;
+	}
+	.score {
+		font-family: var(--display);
+		font-variant-numeric: lining-nums;
+		font-size: 18px;
+		display: flex;
+		gap: 4px;
+		color: var(--muted);
+	}
+	.radiant {
+		color: var(--radiant);
+	}
+	.dire {
+		color: var(--dire);
 	}
 	.wave {
 		color: var(--muted);

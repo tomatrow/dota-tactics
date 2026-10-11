@@ -1,7 +1,7 @@
 <!--
 	The player's hero, bottom centre: HP, MP and CT, its statuses, its abilities on Q W E (click or
-	press; greyed when it can't use them), what it's doing, its gold, last hits and denies, and the
-	respawn countdown while it's dead. Refreshed every tick.
+	press; greyed when it can't use them), what it's doing, its gold, kills and deaths, last hits
+	and denies, and the respawn countdown while it's dead. Refreshed every tick.
 -->
 <script lang="ts">
 	import type { Ability } from "#lib/content/abilities.ts"
@@ -54,6 +54,8 @@
 			maxMp: unit.stats.mp,
 			gauge: Math.floor((unit.gauge / GAUGE_FULL) * 100),
 			gold: hero.gold,
+			kills: hero.kills,
+			deaths: hero.deaths,
 			lastHits: hero.lastHits,
 			denies: hero.denies,
 			doing:
@@ -91,7 +93,8 @@
 		<header>
 			<strong>{info.name}</strong>
 			<span class="gold" title="Gold">{info.gold} g</span>
-			<span class="num" title="Last hits / denies">{info.lastHits} / {info.denies}</span>
+			<span class="num" title="Kills / deaths">K/D {info.kills}/{info.deaths}</span>
+			<span class="num" title="Last hits / denies">LH/DN {info.lastHits}/{info.denies}</span>
 		</header>
 		{#if info.alive}
 			<div class="bar">

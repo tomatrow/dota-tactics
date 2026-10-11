@@ -1,26 +1,31 @@
 <!--
 	One game on one map: the board's viewer state and the game's state, shared with everything
-	below, the 3D stage, the HUD and the keys (Dota 2's defaults, DESIGN.md §11).
+	below, the 3D stage, the HUD (and, when a side wins, the end window) and the keys (Dota 2's
+	defaults, DESIGN.md §11).
 -->
 <script lang="ts">
 	import type { MapModel } from "dota-tactics-grid/map/model.ts"
 	import type { JobId } from "#lib/content/heroes.ts"
+	import type { Team } from "#lib/content/units.ts"
 	import { setViewerState, ViewerState } from "dota-tactics-grid/state.svelte.ts"
 	import { GameState, setGameState } from "#lib/game/GameState.svelte.ts"
 	import ClockWindow from "./ClockWindow.svelte"
 	import ControlsWindow from "./ControlsWindow.svelte"
+	import EndWindow from "./EndWindow.svelte"
 	import HeroWindow from "./HeroWindow.svelte"
+	import Notices from "./Notices.svelte"
 	import Stage from "./Stage.svelte"
 	import UnitWindow from "./UnitWindow.svelte"
 
-	let { model, seed, job }: { model: MapModel; seed: number; job: JobId } = $props()
+	let { model, seed, job, side }: { model: MapModel; seed: number; job: JobId; side: Team } =
+		$props()
 
-	// One map, seed and hero per game: `{#key}` it to start another.
+	// One map, seed, hero and side per game: `{#key}` it to start another.
 	// svelte-ignore state_referenced_locally
 	const view = setViewerState(new ViewerState(model))
 	view.visibility.lanes = false
 	// svelte-ignore state_referenced_locally
-	const game = setGameState(new GameState(view, seed, job))
+	const game = setGameState(new GameState(view, seed, job, side))
 	// For poking at from the console and headless checks, in development only.
 	$effect(() => {
 		if (import.meta.env.DEV) Object.assign(window, { game })
@@ -82,6 +87,8 @@
 
 <Stage />
 <ClockWindow />
+<Notices />
 <UnitWindow />
 <HeroWindow />
 <ControlsWindow />
+<EndWindow />

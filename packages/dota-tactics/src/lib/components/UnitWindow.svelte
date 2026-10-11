@@ -1,7 +1,7 @@
 <!--
-	The selected unit (not the player's hero: the hero window shows that): who it is, its HP and
-	gauge, its stats (speed with its statuses), its statuses, and what it's doing. Refreshed every
-	tick.
+	The selected unit (not the player's hero: the hero window shows that): who it is, its HP (and a
+	hero's MP) and gauge, its stats (speed with its statuses), its statuses, and what it's doing;
+	for the AI's hero, what it's about, and its score. Refreshed every tick.
 -->
 <script lang="ts">
 	import { STATUS_IDS, STATUSES } from "#lib/content/statuses.ts"
@@ -16,8 +16,10 @@
 		if (!unit || unit === game.hero) return null
 		const { stats } = unit
 		const { world } = game
+		const hero = unit.hero
 		const doing =
 			unit.casting ? `Casting ${unit.casting.ability.name}`
+			: game.intentOf(unit) !== null ? `AI: ${game.intentOf(unit) ?? ""}`
 			: unit.step ? "Walking"
 			: unit.target ? `Fighting ${unit.target.name}`
 			: "Waiting"
@@ -26,6 +28,10 @@
 			team: unit.team,
 			hp: unit.hp,
 			maxHp: stats.hp,
+			mp: hero ? { mp: unit.mp, max: stats.mp } : null,
+			score:
+				hero &&
+				`K/D ${String(hero.kills)}/${String(hero.deaths)} · LH/DN ${String(hero.lastHits)}/${String(hero.denies)} · ${String(hero.gold)} g`,
 			gauge: Math.floor((unit.gauge / GAUGE_FULL) * 100),
 			stats: [
 				["ATK", stats.atk],
@@ -52,6 +58,13 @@
 			<meter max={info.maxHp} min="0" value={info.hp}></meter>
 			<span class="num">{info.hp}/{info.maxHp}</span>
 		</div>
+		{#if info.mp}
+			<div class="bar">
+				<span>MP</span>
+				<meter class="mp" max={info.mp.max} min="0" value={info.mp.mp}></meter>
+				<span class="num">{info.mp.mp}/{info.mp.max}</span>
+			</div>
+		{/if}
 		<div class="bar">
 			<span>CT</span>
 			<meter max="100" min="0" value={info.gauge}></meter>
@@ -63,6 +76,9 @@
 				<dd>{value}</dd>
 			{/each}
 		</dl>
+		{#if info.score}
+			<p class="score">{info.score}</p>
+		{/if}
 		{#if info.statuses.length > 0}
 			<p class="statuses">{info.statuses.join(" · ")}</p>
 		{/if}
@@ -74,7 +90,7 @@
 	section {
 		right: 12px;
 		bottom: 12px;
-		width: 230px;
+		width: 260px;
 	}
 	header {
 		display: flex;
@@ -128,5 +144,16 @@
 	}
 	.statuses {
 		color: #9fd8ff;
+	}
+	.score {
+		color: var(--fg);
+		font-family: var(--mono);
+		font-size: 11px;
+	}
+	.mp::-webkit-meter-optimum-value {
+		background: #6fa8ff;
+	}
+	.mp::-moz-meter-bar {
+		background: #6fa8ff;
 	}
 </style>
